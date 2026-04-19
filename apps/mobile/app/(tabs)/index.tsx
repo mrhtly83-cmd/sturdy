@@ -1,13 +1,12 @@
 // app/(tabs)/index.tsx
-// v7 — Final home: input-first, tone picker, intent cards, weekly insight
-// Tone picker matches age picker style (arrows + fill bar)
-// Tone is Sturdy+ gated — free users see locked state, default Gentle
-// No grid, no paging, no YOUR CHILDREN section
+// v8 — Hub: logo, compact layout, direct API, intent pills, last session, insight, daily tip
+// EMPTY_THRESHOLD = 3 for testing — TODO: change back to 5 before launch
 
-
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   Dimensions,
+  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -26,13 +25,13 @@ import { colors as C, fonts as F } from '../../src/theme';
 import { useAuth }         from '../../src/context/AuthContext';
 import { useChildProfile } from '../../src/context/ChildProfileContext';
 import { supabase }        from '../../src/lib/supabase';
-
+import { getParentingScript, CrisisDetectedError } from '../../src/lib/api';
+import { detectCrisis } from '../../src/hooks/useCrisisMode';
 
 const { width: SW } = Dimensions.get('window');
 const EMPTY_THRESHOLD = 3; // TODO: change back to 5 before launch
 
-
-// ─── Constants ───
+// ─── Data ───
 const THOUGHTS = [
   "You don't have to get it right every time. You just have to keep showing up.",
   "The fact that you're looking for better words means you're already a good parent.",
@@ -46,25 +45,24 @@ const THOUGHTS = [
   "It's okay to pause before you respond. That pause is parenting.",
 ];
 
-
-const TONES = [
-  { key: 'gentle', name: 'Gentle', color: C.sage },
-  { key: 'steady', name: 'Steady', color: C.amber },
-  { key: 'firm', name: 'Firm', color: C.coral },
-  { key: 'direct', name: 'Direct', color: C.coral },
-] as const;
-
+const TIPS = [
+  { text: "When your child refuses to leave, they're not being defiant — they're struggling with transitions.", source: 'The Whole-Brain Child' },
+  { text: "Name the emotion before trying to solve the problem. It reduces amygdala activity.", source: 'No-Drama Discipline' },
+  { text: "Children do well when they can. If they're not doing well, something is getting in the way.", source: 'The Explosive Child' },
+  { text: "Your triggers are your history. When you lose it, that's your childhood talking.", source: 'Raising Good Humans' },
+  { text: "Less stuff, fewer choices, more rhythm. Environment shapes behaviour.", source: 'Simplicity Parenting' },
+  { text: "Repair matters more than perfection. Coming back after a rupture builds trust.", source: 'The Book You Wish Your Parents Had Read' },
+  { text: "Acknowledge feelings before solving problems. Always.", source: 'How to Talk So Kids Will Listen' },
+];
 
 const INTENTS = [
-  { emoji: '🧘', label: 'Help us both calm down', mode: 'sos' },
-  { emoji: '🎯', label: 'Get through this together', mode: 'sos' },
-  { emoji: '💡', label: 'Help me understand why', mode: 'understand' },
-  { emoji: '🤝', label: 'Repair what just happened', mode: 'reconnect' },
+  { emoji: '🧘', label: 'Calm down', mode: 'sos' },
+  { emoji: '🎯', label: 'Get through', mode: 'sos' },
+  { emoji: '💡', label: 'Understand', mode: 'understand' },
+  { emoji: '🤝', label: 'Repair', mode: 'reconnect' },
 ] as const;
 
-
 const CHILD_COLORS = ['#5778A3', '#8AA060', '#E87461', '#F79566'];
-
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -73,64 +71,95 @@ function getGreeting(): string {
   return 'Good evening,';
 }
 
-
-function getDailyThought(): string {
+function getDailyIndex(mod: number): number {
   const dayOfYear = Math.floor(
     (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000
   );
-  return THOUGHTS[dayOfYear % THOUGHTS.length];
+  return dayOfYear % mod;
 }
 
+// ─── Types ───
+type LastSession = {
+  id: string;
+  summary: string;
+  mode: string;
+  trigger_category: string | null;
+  created_at: string;
+};
 
 // ═══════════════════════════════════════════════
 // MAIN
 // ═══════════════════════════════════════════════
 
-
 export default function HubScreen() {
   const { session } = useAuth();
   const { children, activeChild, isLoadingChild } = useChildProfile() as any;
 
-
   const [situation, setSituation] = useState('');
-  const [toneIndex, setToneIndex] = useState(0); // Default Gentle (free)
   const [selectedIntent, setSelectedIntent] = useState(0);
   const [inputFocused, setInputFocused] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [weekCount, setWeekCount] = useState(0);
+  const [lastSession, setLastSession] = useState<LastSession | null>(null);
 
+  const IS_PREMIUM = false; // TODO: wire to real subscription
 
-  const IS_PREMIUM = false; // TODO: wire to real subscription check
-
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(10)).current;
 
   const fetchData = useCallback(async () => {
-    if (!session?.user?.id || !activeChild?.id) return;
+    if (!session?.user?.id) return;
     try {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
 
+      if (activeChild?.id) {
+        const { count: total } = await supabase
+          .from('interaction_logs').select('id', { count: 'exact', head: true })
+          .eq('user_id', session.user.id).eq('child_profile_id', activeChild.id)
+          .eq('is_followup', false);
 
-      const { count: total } = await supabase
-        .from('interaction_logs').select('id', { count: 'exact', head: true })
-        .eq('user_id', session.user.id).eq('child_profile_id', activeChild.id)
-        .eq('is_followup', false);
+        const { count: week } = await supabase
+          .from('interaction_logs').select('id', { count: 'exact', head: true })
+          .eq('user_id', session.user.id).eq('child_profile_id', activeChild.id)
+          .eq('is_followup', false).gte('created_at', weekAgo.toISOString());
 
+        setTotalCount(total ?? 0);
+        setWeekCount(week ?? 0);
+      }
 
-      const { count: week } = await supabase
-        .from('interaction_logs').select('id', { count: 'exact', head: true })
-        .eq('user_id', session.user.id).eq('child_profile_id', activeChild.id)
-        .eq('is_followup', false).gte('created_at', weekAgo.toISOString());
+      // Last session
+      const { data: lastLog } = await supabase
+        .from('interaction_logs')
+        .select('id, situation_summary, mode, trigger_category, created_at')
+        .eq('user_id', session.user.id)
+        .eq('is_followup', false)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
 
-
-      setTotalCount(total ?? 0);
-      setWeekCount(week ?? 0);
+      if (lastLog) {
+        setLastSession({
+          id: lastLog.id,
+          summary: lastLog.situation_summary || 'A hard moment',
+          mode: lastLog.mode || 'SOS',
+          trigger_category: lastLog.trigger_category,
+          created_at: lastLog.created_at,
+        });
+      }
     } catch {}
   }, [session?.user?.id, activeChild?.id]);
 
-
-  useFocusEffect(useCallback(() => { fetchData(); }, [fetchData]));
-
+  useFocusEffect(useCallback(() => {
+    fetchData();
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
+    ]).start();
+  }, [fetchData]));
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -138,49 +167,79 @@ export default function HubScreen() {
     setRefreshing(false);
   }, [fetchData]);
 
-
   const greeting = getGreeting();
-  const thought = getDailyThought();
+  const thought = THOUGHTS[getDailyIndex(THOUGHTS.length)];
+  const tip = TIPS[getDailyIndex(TIPS.length)];
   const childName = activeChild?.name ?? children?.[0]?.name ?? null;
   const canSubmit = situation.trim().length > 0;
 
+  const handleSubmit = async () => {
+    const msg = situation.trim();
+    if (!msg) return;
 
-  const handleSubmit = () => {
-    if (!canSubmit) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const intent = INTENTS[selectedIntent];
-    router.push({ pathname: '/now', params: { mode: intent.mode } });
-  };
-
-
-  const handleToneArrow = (dir: number) => {
-    if (!IS_PREMIUM) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      router.push('/upgrade');
+    const crisisCheck = detectCrisis(msg);
+    if (crisisCheck.isCrisis) {
+      router.push({ pathname: '/crisis', params: { crisisType: crisisCheck.crisisType, riskLevel: crisisCheck.riskLevel } });
       return;
     }
-    Haptics.selectionAsync();
-    setToneIndex((prev) => (prev + dir + TONES.length) % TONES.length);
+
+    const childNameFinal = activeChild?.name?.trim() || 'My child';
+    const childAgeFinal = activeChild?.childAge ?? 4;
+    const intent = INTENTS[selectedIntent];
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setError(''); setLoading(true);
+
+    try {
+      const script = await getParentingScript({
+        childName: childNameFinal, childAge: childAgeFinal,
+        message: msg, userId: session?.user?.id,
+        intensity: null, mode: intent.mode,
+      } as any);
+
+      router.push({
+        pathname: '/result',
+        params: {
+          situationSummary: script.situation_summary,
+          regulateAction: script.regulate.parent_action,
+          regulateScript: script.regulate.script,
+          regulateCoaching: script.regulate.coaching ?? '',
+          regulateStrategies: JSON.stringify(script.regulate.strategies ?? []),
+          connectAction: script.connect.parent_action,
+          connectScript: script.connect.script,
+          connectCoaching: script.connect.coaching ?? '',
+          connectStrategies: JSON.stringify(script.connect.strategies ?? []),
+          guideAction: script.guide.parent_action,
+          guideScript: script.guide.script,
+          guideCoaching: script.guide.coaching ?? '',
+          guideStrategies: JSON.stringify(script.guide.strategies ?? []),
+          avoid: JSON.stringify(script.avoid),
+          childMessage: msg, mode: intent.mode,
+        },
+      });
+      setSituation('');
+    } catch (err) {
+      if (err instanceof CrisisDetectedError) {
+        router.push({ pathname: '/crisis', params: { crisisType: err.crisisType, riskLevel: err.riskLevel } });
+        return;
+      }
+      setError("Couldn't get a script. Try again.");
+    } finally { setLoading(false); }
   };
 
-
-  const handleToneTrackPress = () => {
+  const handleTonePress = () => {
     if (!IS_PREMIUM) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       router.push('/upgrade');
     }
   };
 
-
-  const handleIntentSelect = (index: number) => {
-    Haptics.selectionAsync();
-    setSelectedIntent(index);
-  };
-
-
-  const currentTone = TONES[toneIndex];
-  const toneFillPct = (toneIndex / 3) * 100;
-
+  function formatTimeAgo(iso: string): string {
+    const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+    if (diff < 60) return `${diff}m ago`;
+    if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
+    return `${Math.floor(diff / 1440)}d ago`;
+  }
 
   // ── Guest gate ──
   if (!session) {
@@ -215,8 +274,7 @@ export default function HubScreen() {
     );
   }
 
-
-  // ── Main hub ──
+  // ── Hub ──
   return (
     <SafeAreaView style={s.root} edges={['top']}>
       <StatusBar style="light" />
@@ -233,7 +291,6 @@ export default function HubScreen() {
         pointerEvents="none"
       />
 
-
       <ScrollView
         contentContainerStyle={s.scroll}
         showsVerticalScrollIndicator={false}
@@ -245,383 +302,345 @@ export default function HubScreen() {
             tintColor={C.amber} progressBackgroundColor="#1a1622" />
         }
       >
-        {/* ─── HEADER ─── */}
-        <View style={s.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.greeting}>
-              {greeting} <Text style={s.greetingName}>{childName ? `${childName}'s parent` : ''}</Text>
-            </Text>
-          </View>
-        </View>
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], gap: 10 }}>
 
+      {/* ─── LOGO ─── */}
+<View style={s.logoWrap}>
+  <Image
+    source={require('../../assets/logo.png')}
+    style={{ width: 44, height: 44 }}
+    resizeMode="contain"
+  />
+</View>
 
-        {/* ─── SUBSCRIPTION LINE ─── */}
-        <View style={s.subLine}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={s.subPlan}>FREE PLAN</Text>
-            <Text style={s.subValue}>· Unlimited SOS</Text>
-          </View>
-          <Pressable onPress={() => router.push('/upgrade')} style={({ pressed }) => [s.subUpgrade, pressed && { opacity: 0.8 }]}>
-            <Text style={s.subUpgradeText}>Sturdy+ →</Text>
-          </Pressable>
-        </View>
-
-
-        {/* ─── CHILD PILLS ─── */}
-        {children && children.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.childScroll}>
-            {children.map((child: any, i: number) => {
-              const isActive = child.id === activeChild?.id;
-              const color = CHILD_COLORS[i % CHILD_COLORS.length];
-              return (
-                <Pressable
-                  key={child.id}
-                  onPress={() => router.push('/(tabs)/child')}
-                  style={[s.childChip, isActive && s.childChipActive]}
-                >
-                  <LinearGradient
-                    colors={['#7C9A87', '#3C5A73']}
-                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                    style={s.childChipAva}
-                  >
-                    <Text style={s.childChipInitial}>{child.name?.[0]?.toUpperCase() ?? '?'}</Text>
-                  </LinearGradient>
-                  <View style={{ gap: 0 }}>
-                    <Text style={s.childChipName}>{child.name}</Text>
-                    <Text style={s.childChipAge}>Age {child.childAge ?? '?'} · {weekCount} scripts</Text>
-                  </View>
-                </Pressable>
-              );
-            })}
-            <Pressable onPress={() => router.push('/child/new')} style={s.childAdd}>
-              <Text style={s.childAddText}>+</Text>
+          {/* ─── HEADER ─── */}
+          <View style={s.headerRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.greeting}>{greeting}</Text>
+              <Text style={s.greetingName}>{childName ? `${childName}'s parent` : 'Welcome'}</Text>
+            </View>
+            <Pressable onPress={() => router.push('/upgrade')} style={({ pressed }) => [s.upgradePill, pressed && { opacity: 0.8 }]}>
+              <Text style={s.upgradePillText}>Sturdy+ →</Text>
             </Pressable>
-          </ScrollView>
-        )}
+          </View>
 
+          {/* ─── CHILD PILLS ─── */}
+          {children && children.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.childRow}>
+              {children.map((child: any, i: number) => {
+                const isActive = child.id === activeChild?.id;
+                return (
+                  <Pressable key={child.id} onPress={() => router.push('/(tabs)/child')}
+                    style={[s.childChip, isActive && s.childChipActive]}>
+                    <LinearGradient colors={['#7C9A87', '#3C5A73']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.childAva}>
+                      <Text style={s.childAvaText}>{child.name?.[0]?.toUpperCase() ?? '?'}</Text>
+                    </LinearGradient>
+                    <Text style={s.childChipName}>{child.name}</Text>
+                    <Text style={s.childChipMeta}>· {child.childAge ?? '?'}</Text>
+                  </Pressable>
+                );
+              })}
+              <Pressable onPress={() => router.push('/child/new')} style={s.childAdd}>
+                <Text style={s.childAddText}>+</Text>
+              </Pressable>
+            </ScrollView>
+          )}
 
-        {/* ─── No child prompt ─── */}
-        {!isLoadingChild && (!children || children.length === 0) && (
-          <Pressable onPress={() => router.push('/child/new')}>
-            <LinearGradient
-              colors={['rgba(87,120,163,0.10)', 'rgba(87,120,163,0.04)', 'rgba(0,0,0,0.10)']}
-              start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 1 }}
-              style={s.noChildCard}
-            >
-              <Text style={s.noChildTitle}>Add your first child</Text>
-              <Text style={s.noChildBody}>Sturdy personalizes every script to your child's age and needs.</Text>
-              <Text style={s.noChildLink}>Add child →</Text>
-            </LinearGradient>
-          </Pressable>
-        )}
+          {/* ─── No child ─── */}
+          {!isLoadingChild && (!children || children.length === 0) && (
+            <Pressable onPress={() => router.push('/child/new')}>
+              <LinearGradient colors={['rgba(87,120,163,0.10)', 'rgba(87,120,163,0.04)', 'rgba(0,0,0,0.10)']}
+                start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 1 }} style={s.noChildCard}>
+                <Text style={s.noChildTitle}>Add your first child</Text>
+                <Text style={s.noChildLink}>Add child →</Text>
+              </LinearGradient>
+            </Pressable>
+          )}
 
-
-        {/* ─── INPUT CARD ─── */}
-        <LinearGradient
-          colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.02)', 'rgba(0,0,0,0.10)']}
-          start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 1 }}
-          style={s.inputCard}
-        >
-          {/* Quote */}
+          {/* ─── QUOTE ─── */}
           <Text style={s.quote}>"{thought}"</Text>
 
+          {/* ─── INPUT CARD ─── */}
+          <LinearGradient
+            colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.02)', 'rgba(0,0,0,0.10)']}
+            start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 1 }}
+            style={s.inputCard}
+          >
+            <View style={[s.inputField, inputFocused && s.inputFieldFocused]}>
+              <TextInput
+                multiline
+                placeholder="What's happening right now?"
+                placeholderTextColor="rgba(255,255,255,0.22)"
+                value={situation}
+                onChangeText={setSituation}
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
+                style={s.textarea}
+                textAlignVertical="top"
+              />
+              <Text style={s.inputMic}>🎙️</Text>
+            </View>
 
-          {/* Textarea */}
-          <View style={[s.inputField, inputFocused && s.inputFieldFocused]}>
-            <TextInput
-              multiline
-              placeholder="What's happening right now?"
-              placeholderTextColor="rgba(255,255,255,0.22)"
-              value={situation}
-              onChangeText={setSituation}
-              onFocus={() => setInputFocused(true)}
-              onBlur={() => setInputFocused(false)}
-              style={s.textarea}
-              textAlignVertical="top"
-            />
-            <Text style={s.inputMic}>🎙️</Text>
+            {/* Tone — compact line */}
+            <Pressable onPress={handleTonePress} style={s.toneLine}>
+              <Text style={s.toneLabel}>TONE</Text>
+              <Text style={s.toneValue}>Gentle</Text>
+              <Text style={s.toneLock}>🔒</Text>
+              <View style={s.toneBar}><View style={s.toneBarFill} /></View>
+              <Text style={s.toneEnd}>Direct</Text>
+            </Pressable>
+
+            {/* CTA — compact */}
+            <Pressable
+              onPress={handleSubmit}
+              disabled={!canSubmit || loading}
+              style={({ pressed }) => [pressed && canSubmit && !loading && { opacity: 0.9, transform: [{ scale: 0.98 }] }]}
+            >
+              <LinearGradient
+                colors={canSubmit && !loading ? ['#C8883A', '#E8A855'] : ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.04)']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={s.ctaBtn}
+              >
+                <Text style={[s.ctaText, (!canSubmit || loading) && { color: 'rgba(255,255,255,0.25)' }]}>
+                  {loading ? 'Getting script…' : 'Help me with this'}
+                </Text>
+              </LinearGradient>
+            </Pressable>
+
+            {error ? <Text style={s.errorText}>{error}</Text> : null}
+          </LinearGradient>
+
+          {/* ─── INTENT PILLS ─── */}
+          <View style={s.secRow}>
+            <Text style={s.secLabel}>WHAT DO YOU NEED</Text>
+            <View style={s.secLine} />
           </View>
 
-
-          {/* ─── TONE PICKER (age picker style) ─── */}
-          <Pressable onPress={handleToneTrackPress} style={s.toneWrap}>
-            <View style={s.tonePickerRow}>
-              <Pressable onPress={() => handleToneArrow(-1)} style={s.toneArrow}>
-                <Text style={s.toneArrowText}>‹</Text>
-              </Pressable>
-              <View style={s.toneValueWrap}>
-                <Text style={[s.toneCenterLabel, { color: IS_PREMIUM ? currentTone.color : C.textMuted }]}>
-                  {currentTone.name}
-                </Text>
-                <Text style={s.toneCenterSub}>tone {!IS_PREMIUM && '🔒'}</Text>
-              </View>
-              <Pressable onPress={() => handleToneArrow(1)} style={s.toneArrow}>
-                <Text style={s.toneArrowText}>›</Text>
-              </Pressable>
-            </View>
-
-
-            {/* Fill bar */}
-            <View style={s.toneTrackWrap}>
-              <View style={s.toneTrack} />
-              <View style={[s.toneFill, {
-                width: `${Math.max(toneFillPct + 4, 6)}%`,
-                backgroundColor: IS_PREMIUM ? '#E8A855' : 'rgba(255,255,255,0.15)',
-              }]} />
-            </View>
-            <View style={s.toneRange}>
-              <Text style={s.toneRangeLabel}>Gentle</Text>
-              <Text style={s.toneRangeLabel}>Direct</Text>
-            </View>
-          </Pressable>
-
-
-          {/* CTA */}
-          <Pressable
-            onPress={handleSubmit}
-            disabled={!canSubmit}
-            style={({ pressed }) => [pressed && canSubmit && { opacity: 0.9, transform: [{ scale: 0.98 }] }]}
-          >
-            <LinearGradient
-              colors={canSubmit ? ['#C8883A', '#E8A855'] : ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.04)']}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              style={s.ctaBtn}
-            >
-              <Text style={[s.ctaText, !canSubmit && { color: 'rgba(255,255,255,0.25)' }]}>
-                Help me with this
-              </Text>
-            </LinearGradient>
-          </Pressable>
-        </LinearGradient>
-
-
-        {/* ─── INTENT CARDS (horizontal swipe) ─── */}
-        <View style={s.sectionRow}>
-          <Text style={s.sectionLabel}>WHAT DO YOU NEED</Text>
-          <View style={s.sectionLine} />
-        </View>
-
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.intentScroll}>
-          {INTENTS.map((intent, i) => {
-            const isActive = selectedIntent === i;
-            return (
-              <Pressable
-                key={i}
-                onPress={() => handleIntentSelect(i)}
-                style={[s.intentCard, isActive && s.intentCardActive]}
-              >
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.intentRow}>
+            {INTENTS.map((intent, i) => (
+              <Pressable key={i} onPress={() => { Haptics.selectionAsync(); setSelectedIntent(i); }}
+                style={[s.intentPill, selectedIntent === i && s.intentPillActive]}>
                 <Text style={s.intentEmoji}>{intent.emoji}</Text>
                 <Text style={s.intentLabel}>{intent.label}</Text>
               </Pressable>
-            );
-          })}
-        </ScrollView>
+            ))}
+          </ScrollView>
 
-
-        {/* ─── WEEKLY INSIGHT (locked/blurred) ─── */}
-        {totalCount >= EMPTY_THRESHOLD && (
-          <Pressable onPress={() => router.push('/upgrade')}>
-            <LinearGradient
-              colors={['rgba(124,154,135,0.08)', 'rgba(124,154,135,0.03)', 'rgba(0,0,0,0.10)']}
-              start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 1 }}
-              style={s.insightCard}
-            >
-              <Text style={s.insightEye}>WEEKLY INSIGHT</Text>
-              <View style={s.insightBlur}>
-                <Text style={s.insightPreview}>
-                  Bedtime is the pattern — but it's not really about bedtime. {childName || 'Your child'} needs reconnection after a long day apart.
-                </Text>
+          {/* ─── LAST SESSION ─── */}
+          {lastSession && (
+            <>
+              <View style={s.secRow}>
+                <Text style={s.secLabel}>RECENT</Text>
+                <View style={s.secLine} />
               </View>
-              <View style={s.insightLock}>
-                <Text style={s.insightLockIcon}>🔒</Text>
-                <Text style={s.insightLockText}>Unlock with Sturdy+ →</Text>
-              </View>
-            </LinearGradient>
-          </Pressable>
-        )}
 
+              <Pressable onPress={() => router.push('/(tabs)/child')} style={({ pressed }) => [pressed && { opacity: 0.85 }]}>
+                <LinearGradient
+                  colors={['rgba(60,90,115,0.10)', 'rgba(60,90,115,0.04)', 'rgba(0,0,0,0.10)']}
+                  start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 1 }}
+                  style={s.sessionCard}
+                >
+                  <Text style={s.sessionIcon}>📋</Text>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={s.sessionTitle} numberOfLines={1}>{lastSession.summary}</Text>
+                    <Text style={s.sessionMeta}>
+                      {childName || 'Child'} · {formatTimeAgo(lastSession.created_at)} · {lastSession.mode.toUpperCase()}
+                    </Text>
+                  </View>
+                  <Text style={s.sessionArrow}>→</Text>
+                </LinearGradient>
+              </Pressable>
+            </>
+          )}
 
-        <View style={{ height: 100 }} />
+          {/* ─── WEEKLY INSIGHT (locked) ─── */}
+          {totalCount >= EMPTY_THRESHOLD && (
+            <Pressable onPress={() => router.push('/upgrade')} style={({ pressed }) => [pressed && { opacity: 0.85 }]}>
+              <LinearGradient
+                colors={['rgba(124,154,135,0.08)', 'rgba(124,154,135,0.03)', 'rgba(0,0,0,0.10)']}
+                start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 1 }}
+                style={s.insightCard}
+              >
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={s.insightLabel}>WEEKLY INSIGHT</Text>
+                  <Text style={s.insightPreview}>
+                    Bedtime is the pattern — but it's not really about bedtime...
+                  </Text>
+                </View>
+                <View style={{ alignItems: 'center', gap: 2 }}>
+                  <Text style={{ fontSize: 14 }}>🔒</Text>
+                  <Text style={s.insightLockText}>Sturdy+</Text>
+                </View>
+              </LinearGradient>
+            </Pressable>
+          )}
+
+          {/* ─── TIP OF THE DAY ─── */}
+          <LinearGradient
+            colors={['rgba(200,136,58,0.06)', 'rgba(200,136,58,0.02)', 'rgba(0,0,0,0.08)']}
+            start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 1 }}
+            style={s.tipCard}
+          >
+            <Text style={s.tipIcon}>💡</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={s.tipLabel}>TODAY'S TIP</Text>
+              <Text style={s.tipText}>{tip.text}</Text>
+              <Text style={s.tipSource}>From: {tip.source}</Text>
+            </View>
+          </LinearGradient>
+
+          {/* ─── PLAN FOOTER ─── */}
+          <Text style={s.planFooter}>Free plan · Unlimited SOS scripts</Text>
+
+          <View style={{ height: 80 }} />
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-
 // ═══════════════════════════════════════════════
 // STYLES
 // ═══════════════════════════════════════════════
 
-
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0e0a10' },
-  scroll: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40, gap: 12 },
+  scroll: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40 },
 
-
+  // Logo
+  logoWrap: { alignItems: 'center', paddingBottom: 4 },
+  
   // Header
-  headerRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  greeting: { fontFamily: F.heading, fontSize: 22, color: C.text, letterSpacing: -0.3, lineHeight: 30 },
-  greetingName: { fontFamily: F.bodySemi, fontSize: 15, color: C.amber },
-
-
-  // Subscription
-  subLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  subPlan: { fontFamily: F.label, fontSize: 10, letterSpacing: 0.5, color: C.sage },
-  subValue: { fontFamily: F.body, fontSize: 11, color: C.textMuted },
-  subUpgrade: {
-    paddingVertical: 4, paddingHorizontal: 12, borderRadius: 8,
-    backgroundColor: 'rgba(200,136,58,0.10)',
-    borderWidth: 1, borderColor: 'rgba(200,136,58,0.20)',
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  greeting: { fontFamily: F.heading, fontSize: 18, color: C.text, letterSpacing: -0.3 },
+  greetingName: { fontFamily: F.bodySemi, fontSize: 14, color: C.amber },
+  upgradePill: {
+    paddingVertical: 5, paddingHorizontal: 12, borderRadius: 10,
+    backgroundColor: 'rgba(200,136,58,0.10)', borderWidth: 1, borderColor: 'rgba(200,136,58,0.20)',
   },
-  subUpgradeText: { fontFamily: F.bodySemi, fontSize: 11, color: C.amber },
-
+  upgradePillText: { fontFamily: F.bodySemi, fontSize: 10, color: C.amber },
 
   // Child pills
-  childScroll: { gap: 8, paddingVertical: 2 },
+  childRow: { gap: 6, paddingVertical: 2 },
   childChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    paddingVertical: 5, paddingLeft: 5, paddingRight: 14, borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingVertical: 4, paddingLeft: 4, paddingRight: 10, borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
   },
-  childChipActive: {
-    backgroundColor: 'rgba(138,160,96,0.10)', borderColor: 'rgba(138,160,96,0.25)',
-  },
-  childChipAva: {
-    width: 26, height: 26, borderRadius: 13,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  childChipInitial: { fontFamily: F.bodySemi, fontSize: 11, color: '#fff' },
-  childChipName: { fontFamily: F.bodySemi, fontSize: 13, color: C.textBody },
-  childChipAge: { fontFamily: F.body, fontSize: 10, color: C.textMuted },
+  childChipActive: { backgroundColor: 'rgba(138,160,96,0.10)', borderColor: 'rgba(138,160,96,0.25)' },
+  childAva: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  childAvaText: { fontFamily: F.bodySemi, fontSize: 9, color: '#fff' },
+  childChipName: { fontFamily: F.bodySemi, fontSize: 12, color: C.textBody },
+  childChipMeta: { fontFamily: F.body, fontSize: 10, color: C.textMuted },
   childAdd: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    width: 30, height: 30, borderRadius: 15,
+    backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center', justifyContent: 'center',
   },
-  childAddText: { fontSize: 18, color: C.textMuted },
-
+  childAddText: { fontSize: 14, color: C.textMuted },
 
   // No child
   noChildCard: {
-    borderRadius: 18, padding: 16, gap: 6,
-    borderWidth: 1,
+    borderRadius: 14, padding: 14, gap: 4, borderWidth: 1,
     borderTopColor: 'rgba(87,120,163,0.22)', borderLeftColor: 'rgba(87,120,163,0.12)',
     borderRightColor: 'rgba(0,0,0,0.06)', borderBottomColor: 'rgba(0,0,0,0.10)',
   },
-  noChildTitle: { fontFamily: F.bodySemi, fontSize: 15, color: C.text },
-  noChildBody: { fontFamily: F.body, fontSize: 13, color: C.textSub, lineHeight: 20 },
-  noChildLink: { fontFamily: F.bodySemi, fontSize: 13, color: C.blue, marginTop: 4 },
+  noChildTitle: { fontFamily: F.bodySemi, fontSize: 14, color: C.text },
+  noChildLink: { fontFamily: F.bodySemi, fontSize: 12, color: C.blue },
 
+  // Quote
+  quote: {
+    fontFamily: F.scriptItalic, fontSize: 12, color: C.textMuted,
+    textAlign: 'center', lineHeight: 18, paddingHorizontal: 12,
+  },
 
   // Input card
   inputCard: {
-    borderRadius: 20, padding: 14, gap: 12,
-    borderWidth: 1,
+    borderRadius: 16, padding: 12, gap: 8, borderWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.12)', borderLeftColor: 'rgba(255,255,255,0.06)',
     borderRightColor: 'rgba(0,0,0,0.06)', borderBottomColor: 'rgba(0,0,0,0.10)',
-  },
-  quote: {
-    fontFamily: F.scriptItalic, fontSize: 13, color: C.textSub,
-    textAlign: 'center', lineHeight: 20, paddingHorizontal: 4,
   },
   inputField: {
     flexDirection: 'row', alignItems: 'flex-start',
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 14, overflow: 'hidden',
+    borderRadius: 12, overflow: 'hidden',
   },
   inputFieldFocused: { borderColor: 'rgba(87,120,163,0.35)' },
   textarea: {
     flex: 1, padding: 12, paddingRight: 0,
     fontFamily: F.body, fontSize: 15, color: C.text,
-    lineHeight: 22, minHeight: 44, maxHeight: 100,
+    lineHeight: 22, minHeight: 60, maxHeight: 120,
   },
-  inputMic: { fontSize: 16, opacity: 0.4, padding: 12, paddingLeft: 8 },
+  inputMic: { fontSize: 14, opacity: 0.4, padding: 14, paddingLeft: 6 },
 
+  // Tone — compact line
+  toneLine: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 2 },
+  toneLabel: { fontFamily: F.label, fontSize: 10, letterSpacing: 0.3, color: C.textMuted },
+  toneValue: { fontFamily: F.bodySemi, fontSize: 12, color: C.textMuted },
+  toneLock: { fontSize: 9, marginLeft: -2 },
+  toneBar: { flex: 1, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.08)', overflow: 'hidden' },
+  toneBarFill: { width: '8%', height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)' },
+  toneEnd: { fontFamily: F.body, fontSize: 10, color: 'rgba(255,255,255,0.15)' },
 
-  // Tone picker
-  toneWrap: { alignItems: 'center', gap: 0 },
-  tonePickerRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16,
-    paddingVertical: 4,
-  },
-  toneArrow: {
-    width: 38, height: 38, borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  toneArrowText: { fontSize: 18, color: C.textSub },
-  toneValueWrap: { alignItems: 'center', minWidth: 100 },
-  toneCenterLabel: { fontFamily: F.heading, fontSize: 28, letterSpacing: -0.3 },
-  toneCenterSub: { fontFamily: F.body, fontSize: 11, color: C.textMuted },
-  toneTrackWrap: {
-    width: '100%', height: 20,
-    justifyContent: 'center', marginTop: 4,
-  },
-  toneTrack: {
-    position: 'absolute', left: 0, right: 0, height: 5, borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.10)',
-  },
-  toneFill: {
-    position: 'absolute', left: 0, height: 5, borderRadius: 3,
-  },
-  toneRange: {
-    flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 2,
-  },
-  toneRangeLabel: { fontFamily: F.body, fontSize: 10, color: C.textMuted },
-
-
-  // CTA
-  ctaBtn: { borderRadius: 14, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
-  ctaText: { fontFamily: F.bodySemi, fontSize: 15, color: '#FFFFFF', letterSpacing: 0.3 },
-
+  // CTA — compact
+  ctaBtn: { borderRadius: 12, paddingVertical: 10, alignItems: 'center', justifyContent: 'center' },
+  ctaText: { fontFamily: F.bodySemi, fontSize: 13, color: '#FFFFFF', letterSpacing: 0.2 },
+  errorText: { fontFamily: F.body, fontSize: 12, color: C.coral, textAlign: 'center' },
 
   // Section
-  sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  sectionLabel: { fontFamily: F.label, fontSize: 10, letterSpacing: 0.9, color: C.textMuted },
-  sectionLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.08)' },
+  secRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  secLabel: { fontFamily: F.label, fontSize: 9, letterSpacing: 0.8, color: C.textMuted },
+  secLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.06)' },
 
-
-  // Intent cards
-  intentScroll: { gap: 8, paddingVertical: 2, paddingRight: 20 },
-  intentCard: {
-    alignItems: 'center', gap: 8,
-    paddingVertical: 14, paddingHorizontal: 16, borderRadius: 16, minWidth: 140,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
+  // Intent pills
+  intentRow: { gap: 6, paddingVertical: 2 },
+  intentPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingVertical: 8, paddingHorizontal: 14, borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
   },
-  intentCardActive: {
-    backgroundColor: 'rgba(200,136,58,0.08)', borderColor: 'rgba(200,136,58,0.25)',
-  },
-  intentEmoji: { fontSize: 28 },
-  intentLabel: { fontFamily: F.bodySemi, fontSize: 13, color: C.textBody, textAlign: 'center', lineHeight: 18 },
+  intentPillActive: { backgroundColor: 'rgba(200,136,58,0.08)', borderColor: 'rgba(200,136,58,0.20)' },
+  intentEmoji: { fontSize: 16 },
+  intentLabel: { fontFamily: F.bodyMedium, fontSize: 13, color: C.textBody },
 
-
-  // Weekly insight
-  insightCard: {
-    borderRadius: 18, padding: 16, gap: 8,
-    borderWidth: 1,
-    borderTopColor: 'rgba(124,154,135,0.18)', borderLeftColor: 'rgba(124,154,135,0.10)',
+  // Session
+  sessionCard: {
+    borderRadius: 14, padding: 12, borderWidth: 1,
+    borderTopColor: 'rgba(60,90,115,0.20)', borderLeftColor: 'rgba(60,90,115,0.10)',
     borderRightColor: 'rgba(0,0,0,0.06)', borderBottomColor: 'rgba(0,0,0,0.10)',
-    alignItems: 'center',
+    flexDirection: 'row', alignItems: 'center', gap: 12,
   },
-  insightEye: { fontFamily: F.label, fontSize: 9, letterSpacing: 0.8, color: C.textMuted, alignSelf: 'flex-start' },
-  insightBlur: { overflow: 'hidden' },
-  insightPreview: {
-    fontFamily: F.scriptItalic, fontSize: 14, color: C.textSub,
-    lineHeight: 22, textAlign: 'center',
-    // Note: React Native doesn't support CSS blur on text
-    // Use opacity as approximation — real blur needs a BlurView overlay
-    opacity: 0.3,
-  },
-  insightLock: { alignItems: 'center', gap: 4, marginTop: 4 },
-  insightLockIcon: { fontSize: 18 },
-  insightLockText: { fontFamily: F.bodySemi, fontSize: 12, color: C.amber },
-});
+  sessionIcon: { fontSize: 20 },
+  sessionTitle: { fontFamily: F.bodySemi, fontSize: 13, color: C.textBody },
+  sessionMeta: { fontFamily: F.body, fontSize: 11, color: C.textMuted },
+  sessionArrow: { fontFamily: F.bodySemi, fontSize: 12, color: C.textMuted },
 
+  // Insight
+  insightCard: {
+    borderRadius: 14, padding: 12, borderWidth: 1,
+    borderTopColor: 'rgba(124,154,135,0.16)', borderLeftColor: 'rgba(124,154,135,0.08)',
+    borderRightColor: 'rgba(0,0,0,0.06)', borderBottomColor: 'rgba(0,0,0,0.10)',
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+  },
+  insightLabel: { fontFamily: F.label, fontSize: 9, letterSpacing: 0.6, color: C.textMuted },
+  insightPreview: { fontFamily: F.scriptItalic, fontSize: 13, color: C.textSub, opacity: 0.35, lineHeight: 18 },
+  insightLockText: { fontFamily: F.bodySemi, fontSize: 9, color: C.amber },
+
+  // Tip
+  tipCard: {
+    borderRadius: 14, padding: 12, borderWidth: 1,
+    borderTopColor: 'rgba(200,136,58,0.14)', borderLeftColor: 'rgba(200,136,58,0.08)',
+    borderRightColor: 'rgba(0,0,0,0.06)', borderBottomColor: 'rgba(0,0,0,0.10)',
+    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+  },
+  tipIcon: { fontSize: 16, marginTop: 1 },
+  tipLabel: { fontFamily: F.label, fontSize: 9, letterSpacing: 0.6, color: C.amber, marginBottom: 2 },
+  tipText: { fontFamily: F.body, fontSize: 13, color: C.textBody, lineHeight: 19 },
+  tipSource: { fontFamily: F.body, fontSize: 10, color: C.textMuted, marginTop: 3 },
+
+  // Plan footer
+  planFooter: { fontFamily: F.body, fontSize: 10, color: 'rgba(255,255,255,0.15)', textAlign: 'center', marginTop: 4 },
+});
 
 

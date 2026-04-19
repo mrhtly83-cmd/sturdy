@@ -93,7 +93,6 @@ const INTENSITY_OPTIONS = [
   { level: 2, label: 'Building', color: C.blue },
   { level: 3, label: 'Hard',     color: C.peach },
   { level: 4, label: 'Intense',  color: C.amber },
-  { level: 5, label: 'Crisis',   color: C.coral },
 ] as const;
 
 
