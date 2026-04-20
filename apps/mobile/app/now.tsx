@@ -1,10 +1,6 @@
 // app/now.tsx
-// v6 — Tone-style intensity pills + night sky + glassmorphism + amber CTAs
-// Updated: crisis detection via shared useCrisisMode hook
-// Logo palette: Blue #5778A3, Coral #E87461, Sage #8AA060, Amber #D4944A
-
-
-
+// v7 — Journal identity: pastel gradient, frosted glass, rose accents
+// SOS input with crisis detection, intensity pills, multi-mode support
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -28,80 +24,51 @@ import { useAuth }         from '../src/context/AuthContext';
 import { useChildProfile } from '../src/context/ChildProfileContext';
 import { getParentingScript, CrisisDetectedError } from '../src/lib/api';
 import { colors as C, fonts as F } from '../src/theme';
-import { Stars }        from '../src/components/features/Stars';
 import { detectCrisis } from '../src/hooks/useCrisisMode';
-
-
-
 
 const { width: W } = Dimensions.get('window');
 
-
-
-
-// ── Mode config
 const MODE_CONFIG = {
   sos: {
     title: "What's happening\nright now?",
     sub: 'Describe the moment and get calm words to say.',
     placeholder: 'My child is screaming because we have to leave the park.',
     hint: 'A simple snapshot is enough.',
-    showCrisis: true,
-    showIntensity: true,
-    btnLabel: 'Get Script',
+    showCrisis: true, showIntensity: true, btnLabel: 'Get Script',
   },
   reconnect: {
     title: "What's been\nhappening between you?",
     sub: 'Describe how things have been off — Sturdy will help you reconnect.',
-    placeholder: 'My 14 year old hasn\'t spoken to me properly in three days after I set a limit.',
+    placeholder: "My 14 year old hasn't spoken to me properly in three days after I set a limit.",
     hint: 'Include how long things have been off and what triggered it.',
-    showCrisis: false,
-    showIntensity: false,
-    btnLabel: 'Get Script',
+    showCrisis: false, showIntensity: false, btnLabel: 'Get Script',
   },
   understand: {
     title: "What does your\nchild keep doing?",
-    sub: 'Describe the pattern — Sturdy will explain what\'s driving it.',
+    sub: "Describe the pattern — Sturdy will explain what's driving it.",
     placeholder: 'My child always melts down at transitions. Every single time we have to leave somewhere.',
     hint: 'The more detail you share, the better the explanation.',
-    showCrisis: false,
-    showIntensity: false,
-    btnLabel: 'Help me understand',
+    showCrisis: false, showIntensity: false, btnLabel: 'Help me understand',
   },
   conversation: {
     title: "What do you need\nto talk to them about?",
     sub: 'Describe the topic — Sturdy will help you open the conversation.',
     placeholder: 'I need to talk to my 12 year old about screen time. Every conversation turns into a fight.',
     hint: 'Include their age and how past conversations have gone.',
-    showCrisis: false,
-    showIntensity: false,
-    btnLabel: 'Help me say it',
+    showCrisis: false, showIntensity: false, btnLabel: 'Help me say it',
   },
 } as const;
 
-
-
-
 type Mode = keyof typeof MODE_CONFIG;
 
-
-
-
-// ── Intensity pills matching tone selector style
 const INTENSITY_OPTIONS = [
   { level: 1, label: 'Mild',     color: C.sage },
-  { level: 2, label: 'Building', color: C.blue },
-  { level: 3, label: 'Hard',     color: C.peach },
-  { level: 4, label: 'Intense',  color: C.amber },
+  { level: 2, label: 'Building', color: '#5778A3' },
+  { level: 3, label: 'Hard',     color: '#F79566' },
+  { level: 4, label: 'Intense',  color: C.rose },
 ] as const;
 
-
-
-
 const TIMEOUT_MS = 20 * 60 * 1000;
-
-
-
 
 export default function NowScreen() {
   const navigation = useRouter();
@@ -110,40 +77,25 @@ export default function NowScreen() {
   const childCtx = useChildProfile() as any;
   const draft = childCtx.draft ?? childCtx.activeChild ?? {};
 
-
-
-
   const rawMode = params.mode ?? 'sos';
   const mode: Mode = (rawMode in MODE_CONFIG ? rawMode : 'sos') as Mode;
   const cfg = MODE_CONFIG[mode];
 
-
-
-
   const [situation, setSituation] = useState('');
   const [intensity, setIntensity] = useState<number | null>(null);
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [crisisFlag, setCrisisFlag] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
 
-
-
-
   const crisisOpacity = useRef(new Animated.Value(0)).current;
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-
-
 
   const childName = draft?.name?.trim() ?? null;
   const childAge  = draft?.childAge ?? null;
   const userId    = session?.user?.id ?? undefined;
   const isTrial   = params.trial === 'true';
   const canSubmit = (isTrial || (Boolean(childName) && childAge !== null)) && situation.trim().length > 0;
-
-
-
 
   const resetTimeout = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -154,16 +106,10 @@ export default function NowScreen() {
     }, TIMEOUT_MS);
   }, [session, signOut]);
 
-
-
-
   useEffect(() => {
     resetTimeout();
     return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
   }, [resetTimeout]);
-
-
-
 
   const resetParam = Array.isArray(params.reset) ? params.reset[0] : params.reset;
   useEffect(() => {
@@ -171,17 +117,11 @@ export default function NowScreen() {
     setSituation(''); setIntensity(null); setError(''); setCrisisFlag(false);
   }, [resetParam]);
 
-
-
-
   const handleTextChange = (text: string) => {
     setSituation(text);
     if (error) setError('');
     resetTimeout();
     if (!cfg.showCrisis) return;
-
-
-    // ── Crisis detection via shared hook ──
     const crisisCheck = detectCrisis(text);
     if (crisisCheck.isCrisis !== crisisFlag) {
       setCrisisFlag(crisisCheck.isCrisis);
@@ -191,55 +131,30 @@ export default function NowScreen() {
     }
   };
 
-
-
-
   const handleSelectIntensity = (level: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIntensity(intensity === level ? null : level);
     resetTimeout();
   };
 
-
-
-
   const handleGetScript = async () => {
     const msg = situation.trim();
     if (!msg) return;
 
-
-
-
     const finalName = childName || 'My child';
     const finalAge = childAge ?? 4;
-
-
-
 
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setError(''); setLoading(true); resetTimeout();
 
-
-
-
     try {
       const script = await getParentingScript({
-        childName: finalName,
-        childAge: finalAge,
-        message: msg,
-        userId,
-        intensity: cfg.showIntensity ? intensity : null,
-        mode,
+        childName: finalName, childAge: finalAge,
+        message: msg, userId,
+        intensity: cfg.showIntensity ? intensity : null, mode,
       } as any);
 
-
-
-
       const resultPath = isTrial ? '/welcome/trial-result' : '/result';
-
-
-
-
       navigation.push({
         pathname: resultPath,
         params: {
@@ -257,8 +172,7 @@ export default function NowScreen() {
           guideCoaching: script.guide.coaching ?? '',
           guideStrategies: JSON.stringify(script.guide.strategies ?? []),
           avoid: JSON.stringify(script.avoid),
-          childMessage: msg,
-          mode,
+          childMessage: msg, mode,
         },
       });
     } catch (err) {
@@ -270,38 +184,22 @@ export default function NowScreen() {
     } finally { setLoading(false); }
   };
 
-
-
-
   const handleUnsafe = () => {
     router.push({ pathname: '/crisis', params: { crisisType: 'manual', riskLevel: 'ELEVATED_RISK' } });
   };
 
-
-
-
   return (
     <SafeAreaView style={s.root} edges={['top', 'bottom']}>
-      <StatusBar style="light" />
-
-
+      <StatusBar style="dark" />
       <LinearGradient
-        colors={['#0e0a10', '#14101a', '#1a1622', '#1e1a28', '#201c2a', '#1e1a24', '#1a1620', '#18141e', '#14101a']}
-        locations={[0, 0.10, 0.22, 0.35, 0.48, 0.60, 0.72, 0.85, 1]}
+        colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      <Stars />
-      <LinearGradient
-        colors={['transparent', 'rgba(212,148,74,0.03)', 'rgba(212,148,74,0.06)']}
-        locations={[0, 0.5, 1]}
-        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '35%', zIndex: 1 }}
-        pointerEvents="none"
-      />
-
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1, zIndex: 2 }}
+        style={{ flex: 1 }}
       >
         <ScrollView
           contentContainerStyle={s.content}
@@ -315,9 +213,6 @@ export default function NowScreen() {
             <Text style={s.backText}>← Back</Text>
           </Pressable>
 
-
-
-
           {/* Header */}
           <View style={s.header}>
             {childName && childAge !== null ? (
@@ -329,9 +224,6 @@ export default function NowScreen() {
             <Text style={s.sub}>{cfg.sub}</Text>
           </View>
 
-
-
-
           {/* No child warning */}
           {(!childName || childAge === null) && !isTrial ? (
             <View style={s.noChildCard}>
@@ -342,17 +234,13 @@ export default function NowScreen() {
             </View>
           ) : null}
 
-
-
-
           {/* Textarea */}
           <View style={[s.textareaCard, inputFocused && s.textareaFocused]}>
             <TextInput
               autoFocus={Boolean(childName) && childAge !== null}
-              multiline
-              numberOfLines={5}
+              multiline numberOfLines={5}
               placeholder={cfg.placeholder}
-              placeholderTextColor="rgba(255,255,255,0.22)"
+              placeholderTextColor={C.textMuted}
               value={situation}
               onChangeText={handleTextChange}
               onFocus={() => setInputFocused(true)}
@@ -361,9 +249,6 @@ export default function NowScreen() {
               textAlignVertical="top"
             />
             <Text style={s.textareaHint}>{cfg.hint}</Text>
-
-
-
 
             {cfg.showCrisis ? (
               <Animated.View style={[s.crisisBanner, { opacity: crisisOpacity }]}>
@@ -378,10 +263,7 @@ export default function NowScreen() {
             ) : null}
           </View>
 
-
-
-
-          {/* ── Intensity — Tone-style pills ── */}
+          {/* Intensity */}
           {cfg.showIntensity ? (
             <View style={s.intensitySection}>
               <View style={s.intensityHeader}>
@@ -411,36 +293,20 @@ export default function NowScreen() {
             </View>
           ) : null}
 
-
-
-
           {error ? <Text style={s.errorText}>{error}</Text> : null}
 
-
-
-
-          {/* CTA — Amber gradient */}
+          {/* CTA */}
           <Pressable
             onPress={handleGetScript}
             disabled={!canSubmit || loading}
-            style={({ pressed }) => [
-              pressed && canSubmit && !loading && { opacity: 0.9, transform: [{ scale: 0.98 }] },
-            ]}
+            style={({ pressed }) => [pressed && canSubmit && !loading && { opacity: 0.9, transform: [{ scale: 0.98 }] }]}
           >
-            <LinearGradient
-              colors={canSubmit && !loading ? ['#C8883A', '#E8A855'] : ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.04)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={s.ctaBtn}
-            >
-              <Text style={[s.ctaLabel, (!canSubmit || loading) && { color: 'rgba(255,255,255,0.25)' }]}>
+            <View style={[s.ctaBtn, (!canSubmit || loading) && s.ctaBtnDisabled]}>
+              <Text style={[s.ctaLabel, (!canSubmit || loading) && { color: C.textMuted }]}>
                 {loading ? 'Getting script…' : cfg.btnLabel}
               </Text>
-            </LinearGradient>
+            </View>
           </Pressable>
-
-
-
 
           {cfg.showCrisis ? (
             <Pressable onPress={handleUnsafe} style={s.emergencyBtn}>
@@ -455,60 +321,41 @@ export default function NowScreen() {
   );
 }
 
-
-
-
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0e0a10' },
-  content: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: 40,
-    gap: 22,
-  },
-
+  root: { flex: 1, backgroundColor: C.base },
+  content: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 40, gap: 22 },
 
   back: { alignSelf: 'flex-start', paddingVertical: 6 },
   backText: { fontFamily: F.bodyMedium, fontSize: 16, color: C.textMuted },
 
-
   header: { gap: 10 },
   contextPill: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(138,160,96,0.12)',
-    borderWidth: 1, borderColor: 'rgba(138,160,96,0.25)',
+    backgroundColor: 'rgba(129,178,154,0.12)',
+    borderWidth: 1, borderColor: 'rgba(129,178,154,0.25)',
     borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5,
   },
   contextPillText: { fontFamily: F.bodySemi, fontSize: 12, color: C.sage },
-  title: { fontFamily: F.heading, fontSize: 28, color: C.text, lineHeight: 34, letterSpacing: -0.3 },
+  title: { fontFamily: F.display, fontSize: 28, color: C.text, lineHeight: 34, letterSpacing: -0.3 },
   sub: { fontFamily: F.body, fontSize: 15, color: C.textSub, lineHeight: 22 },
 
-
   noChildCard: {
-    backgroundColor: 'rgba(212,148,74,0.08)',
+    backgroundColor: 'rgba(201,123,99,0.06)',
     borderRadius: 16, padding: 14, gap: 4,
-    borderWidth: 1, borderColor: 'rgba(212,148,74,0.20)',
+    borderWidth: 1, borderColor: 'rgba(201,123,99,0.15)',
   },
-  noChildText: { fontFamily: F.body, fontSize: 14, color: C.amber },
-  noChildLink: { fontFamily: F.bodySemi, fontSize: 14, color: C.amber, marginTop: 4 },
-
+  noChildText: { fontFamily: F.body, fontSize: 14, color: C.rose },
+  noChildLink: { fontFamily: F.bodySemi, fontSize: 14, color: C.rose, marginTop: 4 },
 
   textareaCard: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: C.cardGlass,
+    borderWidth: 1, borderColor: C.border,
     borderRadius: 18, overflow: 'hidden',
   },
-  textareaFocused: {
-    borderColor: 'rgba(87,120,163,0.35)',
-  },
+  textareaFocused: { borderColor: 'rgba(129,178,154,0.40)' },
   textarea: {
-    padding: 16,
-    fontFamily: F.body,
-    fontSize: 16,
-    color: C.text,
-    lineHeight: 24,
-    minHeight: 130,
+    padding: 16, fontFamily: F.body, fontSize: 16,
+    color: C.text, lineHeight: 24, minHeight: 130,
   },
   textareaHint: {
     fontFamily: F.body, fontSize: 12,
@@ -516,51 +363,43 @@ const s = StyleSheet.create({
     paddingHorizontal: 16, paddingBottom: 12,
   },
   crisisBanner: {
-    borderTopWidth: 1, borderTopColor: 'rgba(212,148,74,0.25)',
-    backgroundColor: 'rgba(212,148,74,0.08)',
+    borderTopWidth: 1, borderTopColor: 'rgba(201,123,99,0.20)',
+    backgroundColor: 'rgba(201,123,99,0.06)',
   },
   crisisBannerInner: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     padding: 12, paddingHorizontal: 16,
   },
   crisisIcon: { fontSize: 16 },
-  crisisTitle: { fontFamily: F.bodySemi, fontSize: 13, color: C.amber },
+  crisisTitle: { fontFamily: F.bodySemi, fontSize: 13, color: C.rose },
   crisisSub: { fontFamily: F.body, fontSize: 11, color: C.textSub },
 
-
-  // ── Intensity (tone-style pills) ──
   intensitySection: { gap: 10 },
   intensityHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  intensityLabel: { fontFamily: F.bodyMedium, fontSize: 14, color: C.textBody },
+  intensityLabel: { fontFamily: F.bodyMedium, fontSize: 14, color: C.text },
   intensityOpt: { fontFamily: F.body, fontSize: 12, color: C.textMuted, fontStyle: 'italic' },
   intensityRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   intensityPill: {
     flex: 1, minWidth: 60,
-    paddingVertical: 10, paddingHorizontal: 8,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    paddingVertical: 10, paddingHorizontal: 8, borderRadius: 12,
+    backgroundColor: C.cardGlass,
+    borderWidth: 1, borderColor: C.border,
     alignItems: 'center', justifyContent: 'center',
   },
-  intensityPillText: {
-    fontFamily: F.bodyMedium, fontSize: 12,
-    color: C.textSub,
-  },
+  intensityPillText: { fontFamily: F.bodyMedium, fontSize: 12, color: C.textSub },
 
-
-  errorText: { fontFamily: F.body, fontSize: 14, color: C.coral, textAlign: 'center' },
-
+  errorText: { fontFamily: F.body, fontSize: 14, color: C.rose, textAlign: 'center' },
 
   ctaBtn: {
     borderRadius: 18, minHeight: 56,
     alignItems: 'center', justifyContent: 'center',
+    backgroundColor: C.rose,
   },
+  ctaBtnDisabled: { backgroundColor: 'rgba(0,0,0,0.06)' },
   ctaLabel: { fontFamily: F.subheading, fontSize: 17, color: '#FFFFFF', letterSpacing: 0.3 },
-
 
   emergencyBtn: { alignSelf: 'center', paddingVertical: 6 },
   emergencyText: { fontFamily: F.body, fontSize: 12, color: C.textMuted, textDecorationLine: 'underline' },
 });
-
 
 
