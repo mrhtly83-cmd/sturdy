@@ -1,34 +1,27 @@
 // app/_layout.tsx
-// v6 — Guest detection + auth routing
-// New users → /welcome
-// Returning guests (seen onboarding before) → /(tabs) directly
-// Signed-in users → /(tabs) directly
+// v7 — Journal identity: Manrope + Cormorant Garamond
+// Removed: Jakarta, Crimson (old dark theme)
 
 import { useEffect } from 'react';
 import { Platform, Text, TextInput } from 'react-native';
 import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  PlusJakartaSans_400Regular,
-  PlusJakartaSans_500Medium,
-  PlusJakartaSans_600SemiBold,
-  PlusJakartaSans_700Bold,
-  PlusJakartaSans_800ExtraBold,
-} from '@expo-google-fonts/plus-jakarta-sans';
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+} from '@expo-google-fonts/manrope';
 import {
-  CrimsonPro_300Light,
-  CrimsonPro_400Regular,
-  CrimsonPro_500Medium,
-  CrimsonPro_300Light_Italic,
-  CrimsonPro_400Regular_Italic,
-  CrimsonPro_500Medium_Italic,
-} from '@expo-google-fonts/crimson-pro';
+  CormorantGaramond_400Regular,
+  CormorantGaramond_600SemiBold,
+  CormorantGaramond_700Bold,
+  CormorantGaramond_400Regular_Italic,
+} from '@expo-google-fonts/cormorant-garamond';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { ChildProfileProvider }  from '../src/context/ChildProfileContext';
-
-const GUEST_SEEN_KEY = 'sturdy_guest_seen_v1';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -67,11 +60,10 @@ function AuthGate() {
     if (isLoading) return;
 
     if (session) {
-      // Signed-in user — always go home
       router.replace('/(tabs)');
       return;
     }
-router.replace('/welcome');
+    router.replace('/welcome');
   }, [session, isLoading]);
 
   return null;
@@ -79,17 +71,18 @@ router.replace('/welcome');
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    'Jakarta-Regular':    PlusJakartaSans_400Regular,
-    'Jakarta-Medium':     PlusJakartaSans_500Medium,
-    'Jakarta-SemiBold':   PlusJakartaSans_600SemiBold,
-    'Jakarta-Bold':       PlusJakartaSans_700Bold,
-    'Jakarta-ExtraBold':  PlusJakartaSans_800ExtraBold,
-    'Crimson-Light':        CrimsonPro_300Light,
-    'Crimson-Regular':      CrimsonPro_400Regular,
-    'Crimson-Medium':       CrimsonPro_500Medium,
-    'Crimson-LightItalic':  CrimsonPro_300Light_Italic,
-    'Crimson-Italic':       CrimsonPro_400Regular_Italic,
-    'Crimson-MediumItalic': CrimsonPro_500Medium_Italic,
+    // Manrope — UI body text
+    'Manrope-Regular':    Manrope_400Regular,
+    'Manrope-Medium':     Manrope_500Medium,
+    'Manrope-SemiBold':   Manrope_600SemiBold,
+    'Manrope-Bold':       Manrope_700Bold,
+    'Manrope-ExtraBold':  Manrope_800ExtraBold,
+
+    // Cormorant Garamond — headings, emotional content
+    'Cormorant-Regular':    CormorantGaramond_400Regular,
+    'Cormorant-SemiBold':   CormorantGaramond_600SemiBold,
+    'Cormorant-Bold':       CormorantGaramond_700Bold,
+    'Cormorant-Italic':     CormorantGaramond_400Regular_Italic,
   });
 
   if (!fontsLoaded) return null;
@@ -101,7 +94,7 @@ export default function RootLayout() {
         <Stack
           screenOptions={{
             headerShown: false,
-            contentStyle: { backgroundColor: '#0e0a10' },
+            contentStyle: { backgroundColor: '#FDFAF5' },
             animation: 'slide_from_right',
             orientation: 'portrait',
           }}
@@ -110,3 +103,4 @@ export default function RootLayout() {
     </AuthProvider>
   );
 }
+

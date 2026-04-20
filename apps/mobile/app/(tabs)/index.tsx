@@ -1,8 +1,8 @@
 // app/(tabs)/index.tsx
-// v8 — Hub: logo, compact layout, direct API, intent pills, last session, insight, daily tip
+// v9 — Journal identity: pastel gradient, frosted glass, Manrope + Cormorant
 // EMPTY_THRESHOLD = 3 for testing — TODO: change back to 5 before launch
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
@@ -20,7 +20,6 @@ import { StatusBar }       from 'expo-status-bar';
 import { SafeAreaView }    from 'react-native-safe-area-context';
 import { LinearGradient }  from 'expo-linear-gradient';
 import * as Haptics        from 'expo-haptics';
-import { Stars }           from '../../src/components/features/Stars';
 import { colors as C, fonts as F } from '../../src/theme';
 import { useAuth }         from '../../src/context/AuthContext';
 import { useChildProfile } from '../../src/context/ChildProfileContext';
@@ -56,13 +55,11 @@ const TIPS = [
 ];
 
 const INTENTS = [
-  { emoji: '🧘', label: 'Calm down', mode: 'sos' },
-  { emoji: '🎯', label: 'Get through', mode: 'sos' },
-  { emoji: '💡', label: 'Understand', mode: 'understand' },
-  { emoji: '🤝', label: 'Repair', mode: 'reconnect' },
+  { emoji: '🧘', label: 'Calm down', mode: 'sos', bg: C.catPink, color: '#8B3A4A' },
+  { emoji: '🎯', label: 'Get through', mode: 'sos', bg: C.catBlue, color: '#2E5C7B' },
+  { emoji: '💡', label: 'Understand', mode: 'understand', bg: C.catGreen, color: '#3B6B3A' },
+  { emoji: '🤝', label: 'Repair', mode: 'reconnect', bg: C.catYellow, color: '#8B6530' },
 ] as const;
-
-const CHILD_COLORS = ['#5778A3', '#8AA060', '#E87461', '#F79566'];
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -78,12 +75,10 @@ function getDailyIndex(mod: number): number {
   return dayOfYear % mod;
 }
 
-// ─── Types ───
 type LastSession = {
   id: string;
   summary: string;
   mode: string;
-  trigger_category: string | null;
   created_at: string;
 };
 
@@ -131,10 +126,9 @@ export default function HubScreen() {
         setWeekCount(week ?? 0);
       }
 
-      // Last session
       const { data: lastLog } = await supabase
         .from('interaction_logs')
-        .select('id, situation_summary, mode, trigger_category, created_at')
+        .select('id, situation_summary, mode, created_at')
         .eq('user_id', session.user.id)
         .eq('is_followup', false)
         .order('created_at', { ascending: false })
@@ -146,7 +140,6 @@ export default function HubScreen() {
           id: lastLog.id,
           summary: lastLog.situation_summary || 'A hard moment',
           mode: lastLog.mode || 'SOS',
-          trigger_category: lastLog.trigger_category,
           created_at: lastLog.created_at,
         });
       }
@@ -244,28 +237,27 @@ export default function HubScreen() {
   // ── Guest gate ──
   if (!session) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#0e0a10' }} edges={['top']}>
-        <StatusBar style="light" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: C.base }} edges={['top']}>
+        <StatusBar style="dark" />
         <LinearGradient
-          colors={['#0e0a10', '#14101a', '#1a1622', '#1e1a28', '#14101a']}
-          locations={[0, 0.25, 0.5, 0.75, 1]}
+          colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 20 }}>
-          <Text style={{ fontFamily: F.heading, fontSize: 28, color: '#FFFFFF', textAlign: 'center', letterSpacing: -0.3, lineHeight: 36 }}>
+          <Text style={{ fontFamily: F.display, fontSize: 30, color: C.text, textAlign: 'center', lineHeight: 38 }}>
             Save your scripts.{'\n'}Know your child.
           </Text>
-          <Text style={{ fontFamily: F.body, fontSize: 15, color: 'rgba(255,255,255,0.40)', textAlign: 'center', lineHeight: 23 }}>
+          <Text style={{ fontFamily: F.body, fontSize: 15, color: C.textSub, textAlign: 'center', lineHeight: 23 }}>
             Create a free account to keep everything in one place.
           </Text>
           <Pressable onPress={() => router.push('/auth/sign-up')} style={({ pressed }) => [pressed && { opacity: 0.85 }]}>
-            <LinearGradient colors={['#C8883A', '#E8A855']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              style={{ width: SW - 64, borderRadius: 18, minHeight: 56, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: SW - 64, borderRadius: 18, minHeight: 56, alignItems: 'center', justifyContent: 'center', backgroundColor: C.rose }}>
               <Text style={{ fontFamily: F.subheading, fontSize: 16, color: '#FFFFFF' }}>Create free account</Text>
-            </LinearGradient>
+            </View>
           </Pressable>
           <Pressable onPress={() => router.push('/auth/sign-in')}>
-            <Text style={{ fontFamily: F.bodySemi, fontSize: 14, color: 'rgba(255,255,255,0.35)', textDecorationLine: 'underline' }}>
+            <Text style={{ fontFamily: F.bodySemi, fontSize: 14, color: C.textMuted, textDecorationLine: 'underline' }}>
               Already have an account? Sign in
             </Text>
           </Pressable>
@@ -277,18 +269,14 @@ export default function HubScreen() {
   // ── Hub ──
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
+
+      {/* Pastel gradient background */}
       <LinearGradient
-        colors={['#0e0a10', '#14101a', '#1a1622', '#1e1a28', '#201c2a', '#1e1a24', '#1a1620', '#18141e', '#14101a']}
-        locations={[0, 0.10, 0.22, 0.35, 0.48, 0.60, 0.72, 0.85, 1]}
+        colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
-      />
-      <Stars />
-      <LinearGradient
-        colors={['transparent', 'rgba(212,148,74,0.03)', 'rgba(212,148,74,0.06)']}
-        locations={[0, 0.5, 1]}
-        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '35%', zIndex: 1 }}
-        pointerEvents="none"
       />
 
       <ScrollView
@@ -296,22 +284,21 @@ export default function HubScreen() {
         showsVerticalScrollIndicator={false}
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
-        style={{ zIndex: 2 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh}
-            tintColor={C.amber} progressBackgroundColor="#1a1622" />
+            tintColor={C.rose} progressBackgroundColor={C.base} />
         }
       >
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], gap: 10 }}>
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], gap: 12 }}>
 
-      {/* ─── LOGO ─── */}
-<View style={s.logoWrap}>
-  <Image
-    source={require('../../assets/logo.png')}
-    style={{ width: 44, height: 44 }}
-    resizeMode="contain"
-  />
-</View>
+          {/* ─── LOGO ─── */}
+          <View style={s.logoWrap}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={{ width: 56, height: 56 }}
+              resizeMode="contain"
+            />
+          </View>
 
           {/* ─── HEADER ─── */}
           <View style={s.headerRow}>
@@ -332,9 +319,9 @@ export default function HubScreen() {
                 return (
                   <Pressable key={child.id} onPress={() => router.push('/(tabs)/child')}
                     style={[s.childChip, isActive && s.childChipActive]}>
-                    <LinearGradient colors={['#7C9A87', '#3C5A73']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.childAva}>
+                    <View style={[s.childAva, { backgroundColor: isActive ? C.sage : C.rose }]}>
                       <Text style={s.childAvaText}>{child.name?.[0]?.toUpperCase() ?? '?'}</Text>
-                    </LinearGradient>
+                    </View>
                     <Text style={s.childChipName}>{child.name}</Text>
                     <Text style={s.childChipMeta}>· {child.childAge ?? '?'}</Text>
                   </Pressable>
@@ -349,28 +336,28 @@ export default function HubScreen() {
           {/* ─── No child ─── */}
           {!isLoadingChild && (!children || children.length === 0) && (
             <Pressable onPress={() => router.push('/child/new')}>
-              <LinearGradient colors={['rgba(87,120,163,0.10)', 'rgba(87,120,163,0.04)', 'rgba(0,0,0,0.10)']}
-                start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 1 }} style={s.noChildCard}>
+              <View style={s.noChildCard}>
                 <Text style={s.noChildTitle}>Add your first child</Text>
                 <Text style={s.noChildLink}>Add child →</Text>
-              </LinearGradient>
+              </View>
             </Pressable>
           )}
 
-          {/* ─── QUOTE ─── */}
-          <Text style={s.quote}>"{thought}"</Text>
+          {/* ─── HERO BANNER ─── */}
+          <View style={s.heroBanner}>
+            <View style={s.heroBlob1} />
+            <View style={s.heroBlob2} />
+            <Text style={s.heroTitle}>Your Parenting Journey,{'\n'}Step by Step</Text>
+            <Text style={s.heroSub}>Bonding starts with small moments. Try today's tip when you get a quiet minute.</Text>
+          </View>
 
           {/* ─── INPUT CARD ─── */}
-          <LinearGradient
-            colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.02)', 'rgba(0,0,0,0.10)']}
-            start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 1 }}
-            style={s.inputCard}
-          >
+          <View style={s.inputCard}>
             <View style={[s.inputField, inputFocused && s.inputFieldFocused]}>
               <TextInput
                 multiline
                 placeholder="What's happening right now?"
-                placeholderTextColor="rgba(255,255,255,0.22)"
+                placeholderTextColor={C.textMuted}
                 value={situation}
                 onChangeText={setSituation}
                 onFocus={() => setInputFocused(true)}
@@ -390,38 +377,34 @@ export default function HubScreen() {
               <Text style={s.toneEnd}>Direct</Text>
             </Pressable>
 
-            {/* CTA — compact */}
+            {/* CTA */}
             <Pressable
               onPress={handleSubmit}
               disabled={!canSubmit || loading}
               style={({ pressed }) => [pressed && canSubmit && !loading && { opacity: 0.9, transform: [{ scale: 0.98 }] }]}
             >
-              <LinearGradient
-                colors={canSubmit && !loading ? ['#C8883A', '#E8A855'] : ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.04)']}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={s.ctaBtn}
-              >
-                <Text style={[s.ctaText, (!canSubmit || loading) && { color: 'rgba(255,255,255,0.25)' }]}>
+              <View style={[s.ctaBtn, (!canSubmit || loading) && s.ctaBtnDisabled]}>
+                <Text style={[s.ctaText, (!canSubmit || loading) && s.ctaTextDisabled]}>
                   {loading ? 'Getting script…' : 'Help me with this'}
                 </Text>
-              </LinearGradient>
+              </View>
             </Pressable>
 
             {error ? <Text style={s.errorText}>{error}</Text> : null}
-          </LinearGradient>
+          </View>
 
-          {/* ─── INTENT PILLS ─── */}
+          {/* ─── INTENT CARDS — colorful ─── */}
           <View style={s.secRow}>
-            <Text style={s.secLabel}>WHAT DO YOU NEED</Text>
+            <Text style={s.secLabel}>TODAY'S PLAN</Text>
             <View style={s.secLine} />
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.intentRow}>
             {INTENTS.map((intent, i) => (
               <Pressable key={i} onPress={() => { Haptics.selectionAsync(); setSelectedIntent(i); }}
-                style={[s.intentPill, selectedIntent === i && s.intentPillActive]}>
+                style={[s.intentCard, { backgroundColor: intent.bg }, selectedIntent === i && s.intentCardActive]}>
                 <Text style={s.intentEmoji}>{intent.emoji}</Text>
-                <Text style={s.intentLabel}>{intent.label}</Text>
+                <Text style={[s.intentLabel, { color: intent.color }]}>{intent.label}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -433,13 +416,8 @@ export default function HubScreen() {
                 <Text style={s.secLabel}>RECENT</Text>
                 <View style={s.secLine} />
               </View>
-
               <Pressable onPress={() => router.push('/(tabs)/child')} style={({ pressed }) => [pressed && { opacity: 0.85 }]}>
-                <LinearGradient
-                  colors={['rgba(60,90,115,0.10)', 'rgba(60,90,115,0.04)', 'rgba(0,0,0,0.10)']}
-                  start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 1 }}
-                  style={s.sessionCard}
-                >
+                <View style={s.sessionCard}>
                   <Text style={s.sessionIcon}>📋</Text>
                   <View style={{ flex: 1, gap: 2 }}>
                     <Text style={s.sessionTitle} numberOfLines={1}>{lastSession.summary}</Text>
@@ -448,7 +426,7 @@ export default function HubScreen() {
                     </Text>
                   </View>
                   <Text style={s.sessionArrow}>→</Text>
-                </LinearGradient>
+                </View>
               </Pressable>
             </>
           )}
@@ -456,11 +434,7 @@ export default function HubScreen() {
           {/* ─── WEEKLY INSIGHT (locked) ─── */}
           {totalCount >= EMPTY_THRESHOLD && (
             <Pressable onPress={() => router.push('/upgrade')} style={({ pressed }) => [pressed && { opacity: 0.85 }]}>
-              <LinearGradient
-                colors={['rgba(124,154,135,0.08)', 'rgba(124,154,135,0.03)', 'rgba(0,0,0,0.10)']}
-                start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 1 }}
-                style={s.insightCard}
-              >
+              <View style={s.insightCard}>
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={s.insightLabel}>WEEKLY INSIGHT</Text>
                   <Text style={s.insightPreview}>
@@ -471,23 +445,19 @@ export default function HubScreen() {
                   <Text style={{ fontSize: 14 }}>🔒</Text>
                   <Text style={s.insightLockText}>Sturdy+</Text>
                 </View>
-              </LinearGradient>
+              </View>
             </Pressable>
           )}
 
           {/* ─── TIP OF THE DAY ─── */}
-          <LinearGradient
-            colors={['rgba(200,136,58,0.06)', 'rgba(200,136,58,0.02)', 'rgba(0,0,0,0.08)']}
-            start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 1 }}
-            style={s.tipCard}
-          >
+          <View style={s.tipCard}>
             <Text style={s.tipIcon}>💡</Text>
             <View style={{ flex: 1 }}>
               <Text style={s.tipLabel}>TODAY'S TIP</Text>
               <Text style={s.tipText}>{tip.text}</Text>
               <Text style={s.tipSource}>From: {tip.source}</Text>
             </View>
-          </LinearGradient>
+          </View>
 
           {/* ─── PLAN FOOTER ─── */}
           <Text style={s.planFooter}>Free plan · Unlimited SOS scripts</Text>
@@ -504,143 +474,158 @@ export default function HubScreen() {
 // ═══════════════════════════════════════════════
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0e0a10' },
+  root: { flex: 1, backgroundColor: C.base },
   scroll: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40 },
 
   // Logo
-  logoWrap: { alignItems: 'center', paddingBottom: 4 },
-  
+  logoWrap: { alignItems: 'center', paddingTop: 8,paddingBottom: 8 },
+
   // Header
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  greeting: { fontFamily: F.heading, fontSize: 18, color: C.text, letterSpacing: -0.3 },
-  greetingName: { fontFamily: F.bodySemi, fontSize: 14, color: C.amber },
+  greeting: { fontFamily: F.display, fontSize: 26, color: '#1A1714', letterSpacing: -0.3 },
+  greetingName: { fontFamily: F.subheading, fontSize: 15, color: C.rose },
   upgradePill: {
     paddingVertical: 5, paddingHorizontal: 12, borderRadius: 10,
-    backgroundColor: 'rgba(200,136,58,0.10)', borderWidth: 1, borderColor: 'rgba(200,136,58,0.20)',
+    backgroundColor: C.roseMuted, borderWidth: 1, borderColor: 'rgba(201,123,99,0.20)',
   },
-  upgradePillText: { fontFamily: F.bodySemi, fontSize: 10, color: C.amber },
+  upgradePillText: { fontFamily: F.bodySemi, fontSize: 10, color: C.rose },
 
   // Child pills
-  childRow: { gap: 6, paddingVertical: 2 },
+  childRow: { gap: 8, paddingVertical: 2 },
   childChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingVertical: 4, paddingLeft: 4, paddingRight: 10, borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    flexDirection: 'row', alignItems: 'center', gap: 7,
+    paddingVertical: 5, paddingLeft: 5, paddingRight: 12, borderRadius: 18,
+    backgroundColor: C.cardGlass, borderWidth: 1, borderColor: C.border,
   },
-  childChipActive: { backgroundColor: 'rgba(138,160,96,0.10)', borderColor: 'rgba(138,160,96,0.25)' },
-  childAva: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  childAvaText: { fontFamily: F.bodySemi, fontSize: 9, color: '#fff' },
-  childChipName: { fontFamily: F.bodySemi, fontSize: 12, color: C.textBody },
+  childChipActive: { borderColor: 'rgba(129,178,154,0.3)', backgroundColor: C.cardGlassStrong },
+  childAva: {
+    width: 24, height: 24, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  childAvaText: { fontFamily: F.bodySemi, fontSize: 10, color: '#fff' },
+  childChipName: { fontFamily: F.bodySemi, fontSize: 12, color: C.text },
   childChipMeta: { fontFamily: F.body, fontSize: 10, color: C.textMuted },
   childAdd: {
     width: 30, height: 30, borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: C.cardGlass, borderWidth: 1, borderColor: C.border,
     alignItems: 'center', justifyContent: 'center',
   },
-  childAddText: { fontSize: 14, color: C.textMuted },
+  childAddText: { fontSize: 16, color: C.textMuted },
 
   // No child
   noChildCard: {
-    borderRadius: 14, padding: 14, gap: 4, borderWidth: 1,
-    borderTopColor: 'rgba(87,120,163,0.22)', borderLeftColor: 'rgba(87,120,163,0.12)',
-    borderRightColor: 'rgba(0,0,0,0.06)', borderBottomColor: 'rgba(0,0,0,0.10)',
+    borderRadius: 16, padding: 14, gap: 4,
+    backgroundColor: C.cardGlass, borderWidth: 1, borderColor: C.border,
   },
   noChildTitle: { fontFamily: F.bodySemi, fontSize: 14, color: C.text },
-  noChildLink: { fontFamily: F.bodySemi, fontSize: 12, color: C.blue },
+  noChildLink: { fontFamily: F.bodySemi, fontSize: 12, color: C.sage },
 
-  // Quote
-  quote: {
-    fontFamily: F.scriptItalic, fontSize: 12, color: C.textMuted,
-    textAlign: 'center', lineHeight: 18, paddingHorizontal: 12,
+  // Hero banner — pastel gradient card
+  heroBanner: {
+    borderRadius: 20, padding: 20, overflow: 'hidden', position: 'relative',
+    backgroundColor: 'rgba(255,255,255,0.6)',
+  },
+  heroBlob1: {
+    position: 'absolute', top: -20, right: -20, width: 120, height: 120,
+    borderRadius: 60, backgroundColor: 'rgba(212,232,209,0.5)',
+  },
+  heroBlob2: {
+    position: 'absolute', bottom: -30, left: 20, width: 80, height: 80,
+    borderRadius: 40, backgroundColor: 'rgba(253,221,230,0.5)',
+  },
+  heroTitle: {
+    fontFamily: F.display, fontSize: 20, color: C.text,
+    lineHeight: 28, position: 'relative', zIndex: 1,
+  },
+  heroSub: {
+    fontFamily: F.body, fontSize: 12, color: C.textSub,
+    marginTop: 6, lineHeight: 18, position: 'relative', zIndex: 1,
   },
 
   // Input card
   inputCard: {
-    borderRadius: 16, padding: 12, gap: 8, borderWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.12)', borderLeftColor: 'rgba(255,255,255,0.06)',
-    borderRightColor: 'rgba(0,0,0,0.06)', borderBottomColor: 'rgba(0,0,0,0.10)',
+    borderRadius: 18, padding: 14, gap: 10,
+    backgroundColor: C.cardGlass, borderWidth: 1, borderColor: C.border,
   },
   inputField: {
     flexDirection: 'row', alignItems: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 12, overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    borderWidth: 1, borderColor: C.border,
+    borderRadius: 14, overflow: 'hidden',
   },
-  inputFieldFocused: { borderColor: 'rgba(87,120,163,0.35)' },
+  inputFieldFocused: { borderColor: 'rgba(129,178,154,0.40)' },
   textarea: {
     flex: 1, padding: 12, paddingRight: 0,
     fontFamily: F.body, fontSize: 15, color: C.text,
-    lineHeight: 22, minHeight: 60, maxHeight: 120,
+    lineHeight: 22, minHeight: 56, maxHeight: 120,
   },
-  inputMic: { fontSize: 14, opacity: 0.4, padding: 14, paddingLeft: 6 },
+  inputMic: { fontSize: 14, opacity: 0.3, padding: 14, paddingLeft: 6 },
 
-  // Tone — compact line
+  // Tone
   toneLine: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 2 },
   toneLabel: { fontFamily: F.label, fontSize: 10, letterSpacing: 0.3, color: C.textMuted },
-  toneValue: { fontFamily: F.bodySemi, fontSize: 12, color: C.textMuted },
+  toneValue: { fontFamily: F.bodySemi, fontSize: 12, color: C.textSub },
   toneLock: { fontSize: 9, marginLeft: -2 },
-  toneBar: { flex: 1, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.08)', overflow: 'hidden' },
-  toneBarFill: { width: '8%', height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)' },
-  toneEnd: { fontFamily: F.body, fontSize: 10, color: 'rgba(255,255,255,0.15)' },
+  toneBar: { flex: 1, height: 3, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.06)', overflow: 'hidden' },
+  toneBarFill: { width: '10%', height: 3, borderRadius: 2, backgroundColor: 'rgba(201,123,99,0.3)' },
+  toneEnd: { fontFamily: F.body, fontSize: 10, color: 'rgba(42,37,32,0.15)' },
 
-  // CTA — compact
-  ctaBtn: { borderRadius: 12, paddingVertical: 10, alignItems: 'center', justifyContent: 'center' },
-  ctaText: { fontFamily: F.bodySemi, fontSize: 13, color: '#FFFFFF', letterSpacing: 0.2 },
-  errorText: { fontFamily: F.body, fontSize: 12, color: C.coral, textAlign: 'center' },
+  // CTA
+  ctaBtn: { borderRadius: 14, paddingVertical: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: C.rose },
+  ctaBtnDisabled: { backgroundColor: 'rgba(0,0,0,0.06)' },
+  ctaText: { fontFamily: F.bodySemi, fontSize: 14, color: '#FFFFFF', letterSpacing: 0.2 },
+  ctaTextDisabled: { color: C.textMuted },
+  errorText: { fontFamily: F.body, fontSize: 12, color: C.rose, textAlign: 'center' },
 
   // Section
   secRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
   secLabel: { fontFamily: F.label, fontSize: 9, letterSpacing: 0.8, color: C.textMuted },
-  secLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.06)' },
+  secLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(0,0,0,0.08)' },
 
-  // Intent pills
-  intentRow: { gap: 6, paddingVertical: 2 },
-  intentPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingVertical: 8, paddingHorizontal: 14, borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+  // Intent cards — colorful pastel
+  intentRow: { gap: 8, paddingVertical: 2 },
+  intentCard: {
+    paddingVertical: 14, paddingHorizontal: 18, borderRadius: 16, minWidth: 110,
+    alignItems: 'center', gap: 6,
   },
-  intentPillActive: { backgroundColor: 'rgba(200,136,58,0.08)', borderColor: 'rgba(200,136,58,0.20)' },
-  intentEmoji: { fontSize: 16 },
-  intentLabel: { fontFamily: F.bodyMedium, fontSize: 13, color: C.textBody },
+  intentCardActive: { borderWidth: 2, borderColor: 'rgba(0,0,0,0.10)' },
+  intentEmoji: { fontSize: 24 },
+  intentLabel: { fontFamily: F.bodySemi, fontSize: 13, textAlign: 'center' },
 
   // Session
   sessionCard: {
-    borderRadius: 14, padding: 12, borderWidth: 1,
-    borderTopColor: 'rgba(60,90,115,0.20)', borderLeftColor: 'rgba(60,90,115,0.10)',
-    borderRightColor: 'rgba(0,0,0,0.06)', borderBottomColor: 'rgba(0,0,0,0.10)',
+    borderRadius: 14, padding: 12, backgroundColor: C.cardGlass,
+    borderWidth: 1, borderColor: C.border,
     flexDirection: 'row', alignItems: 'center', gap: 12,
   },
   sessionIcon: { fontSize: 20 },
-  sessionTitle: { fontFamily: F.bodySemi, fontSize: 13, color: C.textBody },
+  sessionTitle: { fontFamily: F.bodySemi, fontSize: 13, color: C.text },
   sessionMeta: { fontFamily: F.body, fontSize: 11, color: C.textMuted },
   sessionArrow: { fontFamily: F.bodySemi, fontSize: 12, color: C.textMuted },
 
   // Insight
   insightCard: {
-    borderRadius: 14, padding: 12, borderWidth: 1,
-    borderTopColor: 'rgba(124,154,135,0.16)', borderLeftColor: 'rgba(124,154,135,0.08)',
-    borderRightColor: 'rgba(0,0,0,0.06)', borderBottomColor: 'rgba(0,0,0,0.10)',
+    borderRadius: 14, padding: 12, backgroundColor: C.cardGlass,
+    borderWidth: 1, borderColor: 'rgba(129,178,154,0.15)',
     flexDirection: 'row', alignItems: 'center', gap: 12,
   },
   insightLabel: { fontFamily: F.label, fontSize: 9, letterSpacing: 0.6, color: C.textMuted },
-  insightPreview: { fontFamily: F.scriptItalic, fontSize: 13, color: C.textSub, opacity: 0.35, lineHeight: 18 },
-  insightLockText: { fontFamily: F.bodySemi, fontSize: 9, color: C.amber },
+  insightPreview: { fontFamily: F.scriptItalic, fontSize: 13, color: C.textSub, opacity: 0.4, lineHeight: 18 },
+  insightLockText: { fontFamily: F.bodySemi, fontSize: 9, color: C.rose },
 
   // Tip
   tipCard: {
-    borderRadius: 14, padding: 12, borderWidth: 1,
-    borderTopColor: 'rgba(200,136,58,0.14)', borderLeftColor: 'rgba(200,136,58,0.08)',
-    borderRightColor: 'rgba(0,0,0,0.06)', borderBottomColor: 'rgba(0,0,0,0.10)',
+    borderRadius: 14, padding: 12, backgroundColor: 'rgba(255,255,255,0.5)',
+    borderWidth: 1, borderColor: 'rgba(201,123,99,0.10)',
     flexDirection: 'row', alignItems: 'flex-start', gap: 10,
   },
   tipIcon: { fontSize: 16, marginTop: 1 },
-  tipLabel: { fontFamily: F.label, fontSize: 9, letterSpacing: 0.6, color: C.amber, marginBottom: 2 },
+  tipLabel: { fontFamily: F.label, fontSize: 9, letterSpacing: 0.6, color: C.rose, marginBottom: 2 },
   tipText: { fontFamily: F.body, fontSize: 13, color: C.textBody, lineHeight: 19 },
-  tipSource: { fontFamily: F.body, fontSize: 10, color: C.textMuted, marginTop: 3 },
+  tipSource: { fontFamily: F.body, fontSize: 10, color: C.textMuted, marginTop: 3, fontStyle: 'italic' },
 
   // Plan footer
-  planFooter: { fontFamily: F.body, fontSize: 10, color: 'rgba(255,255,255,0.15)', textAlign: 'center', marginTop: 4 },
+  planFooter: { fontFamily: F.body, fontSize: 10, color: C.textMuted, textAlign: 'center', marginTop: 4 },
 });
 
 
