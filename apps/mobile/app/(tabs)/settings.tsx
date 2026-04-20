@@ -1,7 +1,6 @@
-// app/(tabs)/you.tsx
-// v2 — "You" tab with glassmorphism 3D card system
-// Night sky + Stars + directional border cards + amber CTAs
-// Matches welcome/result/child-profile canonical design
+// app/(tabs)/settings.tsx
+// v3 — Journal identity: pastel gradient, frosted glass cards
+// Settings screen with grouped sections
 
 import { useState } from 'react';
 import {
@@ -17,84 +16,10 @@ import { StatusBar }       from 'expo-status-bar';
 import { SafeAreaView }    from 'react-native-safe-area-context';
 import { LinearGradient }  from 'expo-linear-gradient';
 import * as Haptics        from 'expo-haptics';
-import { Stars }           from '../../src/components/features/Stars';
 import { useAuth }         from '../../src/context/AuthContext';
 import { colors as C, fonts as F } from '../../src/theme';
 
-// ═══════════════════════════════════════════════
-// GLASS GROUP — Settings card with directional borders
-// ═══════════════════════════════════════════════
-
-type GlassTint = 'standard' | 'warm' | 'sage' | 'slate';
-
-const TINT_COLORS: Record<GlassTint, {
-  colors: [string, string, string];
-  borderTop: string;
-  borderLeft: string;
-  borderRight: string;
-  borderBottom: string;
-}> = {
-  standard: {
-    colors: ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.02)', 'rgba(0,0,0,0.10)'],
-    borderTop: 'rgba(255,255,255,0.12)',
-    borderLeft: 'rgba(255,255,255,0.06)',
-    borderRight: 'rgba(0,0,0,0.06)',
-    borderBottom: 'rgba(0,0,0,0.10)',
-  },
-  warm: {
-    colors: ['rgba(200,136,58,0.10)', 'rgba(200,136,58,0.04)', 'rgba(0,0,0,0.10)'],
-    borderTop: 'rgba(200,136,58,0.22)',
-    borderLeft: 'rgba(200,136,58,0.12)',
-    borderRight: 'rgba(0,0,0,0.06)',
-    borderBottom: 'rgba(0,0,0,0.10)',
-  },
-  sage: {
-    colors: ['rgba(124,154,135,0.10)', 'rgba(124,154,135,0.04)', 'rgba(0,0,0,0.10)'],
-    borderTop: 'rgba(124,154,135,0.22)',
-    borderLeft: 'rgba(124,154,135,0.12)',
-    borderRight: 'rgba(0,0,0,0.06)',
-    borderBottom: 'rgba(0,0,0,0.10)',
-  },
-  slate: {
-    colors: ['rgba(60,90,115,0.10)', 'rgba(60,90,115,0.04)', 'rgba(0,0,0,0.10)'],
-    borderTop: 'rgba(60,90,115,0.22)',
-    borderLeft: 'rgba(60,90,115,0.12)',
-    borderRight: 'rgba(0,0,0,0.06)',
-    borderBottom: 'rgba(0,0,0,0.10)',
-  },
-};
-
-function GlassGroup({
-  children,
-  tint = 'standard',
-}: {
-  children: React.ReactNode;
-  tint?: GlassTint;
-}) {
-  const t = TINT_COLORS[tint];
-  return (
-    <LinearGradient
-      colors={t.colors}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0.8, y: 1 }}
-      style={[
-        s.group,
-        {
-          borderTopColor: t.borderTop,
-          borderLeftColor: t.borderLeft,
-          borderRightColor: t.borderRight,
-          borderBottomColor: t.borderBottom,
-        },
-      ]}
-    >
-      {children}
-    </LinearGradient>
-  );
-}
-
-// ═══════════════════════════════════════════════
-// SUB-COMPONENTS
-// ═══════════════════════════════════════════════
+// ─── Components ───
 
 function SectionLabel({ label }: { label: string }) {
   return (
@@ -105,44 +30,44 @@ function SectionLabel({ label }: { label: string }) {
   );
 }
 
+function SettingGroup({ children, tint }: { children: React.ReactNode; tint?: 'rose' | 'sage' }) {
+  const bg = tint === 'rose' ? 'rgba(201,123,99,0.05)'
+    : tint === 'sage' ? 'rgba(129,178,154,0.05)'
+    : C.cardGlass;
+  const bc = tint === 'rose' ? 'rgba(201,123,99,0.12)'
+    : tint === 'sage' ? 'rgba(129,178,154,0.12)'
+    : C.border;
+  return (
+    <View style={[s.group, { backgroundColor: bg, borderColor: bc }]}>
+      {children}
+    </View>
+  );
+}
+
 function SettingRow({
   label, value, onPress, danger, toggle, toggleValue, onToggle, accent,
 }: {
-  label: string;
-  value?: string;
-  onPress?: () => void;
-  danger?: boolean;
-  toggle?: boolean;
-  toggleValue?: boolean;
-  onToggle?: (v: boolean) => void;
-  accent?: boolean;
+  label: string; value?: string; onPress?: () => void; danger?: boolean;
+  toggle?: boolean; toggleValue?: boolean; onToggle?: (v: boolean) => void; accent?: boolean;
 }) {
   return (
     <Pressable
-      onPress={() => {
-        if (onPress) {
-          Haptics.selectionAsync();
-          onPress();
-        }
-      }}
+      onPress={() => { if (onPress) { Haptics.selectionAsync(); onPress(); } }}
       disabled={!onPress && !toggle}
       style={({ pressed }) => [s.row, onPress && pressed && { opacity: 0.7 }]}
     >
       <Text style={[
         s.rowLabel,
-        danger && s.rowLabelDanger,
-        accent && s.rowLabelAccent,
+        danger && { color: '#C0524A' },
+        accent && { color: C.rose },
       ]}>
         {label}
       </Text>
       {toggle ? (
         <Switch
           value={toggleValue}
-          onValueChange={(v) => {
-            Haptics.selectionAsync();
-            onToggle?.(v);
-          }}
-          trackColor={{ false: 'rgba(255,255,255,0.10)', true: C.blue }}
+          onValueChange={(v) => { Haptics.selectionAsync(); onToggle?.(v); }}
+          trackColor={{ false: 'rgba(0,0,0,0.08)', true: C.sage }}
           thumbColor="#FFFFFF"
         />
       ) : value ? (
@@ -158,11 +83,9 @@ function Divider() {
   return <View style={s.divider} />;
 }
 
-// ═══════════════════════════════════════════════
-// MAIN SCREEN
-// ═══════════════════════════════════════════════
+// ─── Main ───
 
-export default function YouScreen() {
+export default function SettingsScreen() {
   const { session, signOut } = useAuth();
   const [pushEnabled, setPushEnabled] = useState(false);
   const [researchConsent, setResearchConsent] = useState(false);
@@ -183,142 +106,101 @@ export default function YouScreen() {
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      <StatusBar style="light" />
-
-      {/* ─── Night sky background (canonical) ─── */}
+      <StatusBar style="dark" />
       <LinearGradient
-        colors={['#0e0a10', '#14101a', '#1a1622', '#1e1a28', '#201c2a', '#1e1a24', '#1a1620', '#18141e', '#14101a']}
-        locations={[0, 0.10, 0.22, 0.35, 0.48, 0.60, 0.72, 0.85, 1]}
+        colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
-      />
-      <Stars />
-
-      {/* ─── Warm ambient glow ─── */}
-      <LinearGradient
-        colors={['transparent', 'rgba(212,148,74,0.03)', 'rgba(212,148,74,0.06)']}
-        locations={[0, 0.5, 1]}
-        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '35%', zIndex: 1 }}
-        pointerEvents="none"
       />
 
       <ScrollView
         contentContainerStyle={s.scroll}
         showsVerticalScrollIndicator={false}
-        style={{ zIndex: 2 }}
       >
-        {/* Title */}
-        <Text style={s.title}>You</Text>
+        <Text style={s.title}>Settings</Text>
 
-        {/* ═══ ACCOUNT (slate — personal/identity) ═══ */}
+        {/* ACCOUNT */}
         <SectionLabel label="ACCOUNT" />
-        <GlassGroup tint="slate">
+        <SettingGroup>
           <View style={s.accountRow}>
-            <LinearGradient
-              colors={['#7C9A87', '#3C5A73']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={s.accountAva}
-            >
+            <View style={s.accountAva}>
               <Text style={s.accountAvaText}>
                 {email ? email[0].toUpperCase() : '?'}
               </Text>
-            </LinearGradient>
+            </View>
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={s.accountEmail}>{email ?? 'Guest'}</Text>
               <Text style={s.accountPlan}>Free plan</Text>
             </View>
           </View>
-        </GlassGroup>
+        </SettingGroup>
 
-        {/* ═══ SUBSCRIPTION (warm — upsell/amber) ═══ */}
+        {/* SUBSCRIPTION */}
         <SectionLabel label="SUBSCRIPTION" />
-        <GlassGroup tint="warm">
+        <SettingGroup tint="rose">
           <Pressable
-            onPress={() => {/* paywall */}}
+            onPress={() => router.push('/upgrade')}
             style={({ pressed }) => [s.upgradeRow, pressed && { opacity: 0.85 }]}
           >
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={s.upgradeLabel}>Upgrade to Sturdy+</Text>
               <Text style={s.upgradeSub}>Unlimited scripts, full history, insights</Text>
             </View>
-            <LinearGradient
-              colors={['#C8883A', '#E8A855']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={s.upgradeBtn}
-            >
+            <View style={s.upgradeBtn}>
               <Text style={s.upgradeBtnText}>→</Text>
-            </LinearGradient>
+            </View>
           </Pressable>
           <Divider />
           <SettingRow label="Restore purchase" onPress={() => {}} />
-        </GlassGroup>
+        </SettingGroup>
 
-        {/* ═══ CHILDREN (sage — growth) ═══ */}
+        {/* CHILDREN */}
         <SectionLabel label="CHILDREN" />
-        <GlassGroup tint="sage">
-          <SettingRow
-            label="Manage children"
-            onPress={() => router.push('/child/new')}
-          />
-        </GlassGroup>
+        <SettingGroup tint="sage">
+          <SettingRow label="Manage children" onPress={() => router.push('/child/new')} />
+        </SettingGroup>
 
-        {/* ═══ GENERAL (standard) ═══ */}
+        {/* GENERAL */}
         <SectionLabel label="GENERAL" />
-        <GlassGroup tint="standard">
+        <SettingGroup>
           <SettingRow
             label="Push notifications"
-            toggle
-            toggleValue={pushEnabled}
-            onToggle={setPushEnabled}
+            toggle toggleValue={pushEnabled} onToggle={setPushEnabled}
           />
-        </GlassGroup>
+        </SettingGroup>
 
-        {/* ═══ PRIVACY (standard) ═══ */}
+        {/* PRIVACY */}
         <SectionLabel label="PRIVACY" />
-        <GlassGroup tint="standard">
+        <SettingGroup>
           <SettingRow
             label="Research consent"
-            toggle
-            toggleValue={researchConsent}
-            onToggle={setResearchConsent}
+            toggle toggleValue={researchConsent} onToggle={setResearchConsent}
           />
           <Divider />
-          <SettingRow
-            label="Privacy policy"
-            onPress={() => router.push('/legal/privacy-policy')}
-          />
+          <SettingRow label="Privacy policy" onPress={() => router.push('/legal/privacy-policy')} />
           <Divider />
-          <SettingRow
-            label="Terms of service"
-            onPress={() => router.push('/legal/terms-of-service')}
-          />
-        </GlassGroup>
+          <SettingRow label="Terms of service" onPress={() => router.push('/legal/terms-of-service')} />
+        </SettingGroup>
 
-        {/* ═══ SUPPORT (standard) ═══ */}
+        {/* SUPPORT */}
         <SectionLabel label="SUPPORT" />
-        <GlassGroup tint="standard">
+        <SettingGroup>
           <SettingRow label="Help & FAQ" onPress={() => {}} />
           <Divider />
           <SettingRow label="Contact us" onPress={() => {}} />
-        </GlassGroup>
+        </SettingGroup>
 
-        {/* ═══ ACCOUNT ACTIONS ═══ */}
-        <GlassGroup tint="standard">
+        {/* ACCOUNT ACTIONS */}
+        <SettingGroup>
           <SettingRow
             label={signingOut ? 'Signing out…' : 'Sign out'}
             onPress={handleSignOut}
           />
           <Divider />
-          <SettingRow
-            label="Delete account"
-            danger
-            onPress={() => {}}
-          />
-        </GlassGroup>
+          <SettingRow label="Delete account" danger onPress={() => {}} />
+        </SettingGroup>
 
-        {/* Version */}
-        <Text style={s.version}>Sturdy v4.0 · Made with ♥</Text>
+        <Text style={s.version}>Sturdy v6.0 · Made with ♥</Text>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -326,101 +208,51 @@ export default function YouScreen() {
   );
 }
 
-// ═══════════════════════════════════════════════
-// STYLES
-// ═══════════════════════════════════════════════
+// ─── Styles ───
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0e0a10' },
+  root: { flex: 1, backgroundColor: C.base },
   scroll: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 60, gap: 6 },
 
-  title: {
-    fontFamily: F.heading,
-    fontSize: 28,
-    color: C.text,
-    letterSpacing: -0.3,
-    marginBottom: 8,
-  },
+  title: { fontFamily: F.display, fontSize: 28, color: C.text, letterSpacing: -0.3, marginBottom: 8 },
 
-  // Section headers (matching child-profile pattern)
   sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, marginBottom: 4 },
-  sectionLabel: {
-    fontFamily: F.label,
-    fontSize: 10,
-    letterSpacing: 0.9,
-    color: C.textMuted,
-  },
-  sectionLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.08)' },
+  sectionLabel: { fontFamily: F.label, fontSize: 10, letterSpacing: 0.9, color: C.textMuted },
+  sectionLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(0,0,0,0.08)' },
 
-  // Glass group (directional border applied inline via GlassGroup)
-  group: {
-    borderRadius: 18,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
+  group: { borderRadius: 18, borderWidth: 1, overflow: 'hidden' },
 
-  // Divider
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    marginLeft: 16,
-  },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(0,0,0,0.06)', marginLeft: 16 },
 
-  // Row
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 15,
-    minHeight: 52,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 15, minHeight: 52,
   },
-  rowLabel: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textBody },
-  rowLabelDanger: { color: C.coral },
-  rowLabelAccent: { color: C.amber },
+  rowLabel: { fontFamily: F.bodyMedium, fontSize: 15, color: C.text },
   rowValue: { fontFamily: F.body, fontSize: 14, color: C.textMuted },
-  rowChevron: { fontSize: 18, color: 'rgba(255,255,255,0.18)' },
+  rowChevron: { fontSize: 18, color: 'rgba(42,37,32,0.18)' },
 
-  // Account
-  accountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
+  accountRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
   accountAva: {
     width: 44, height: 44, borderRadius: 22,
+    backgroundColor: C.sage,
     alignItems: 'center', justifyContent: 'center',
   },
   accountAvaText: { fontFamily: F.subheading, fontSize: 16, color: '#FFF' },
-  accountEmail: { fontFamily: F.bodyMedium, fontSize: 14, color: C.textBody },
+  accountEmail: { fontFamily: F.bodyMedium, fontSize: 14, color: C.text },
   accountPlan: { fontFamily: F.body, fontSize: 12, color: C.textMuted },
 
-  // Upgrade row (custom layout inside warm glass)
-  upgradeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  upgradeLabel: { fontFamily: F.bodySemi, fontSize: 15, color: C.amber },
+  upgradeRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
+  upgradeLabel: { fontFamily: F.bodySemi, fontSize: 15, color: C.rose },
   upgradeSub: { fontFamily: F.body, fontSize: 12, color: C.textMuted },
   upgradeBtn: {
     width: 36, height: 36, borderRadius: 12,
+    backgroundColor: C.rose,
     alignItems: 'center', justifyContent: 'center',
   },
   upgradeBtnText: { fontSize: 16, color: '#FFFFFF', fontFamily: F.bodySemi },
 
-  // Version
-  version: {
-    fontFamily: F.body,
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.15)',
-    textAlign: 'center',
-    marginTop: 16,
-  },
+  version: { fontFamily: F.body, fontSize: 12, color: C.textMuted, textAlign: 'center', marginTop: 16 },
 });
 
 
