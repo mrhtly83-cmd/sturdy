@@ -1,16 +1,18 @@
 // app/(tabs)/_layout.tsx
-// v3 — 3-tab layout: Home · Child · Settings
-// Child tab uses avatar initial from active child
-// Transparent tab bar, amber active state
+// v4 — Journal identity: frosted glass tab bar, rose active
+// 3 tabs: Home · Child · Settings
+
 
 import { Text, View, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useChildProfile } from '../../src/context/ChildProfileContext';
 import { colors as C, fonts as F } from '../../src/theme';
 
+
 function ChildTabIcon({ focused }: { focused: boolean }) {
   const { activeChild } = useChildProfile();
   const initial = activeChild?.name?.trim()?.[0]?.toUpperCase() ?? '?';
+
 
   return (
     <View style={[
@@ -19,7 +21,7 @@ function ChildTabIcon({ focused }: { focused: boolean }) {
     ]}>
       <Text style={[
         st.childInitial,
-        { opacity: focused ? 1 : 0.5 },
+        { color: focused ? '#FFFFFF' : C.textMuted },
       ]}>
         {initial}
       </Text>
@@ -27,23 +29,24 @@ function ChildTabIcon({ focused }: { focused: boolean }) {
   );
 }
 
+
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: 'transparent',
+          backgroundColor: 'rgba(253,250,245,0.85)',
           borderTopWidth: 1,
-          borderTopColor: 'rgba(255,255,255,0.04)',
+          borderTopColor: 'rgba(0,0,0,0.06)',
           paddingBottom: 24,
           paddingTop: 8,
           height: 80,
           position: 'absolute',
           elevation: 0,
         },
-        tabBarActiveTintColor: C.amber,
-        tabBarInactiveTintColor: 'rgba(255,255,255,0.25)',
+        tabBarActiveTintColor: C.rose,
+        tabBarInactiveTintColor: C.textMuted,
         tabBarLabelStyle: {
           fontFamily: F.bodySemi,
           fontSize: 10,
@@ -61,6 +64,7 @@ export default function TabLayout() {
         }}
       />
 
+
       <Tabs.Screen
         name="child"
         options={{
@@ -68,6 +72,7 @@ export default function TabLayout() {
           tabBarIcon: ({ focused }) => <ChildTabIcon focused={focused} />,
         }}
       />
+
 
       <Tabs.Screen
         name="settings"
@@ -82,6 +87,7 @@ export default function TabLayout() {
   );
 }
 
+
 const st = StyleSheet.create({
   childIcon: {
     width: 28,
@@ -91,15 +97,16 @@ const st = StyleSheet.create({
     justifyContent: 'center',
   },
   childIconActive: {
-    backgroundColor: C.amber,
+    backgroundColor: C.rose,
   },
   childIconInactive: {
-    backgroundColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: 'rgba(0,0,0,0.06)',
   },
   childInitial: {
     fontFamily: F.bodySemi,
     fontSize: 13,
-    color: '#FFFFFF',
   },
 });
+
+
 
