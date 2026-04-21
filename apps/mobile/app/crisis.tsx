@@ -1,10 +1,7 @@
 // app/crisis.tsx
-// v7 — Safety support screen with glassmorphism 3D card system
-// Night sky + Stars + directional border cards
+// v8 — Journal identity: pastel gradient, frosted glass, calm blue cards
 // Calm, warm, no red, no alarm aesthetics
-// Never shows scripts. Never paywalls. Never shames.
 // Per SAFETY_SYSTEM.md: "invisible infrastructure — protects without alarming"
-
 
 import { Pressable, ScrollView, StyleSheet, Text, View, Linking } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -12,18 +9,10 @@ import { StatusBar }       from 'expo-status-bar';
 import { SafeAreaView }    from 'react-native-safe-area-context';
 import { LinearGradient }  from 'expo-linear-gradient';
 import * as Haptics        from 'expo-haptics';
-import { Stars }           from '../src/components/features/Stars';
 import { colors as C, fonts as F } from '../src/theme';
 
-
-// ═══════════════════════════════════════════════
-// CRISIS CONTENT — Per crisis type
-// ═══════════════════════════════════════════════
-
-
 const CRISIS_CONTENT: Record<string, {
-  title: string;
-  message: string;
+  title: string; message: string;
   resources: { label: string; detail: string; action?: string }[];
 }> = {
   medical_emergency: {
@@ -109,16 +98,7 @@ const CRISIS_CONTENT: Record<string, {
   },
 };
 
-
-const KEY_ALIASES: Record<string, string> = {
-  violence_toward_parent: 'domestic_violence',
-};
-
-
-// ═══════════════════════════════════════════════
-// MAIN SCREEN
-// ═══════════════════════════════════════════════
-
+const KEY_ALIASES: Record<string, string> = { violence_toward_parent: 'domestic_violence' };
 
 export default function CrisisScreen() {
   const params = useLocalSearchParams<{ crisisType?: string; riskLevel?: string }>();
@@ -126,72 +106,28 @@ export default function CrisisScreen() {
   const crisisType = KEY_ALIASES[rawType] || rawType;
   const content = CRISIS_CONTENT[crisisType] || CRISIS_CONTENT.manual;
 
-
   const handleResource = (action?: string) => {
-    if (action) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      Linking.openURL(action);
-    }
+    if (action) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); Linking.openURL(action); }
   };
-
 
   return (
     <SafeAreaView style={s.root} edges={['top', 'bottom']}>
-      <StatusBar style="light" />
-
-
-      {/* ─── Night sky background (canonical) ─── */}
+      <StatusBar style="dark" />
       <LinearGradient
-        colors={['#0e0a10', '#14101a', '#1a1622', '#1e1a28', '#201c2a', '#1e1a24', '#1a1620', '#18141e', '#14101a']}
-        locations={[0, 0.10, 0.22, 0.35, 0.48, 0.60, 0.72, 0.85, 1]}
+        colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      <Stars />
 
-
-      {/* ─── Warm ambient glow — softer/higher on crisis screen for comfort ─── */}
-      <LinearGradient
-        colors={['transparent', 'rgba(87,120,163,0.04)', 'rgba(87,120,163,0.08)']}
-        locations={[0, 0.4, 1]}
-        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '45%', zIndex: 1 }}
-        pointerEvents="none"
-      />
-
-
-      <ScrollView
-        contentContainerStyle={s.scroll}
-        showsVerticalScrollIndicator={false}
-        style={{ zIndex: 2 }}
-      >
-        {/* Back */}
-        <Pressable
-          onPress={() => router.back()}
-          style={s.backBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          hitSlop={12}
-        >
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+        <Pressable onPress={() => router.back()} style={s.backBtn} hitSlop={12}>
           <Text style={s.backText}>← Back</Text>
         </Pressable>
 
-
-        {/* Grounding prompt — slate glass, quiet and steady */}
-        <LinearGradient
-          colors={['rgba(60,90,115,0.10)', 'rgba(60,90,115,0.04)', 'rgba(0,0,0,0.10)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0.8, y: 1 }}
-          style={[s.groundingCard, {
-            borderTopColor: 'rgba(60,90,115,0.22)',
-            borderLeftColor: 'rgba(60,90,115,0.12)',
-            borderRightColor: 'rgba(0,0,0,0.06)',
-            borderBottomColor: 'rgba(0,0,0,0.10)',
-          }]}
-        >
-          <Text style={s.groundingText}>
-            Take a breath. You're in the right place.
-          </Text>
-        </LinearGradient>
-
+        {/* Grounding */}
+        <View style={s.groundingCard}>
+          <Text style={s.groundingText}>Take a breath. You're in the right place.</Text>
+        </View>
 
         {/* Title + message */}
         <View style={s.header}>
@@ -199,45 +135,23 @@ export default function CrisisScreen() {
           <Text style={s.message}>{content.message}</Text>
         </View>
 
-
-        {/* Resources — each a tappable slate glass card */}
+        {/* Resources */}
         <View style={s.resources}>
           {content.resources.map((r, i) => (
-            <Pressable
-              key={i}
-              onPress={() => handleResource(r.action)}
-              disabled={!r.action}
-              style={({ pressed }) => [pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] }]}
-              accessibilityRole="button"
-              accessibilityLabel={`${r.label}: ${r.detail}`}
-            >
-              <LinearGradient
-                colors={['rgba(87,120,163,0.10)', 'rgba(87,120,163,0.04)', 'rgba(0,0,0,0.10)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0.8, y: 1 }}
-                style={[s.resourceCard, {
-                  borderTopColor: 'rgba(87,120,163,0.22)',
-                  borderLeftColor: 'rgba(87,120,163,0.12)',
-                  borderRightColor: 'rgba(0,0,0,0.06)',
-                  borderBottomColor: 'rgba(0,0,0,0.10)',
-                }]}
-              >
-                <View style={s.resourceRow}>
-                  <View style={{ flex: 1, gap: 3 }}>
-                    <Text style={s.resourceLabel}>{r.label}</Text>
-                    <Text style={s.resourceDetail}>{r.detail}</Text>
-                  </View>
-                  {r.action && (
-                    <View style={s.resourceArrow}>
-                      <Text style={s.resourceArrowText}>→</Text>
-                    </View>
-                  )}
+            <Pressable key={i} onPress={() => handleResource(r.action)} disabled={!r.action}
+              style={({ pressed }) => [pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] }]}>
+              <View style={s.resourceCard}>
+                <View style={{ flex: 1, gap: 3 }}>
+                  <Text style={s.resourceLabel}>{r.label}</Text>
+                  <Text style={s.resourceDetail}>{r.detail}</Text>
                 </View>
-              </LinearGradient>
+                {r.action && (
+                  <View style={s.resourceArrow}><Text style={s.resourceArrowText}>→</Text></View>
+                )}
+              </View>
             </Pressable>
           ))}
         </View>
-
 
         {/* Reassurance */}
         <View style={s.reassurance}>
@@ -248,44 +162,16 @@ export default function CrisisScreen() {
           </Text>
         </View>
 
-
         {/* Actions */}
         <View style={s.actions}>
-          {/* "I'm okay" — standard glass, not amber (no upsell energy on crisis) */}
-          <Pressable
-            onPress={() => {
-              Haptics.selectionAsync();
-              router.back();
-            }}
-            style={({ pressed }) => [pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] }]}
-            accessibilityRole="button"
-            accessibilityLabel="I'm okay now — go back"
-          >
-            <LinearGradient
-              colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.02)', 'rgba(0,0,0,0.10)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0.8, y: 1 }}
-              style={[s.safeBtn, {
-                borderTopColor: 'rgba(255,255,255,0.12)',
-                borderLeftColor: 'rgba(255,255,255,0.06)',
-                borderRightColor: 'rgba(0,0,0,0.06)',
-                borderBottomColor: 'rgba(0,0,0,0.10)',
-              }]}
-            >
-              <Text style={s.safeBtnText}>I'm okay now</Text>
-            </LinearGradient>
+          <Pressable onPress={() => { Haptics.selectionAsync(); router.back(); }}
+            style={({ pressed }) => [pressed && { opacity: 0.85 }]}>
+            <View style={s.safeBtn}><Text style={s.safeBtnText}>I'm okay now</Text></View>
           </Pressable>
-
-
-          <Pressable
-            onPress={() => router.replace('/(tabs)')}
-            accessibilityRole="link"
-            accessibilityLabel="Go home"
-          >
+          <Pressable onPress={() => router.replace('/(tabs)')}>
             <Text style={s.homeLink}>Go home</Text>
           </Pressable>
         </View>
-
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -293,119 +179,46 @@ export default function CrisisScreen() {
   );
 }
 
-
-// ═══════════════════════════════════════════════
-// STYLES
-// ═══════════════════════════════════════════════
-
-
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0e0a10' },
+  root: { flex: 1, backgroundColor: C.base },
   scroll: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 60, gap: 16 },
 
-
-  // Back
   backBtn: { alignSelf: 'flex-start', paddingVertical: 6 },
   backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textMuted },
 
-
-  // Grounding card (slate glass)
   groundingCard: {
-    borderRadius: 18,
-    padding: 18,
-    borderWidth: 1,
-    alignItems: 'center',
+    borderRadius: 18, padding: 18, alignItems: 'center',
+    backgroundColor: 'rgba(87,120,163,0.06)', borderWidth: 1, borderColor: 'rgba(87,120,163,0.12)',
   },
-  groundingText: {
-    fontFamily: F.scriptItalic,
-    fontSize: 16,
-    color: C.textSub,
-    lineHeight: 24,
-    textAlign: 'center',
-  },
+  groundingText: { fontFamily: F.bodyMedium, fontSize: 16, color: C.textSub, lineHeight: 24, textAlign: 'center' },
 
-
-  // Header
   header: { gap: 12, marginTop: 4 },
-  title: {
-    fontFamily: F.heading,
-    fontSize: 28,
-    color: C.text,
-    letterSpacing: -0.3,
-  },
-  message: {
-    fontFamily: F.body,
-    fontSize: 16,
-    color: C.textBody,
-    lineHeight: 25,
-  },
+  title: { fontFamily: F.heading, fontSize: 28, color: C.text, letterSpacing: -0.3 },
+  message: { fontFamily: F.body, fontSize: 16, color: C.text, lineHeight: 25 },
 
-
-  // Resources
   resources: { gap: 12 },
   resourceCard: {
-    borderRadius: 18,
-    padding: 18,
-    borderWidth: 1,
+    borderRadius: 18, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: C.cardGlass, borderWidth: 1, borderColor: 'rgba(87,120,163,0.12)',
   },
-  resourceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  resourceLabel: {
-    fontFamily: F.bodySemi,
-    fontSize: 16,
-    color: C.text,
-  },
-  resourceDetail: {
-    fontFamily: F.body,
-    fontSize: 14,
-    color: C.textSub,
-  },
+  resourceLabel: { fontFamily: F.bodySemi, fontSize: 16, color: C.text },
+  resourceDetail: { fontFamily: F.body, fontSize: 14, color: C.textSub },
   resourceArrow: {
     width: 36, height: 36, borderRadius: 12,
-    backgroundColor: 'rgba(87,120,163,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(87,120,163,0.25)',
+    backgroundColor: 'rgba(87,120,163,0.10)', borderWidth: 1, borderColor: 'rgba(87,120,163,0.20)',
     alignItems: 'center', justifyContent: 'center',
   },
-  resourceArrowText: {
-    fontSize: 16, color: C.blue, fontFamily: F.bodySemi,
-  },
+  resourceArrowText: { fontSize: 16, color: '#5778A3', fontFamily: F.bodySemi },
 
-
-  // Reassurance
   reassurance: { paddingVertical: 8 },
-  reassuranceText: {
-    fontFamily: F.body,
-    fontSize: 13,
-    color: C.textMuted,
-    lineHeight: 20,
-    textAlign: 'center',
-  },
+  reassuranceText: { fontFamily: F.body, fontSize: 13, color: C.textMuted, lineHeight: 20, textAlign: 'center' },
 
-
-  // Actions
   actions: { gap: 16, alignItems: 'center' },
   safeBtn: {
-    borderRadius: 18,
-    borderWidth: 1,
-    paddingVertical: 16,
-    alignItems: 'center',
-    width: '100%',
+    borderRadius: 18, paddingVertical: 16, alignItems: 'center', width: '100%',
+    backgroundColor: C.cardGlass, borderWidth: 1, borderColor: C.border,
   },
-  safeBtnText: {
-    fontFamily: F.bodySemi,
-    fontSize: 16,
-    color: C.textBody,
-  },
-  homeLink: {
-    fontFamily: F.bodyMedium,
-    fontSize: 14,
-    color: C.textMuted,
-  },
+  safeBtnText: { fontFamily: F.bodySemi, fontSize: 16, color: C.text },
+  homeLink: { fontFamily: F.bodyMedium, fontSize: 14, color: C.textMuted },
 });
-
-
 
