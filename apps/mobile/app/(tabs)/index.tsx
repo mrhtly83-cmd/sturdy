@@ -1,5 +1,5 @@
 // app/(tabs)/index.tsx
-// v9 — Journal identity: pastel gradient, frosted glass, Manrope + Cormorant
+// v9 — Journal identity: pastel gradient, frosted glass, Manrope
 // EMPTY_THRESHOLD = 3 for testing — TODO: change back to 5 before launch
 
 import { useCallback, useRef, useState } from 'react';

@@ -1,5 +1,5 @@
 // src/components/ui/ScriptCard.tsx
-// v5 — Journal identity: frosted glass cards, dark text, Manrope + Cormorant
+// v5 — Journal identity: frosted glass cards, dark text, Manrope
 
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -82,7 +82,7 @@ export function ScriptCard({ step, parent_action, script, coaching, strategies, 
     <Animated.View style={[
       st.card,
       {
-        backgroundColor: expanded ? c.cardBg : 'rgba(255,255,255,0.7)',
+        backgroundColor: expanded ? c.cardBg : 'rgba(255,255,255,0.5)',
         borderColor: expanded ? c.cardBorder : 'rgba(0,0,0,0.06)',
       },
       { opacity, transform: [{ translateY }] },
@@ -148,9 +148,7 @@ export function ScriptCard({ step, parent_action, script, coaching, strategies, 
 
 const st = StyleSheet.create({
   card: {
-    borderRadius: 20, borderWidth: 1, overflow: 'hidden',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08, shadowRadius: 12, elevation: 3,
+    borderRadius: 20, overflow: 'hidden',
   },
 
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, paddingHorizontal: 18 },
@@ -174,17 +172,17 @@ const st = StyleSheet.create({
   },
   badgeText: { fontFamily: 'Manrope-SemiBold', fontSize: 10, letterSpacing: 0.8, color: 'rgba(42,37,32,0.45)' },
 
-  preview: { fontFamily: 'Cormorant-Regular', fontSize: 13, color: 'rgba(42,37,32,0.35)', maxWidth: 140 },
+  preview: { fontFamily: 'Manrope-Medium', fontSize: 13, color: 'rgba(42,37,32,0.35)', maxWidth: 140 },
   chevron: { fontSize: 10, color: 'rgba(42,37,32,0.20)' },
 
   body: { paddingHorizontal: 18, paddingBottom: 18, gap: 10 },
 
   actionWrap: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   actionBar: { width: 2, alignSelf: 'stretch', borderRadius: 1, marginTop: 2, marginBottom: 2 },
-  action: { fontFamily: 'Cormorant-Italic', fontSize: 13, color: 'rgba(42,37,32,0.55)', lineHeight: 20, flex: 1 },
+  action: { fontFamily: 'Manrope-Medium', fontSize: 13, color: 'rgba(42,37,32,0.55)', lineHeight: 20, flex: 1 },
 
   sayLabel: { fontFamily: 'Manrope-SemiBold', fontSize: 9, letterSpacing: 0.8, color: 'rgba(42,37,32,0.25)', marginTop: 4 },
-  script: { fontFamily: 'Cormorant-Regular', fontSize: 18, color: '#2A2520', lineHeight: 28 },
+  script: { fontFamily: 'Manrope-Medium', fontSize: 18, color: '#2A2520', lineHeight: 28 },
 
   coachToggle: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -195,11 +193,11 @@ const st = StyleSheet.create({
   coachChev: { fontSize: 8, color: 'rgba(42,37,32,0.20)' },
 
   coachBody: { gap: 8, marginTop: 4 },
-  coachText: { fontFamily: 'Cormorant-Regular', fontSize: 14, color: 'rgba(42,37,32,0.60)', lineHeight: 22 },
+  coachText: { fontFamily: 'Manrope-Medium', fontSize: 14, color: 'rgba(42,37,32,0.60)', lineHeight: 22 },
   strats: { gap: 5 },
   stratRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   stratDot: { width: 5, height: 5, borderRadius: 3, marginTop: 7, opacity: 0.6 },
-  stratText: { fontFamily: 'Cormorant-Regular', fontSize: 13, color: 'rgba(42,37,32,0.45)', lineHeight: 20, flex: 1 },
+  stratText: { fontFamily: 'Manrope-Medium', fontSize: 13, color: 'rgba(42,37,32,0.45)', lineHeight: 20, flex: 1 },
 });
 
 

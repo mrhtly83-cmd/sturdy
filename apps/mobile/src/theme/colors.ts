@@ -92,16 +92,15 @@ export const fonts = {
   bodySemi:         'Manrope-SemiBold',
   label:            'Manrope-Bold',
 
-  // Cormorant Garamond — headings, emotional content, scripts
-  display:          'Cormorant-Bold',
-  displaySemi:      'Cormorant-SemiBold',
-  script:           'Cormorant-Regular',
-  scriptItalic:     'Cormorant-Italic',
-  accent:           'Cormorant-Italic',
+  display:          'Manrope-ExtraBold',
+  displaySemi:      'Manrope-Bold',
+  script:           'Manrope-Medium',
+  scriptItalic:     'Manrope-Medium',
+  accent:           'Manrope-Medium',
 
   // Legacy aliases (keeps existing code working during migration)
-  scriptMedium:     'Cormorant-SemiBold',
-  scriptLight:      'Cormorant-Regular',
-  scriptLightItalic:'Cormorant-Italic',
+  scriptMedium:     'Manrope-Bold',
+  scriptLight:      'Manrope-Medium',
+  scriptLightItalic:'Manrope-Medium',
 } as const;
 

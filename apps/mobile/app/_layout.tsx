@@ -1,6 +1,5 @@
 // app/_layout.tsx
-// v7 — Journal identity: Manrope + Cormorant Garamond
-// Removed: Jakarta, Crimson (old dark theme)
+// v8 — Journal identity: Manrope only
 
 import { useEffect } from 'react';
 import { Platform, Text, TextInput } from 'react-native';
@@ -14,12 +13,6 @@ import {
   Manrope_700Bold,
   Manrope_800ExtraBold,
 } from '@expo-google-fonts/manrope';
-import {
-  CormorantGaramond_400Regular,
-  CormorantGaramond_600SemiBold,
-  CormorantGaramond_700Bold,
-  CormorantGaramond_400Regular_Italic,
-} from '@expo-google-fonts/cormorant-garamond';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { ChildProfileProvider }  from '../src/context/ChildProfileContext';
 
@@ -71,18 +64,11 @@ function AuthGate() {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    // Manrope — UI body text
     'Manrope-Regular':    Manrope_400Regular,
     'Manrope-Medium':     Manrope_500Medium,
     'Manrope-SemiBold':   Manrope_600SemiBold,
     'Manrope-Bold':       Manrope_700Bold,
     'Manrope-ExtraBold':  Manrope_800ExtraBold,
-
-    // Cormorant Garamond — headings, emotional content
-    'Cormorant-Regular':    CormorantGaramond_400Regular,
-    'Cormorant-SemiBold':   CormorantGaramond_600SemiBold,
-    'Cormorant-Bold':       CormorantGaramond_700Bold,
-    'Cormorant-Italic':     CormorantGaramond_400Regular_Italic,
   });
 
   if (!fontsLoaded) return null;
