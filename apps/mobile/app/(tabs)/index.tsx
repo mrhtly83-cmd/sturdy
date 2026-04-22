@@ -234,38 +234,6 @@ export default function HubScreen() {
     return `${Math.floor(diff / 1440)}d ago`;
   }
 
-  // ── Guest gate ──
-  if (!session) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: C.base }} edges={['top']}>
-        <StatusBar style="dark" />
-        <LinearGradient
-          colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 20 }}>
-          <Text style={{ fontFamily: F.display, fontSize: 30, color: C.text, textAlign: 'center', lineHeight: 38 }}>
-            Save your scripts.{'\n'}Know your child.
-          </Text>
-          <Text style={{ fontFamily: F.body, fontSize: 15, color: C.textSub, textAlign: 'center', lineHeight: 23 }}>
-            Create a free account to keep everything in one place.
-          </Text>
-          <Pressable onPress={() => router.push('/auth/sign-up')} style={({ pressed }) => [pressed && { opacity: 0.85 }]}>
-            <View style={{ width: SW - 64, borderRadius: 18, minHeight: 56, alignItems: 'center', justifyContent: 'center', backgroundColor: C.rose }}>
-              <Text style={{ fontFamily: F.subheading, fontSize: 16, color: '#FFFFFF' }}>Create free account</Text>
-            </View>
-          </Pressable>
-          <Pressable onPress={() => router.push('/auth/sign-in')}>
-            <Text style={{ fontFamily: F.bodySemi, fontSize: 14, color: C.textMuted, textDecorationLine: 'underline' }}>
-              Already have an account? Sign in
-            </Text>
-          </Pressable>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   // ── Hub ──
   return (
     <SafeAreaView style={s.root} edges={['top']}>

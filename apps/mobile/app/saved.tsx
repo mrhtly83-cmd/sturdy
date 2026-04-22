@@ -1,9 +1,9 @@
 // app/saved.tsx
-// v6 — Saved scripts library with glassmorphism 3D card system
-// Night sky + Stars + directional border cards
-// Matches welcome/result/child-profile/you canonical design
+// v7 — Saved scripts library (grouped by child)
+// Night sky + Stars + directional border glassmorphism
 
-import { useCallback, useState } from 'react';
+
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -22,11 +22,14 @@ import { Stars }           from '../src/components/features/Stars';
 import { colors as C, fonts as F } from '../src/theme';
 import { loadSavedScripts, deleteSavedScript, type SavedScriptRow } from '../src/lib/loadSavedScripts';
 
+
 // ═══════════════════════════════════════════════
 // GLASS CARD — Directional border glassmorphism
 // ═══════════════════════════════════════════════
 
+
 type GlassTint = 'standard' | 'warm' | 'sage' | 'slate';
+
 
 const TINTS: Record<GlassTint, {
   colors: [string, string, string];
@@ -65,6 +68,7 @@ const TINTS: Record<GlassTint, {
   },
 };
 
+
 function GlassCard({
   children,
   tint = 'standard',
@@ -97,6 +101,7 @@ function GlassCard({
     </LinearGradient>
   );
 
+
   if (onPress) {
     return (
       <Pressable
@@ -110,14 +115,24 @@ function GlassCard({
   return content;
 }
 
+
 // ═══════════════════════════════════════════════
 // MAIN SCREEN
 // ═══════════════════════════════════════════════
+
+
+type ChildGroup = {
+  key: string;
+  childName: string;
+  scripts: SavedScriptRow[];
+};
+
 
 export default function SavedScriptsScreen() {
   const [scripts, setScripts] = useState<SavedScriptRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
 
   const fetchSaved = useCallback(async () => {
     setLoading(true);
@@ -132,11 +147,29 @@ export default function SavedScriptsScreen() {
     }
   }, []);
 
+
   useFocusEffect(
     useCallback(() => {
       fetchSaved();
     }, [fetchSaved])
   );
+
+
+  // Group by child, preserving newest-first order within each group
+  const groups: ChildGroup[] = useMemo(() => {
+    const map = new Map<string, ChildGroup>();
+    scripts.forEach(s => {
+      const key = s.child_name || 'Unassigned';
+      const existing = map.get(key);
+      if (existing) {
+        existing.scripts.push(s);
+      } else {
+        map.set(key, { key, childName: key, scripts: [s] });
+      }
+    });
+    return Array.from(map.values());
+  }, [scripts]);
+
 
   const handleDelete = (scriptId: string, title: string | null) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -162,10 +195,12 @@ export default function SavedScriptsScreen() {
     );
   };
 
+
   const handleOpenScript = (item: SavedScriptRow) => {
     const d = item.structured;
     if (!d) return;
     Haptics.selectionAsync();
+
 
     router.push({
       pathname: '/result',
@@ -189,6 +224,7 @@ export default function SavedScriptsScreen() {
     });
   };
 
+
   function formatDate(dateStr: string): string {
     const d = new Date(dateStr);
     const now = new Date();
@@ -200,9 +236,11 @@ export default function SavedScriptsScreen() {
     return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
   }
 
+
   return (
     <SafeAreaView style={s.root} edges={['top', 'bottom']}>
       <StatusBar style="light" />
+
 
       {/* ─── Night sky background (canonical) ─── */}
       <LinearGradient
@@ -212,6 +250,7 @@ export default function SavedScriptsScreen() {
       />
       <Stars />
 
+
       {/* ─── Warm ambient glow ─── */}
       <LinearGradient
         colors={['transparent', 'rgba(212,148,74,0.03)', 'rgba(212,148,74,0.06)']}
@@ -219,6 +258,7 @@ export default function SavedScriptsScreen() {
         style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '35%', zIndex: 1 }}
         pointerEvents="none"
       />
+
 
       <ScrollView
         contentContainerStyle={s.scroll}
@@ -235,10 +275,17 @@ export default function SavedScriptsScreen() {
           </Pressable>
         </View>
 
+
         <View style={s.header}>
           <Text style={s.title}>Saved Scripts</Text>
-          {!loading && <Text style={s.subtitle}>{scripts.length} script{scripts.length !== 1 ? 's' : ''}</Text>}
+          {!loading && (
+            <Text style={s.subtitle}>
+              {scripts.length} script{scripts.length !== 1 ? 's' : ''}
+              {groups.length > 1 ? ` · ${groups.length} children` : ''}
+            </Text>
+          )}
         </View>
+
 
         {/* Content */}
         {loading ? (
@@ -274,55 +321,70 @@ export default function SavedScriptsScreen() {
             </Pressable>
           </GlassCard>
         ) : (
-          <View style={s.list}>
-            {scripts.map((item) => (
-              <GlassCard
-                key={item.id}
-                tint="slate"
-                onPress={() => handleOpenScript(item)}
-              >
-                {/* Header row */}
-                <View style={s.itemHeader}>
-                  <Text style={s.itemTitle} numberOfLines={1}>
-                    {item.title || 'Saved script'}
+          <View style={s.groupsWrap}>
+            {groups.map(group => (
+              <View key={group.key} style={s.group}>
+                {/* Group header */}
+                <View style={s.groupHeader}>
+                  <Text style={s.groupName}>{group.childName}</Text>
+                  <Text style={s.groupCount}>
+                    {group.scripts.length} script{group.scripts.length !== 1 ? 's' : ''}
                   </Text>
-                  <Text style={s.itemDate}>{formatDate(item.created_at)}</Text>
                 </View>
 
-                {/* Script preview */}
-                {item.structured?.regulate?.script ? (
-                  <Text style={s.itemPreview} numberOfLines={2}>
-                    "{item.structured.regulate.script}"
-                  </Text>
-                ) : null}
 
-                {/* Footer: meta + delete */}
-                <View style={s.itemFooter}>
-                  <View style={s.itemMeta}>
-                    {item.child_name ? (
-                      <View style={s.metaPill}>
-                        <Text style={s.metaPillText}>{item.child_name}</Text>
+                {/* Script cards */}
+                <View style={s.list}>
+                  {group.scripts.map(item => (
+                    <GlassCard
+                      key={item.id}
+                      tint="slate"
+                      onPress={() => handleOpenScript(item)}
+                    >
+                      {/* Header row */}
+                      <View style={s.itemHeader}>
+                        <Text style={s.itemTitle} numberOfLines={1}>
+                          {item.title || 'Saved script'}
+                        </Text>
+                        <Text style={s.itemDate}>{formatDate(item.created_at)}</Text>
                       </View>
-                    ) : null}
-                    {item.trigger_label ? (
-                      <View style={[s.metaPill, s.metaPillTrigger]}>
-                        <Text style={[s.metaPillText, { color: C.peach }]}>{item.trigger_label}</Text>
-                      </View>
-                    ) : null}
-                  </View>
 
-                  <Pressable
-                    onPress={() => handleDelete(item.id, item.title)}
-                    hitSlop={12}
-                    style={({ pressed }) => [pressed && { opacity: 0.6 }]}
-                  >
-                    <Text style={s.deleteText}>Delete</Text>
-                  </Pressable>
+
+                      {/* Script preview */}
+                      {item.structured?.regulate?.script ? (
+                        <Text style={s.itemPreview} numberOfLines={2}>
+                          "{item.structured.regulate.script}"
+                        </Text>
+                      ) : null}
+
+
+                      {/* Footer: meta + delete */}
+                      <View style={s.itemFooter}>
+                        <View style={s.itemMeta}>
+                          {item.trigger_label ? (
+                            <View style={[s.metaPill, s.metaPillTrigger]}>
+                              <Text style={[s.metaPillText, { color: C.peach }]}>{item.trigger_label}</Text>
+                            </View>
+                          ) : null}
+                        </View>
+
+
+                        <Pressable
+                          onPress={() => handleDelete(item.id, item.title)}
+                          hitSlop={12}
+                          style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+                        >
+                          <Text style={s.deleteText}>Delete</Text>
+                        </Pressable>
+                      </View>
+                    </GlassCard>
+                  ))}
                 </View>
-              </GlassCard>
+              </View>
             ))}
           </View>
         )}
+
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -330,13 +392,16 @@ export default function SavedScriptsScreen() {
   );
 }
 
+
 // ═══════════════════════════════════════════════
 // STYLES
 // ═══════════════════════════════════════════════
 
+
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0e0a10' },
   scroll: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 60, gap: 14 },
+
 
   // Navigation
   backRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -345,10 +410,12 @@ const s = StyleSheet.create({
   homeBtn: { paddingVertical: 6, paddingHorizontal: 10 },
   homeBtnText: { fontSize: 20 },
 
+
   // Header
   header: { gap: 4, marginBottom: 4 },
   title: { fontFamily: F.heading, fontSize: 26, color: C.text, letterSpacing: -0.3 },
   subtitle: { fontFamily: F.body, fontSize: 14, color: C.textSub },
+
 
   // Glass card base
   glassCard: {
@@ -357,6 +424,7 @@ const s = StyleSheet.create({
     gap: 8,
     borderWidth: 1,
   },
+
 
   // Center states
   center: {
@@ -367,6 +435,7 @@ const s = StyleSheet.create({
   },
   errorText: { fontFamily: F.body, fontSize: 14, color: C.coral },
   retryText: { fontFamily: F.bodySemi, fontSize: 14, color: C.amber },
+
 
   // Empty state
   emptyIcon: { fontSize: 40, marginBottom: 4 },
@@ -382,8 +451,23 @@ const s = StyleSheet.create({
   },
   emptyCtaText: { fontFamily: F.bodySemi, fontSize: 14, color: '#FFFFFF' },
 
-  // Script list
+
+  // Groups
+  groupsWrap: { gap: 20 },
+  group: { gap: 10 },
+  groupHeader: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+  },
+  groupName: { fontFamily: F.bodySemi, fontSize: 15, color: C.amber, letterSpacing: 0.2 },
+  groupCount: { fontFamily: F.body, fontSize: 12, color: C.textMuted },
+
+
+  // Script list inside a group
   list: { gap: 12 },
+
 
   // Item card content
   itemHeader: {
@@ -419,5 +503,4 @@ const s = StyleSheet.create({
   metaPillText: { fontFamily: F.bodyMedium, fontSize: 11, color: C.textMuted },
   deleteText: { fontFamily: F.bodyMedium, fontSize: 12, color: C.coral },
 });
-
 
