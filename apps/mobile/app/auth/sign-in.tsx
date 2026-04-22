@@ -36,7 +36,6 @@ export default function SignInScreen() {
     setError(''); setLoading(true);
     try {
       await signInWithEmail(e, password);
-      router.replace('/(tabs)');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign in failed. Please try again.');
     } finally { setLoading(false); }
