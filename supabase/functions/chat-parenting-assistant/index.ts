@@ -173,6 +173,7 @@ async function generateScript(prompt: string) {
   }
 }
 
+
 // @ts-ignore
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -211,7 +212,6 @@ serve(async (req) => {
       followUpType:   input.followUpType,
       originalScript: input.originalScript,
     });
-
     const result = await generateScript(prompt);
 
     // Detect trigger category from message

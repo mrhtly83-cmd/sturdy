@@ -26,7 +26,7 @@ import * as Clipboard     from 'expo-clipboard';
 import { ScriptCard }     from '../src/components/ui/ScriptCard';
 import { useAuth }        from '../src/context/AuthContext';
 import { useChildProfile } from '../src/context/ChildProfileContext';
-import { getFollowUpResponse, CrisisDetectedError, type FollowUpResponse } from '../src/lib/api';
+import { CrisisDetectedError } from '../src/lib/api';
 import { supabase }       from '../src/lib/supabase';
 import { saveScript }     from '../src/lib/saveScript';
 import { detectCrisis } from '../src/hooks/useCrisisMode';
@@ -119,9 +119,6 @@ export default function ResultScreen() {
   const [saveErr, setSaveErr] = useState('');
   const [avoidOpen, setAvoidOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [followUpLoading, setFollowUpLoading] = useState<string | null>(null);
-  const [followUpError, setFollowUpError] = useState('');
-  const [followUpResult, setFollowUpResult] = useState<FollowUpResponse | null>(null);
   const [feedbackGiven, setFeedbackGiven] = useState(false);
   const [feedbackStep, setFeedbackStep] = useState<'helpful' | 'outcome' | 'done'>('helpful');
   const [feedbackHelpful, setFeedbackHelpful] = useState<string | null>(null);
@@ -156,7 +153,7 @@ export default function ResultScreen() {
 
   useEffect(() => {
     setSaved(false); setSaving(false); setSaveErr(''); setAvoidOpen(false);
-    setFollowUpResult(null); setFollowUpError(''); setCopied(false);
+    setCopied(false);
     setFeedbackGiven(false); setFeedbackStep('helpful'); setFeedbackHelpful(null);
     return () => { voice.stop(); };
   }, [params.regulateScript]);
@@ -176,15 +173,6 @@ export default function ResultScreen() {
   const handleFeedbackOutcome = async (outcome: string) => { Haptics.selectionAsync(); await saveFeedback(feedbackHelpful!, outcome); setFeedbackGiven(true); };
   const saveFeedback = async (helpful: string, outcome: string | null) => { if (!session?.user?.id) return; try { await supabase.from('script_feedback').insert({ user_id: session.user.id, child_profile_id: activeChild?.id || null, conversation_id: val(params.conversation_id) || null, helpful, outcome, most_helpful_step: null, parent_notes: null }); } catch {} };
   const toggleAvoid = () => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setAvoidOpen(prev => !prev); };
-
-  const handleFollowUp = async (followUpType: string) => {
-    if (followUpLoading) return; voice.stop(); setFollowUpLoading(followUpType); setFollowUpError(''); setFollowUpResult(null);
-    try {
-      const result = await getFollowUpResponse({ childName: childName || 'My child', childAge: childAge ?? 5, message: val(params.childMessage) ?? script.situation_summary, userId: session?.user?.id, intensity: null, mode, isFollowUp: true, followUpType, originalScript: { situation_summary: script.situation_summary, regulate: script.regulate.script, connect: script.connect.script, guide: script.guide.script } });
-      setFollowUpResult(result);
-    } catch (err) { if (err instanceof CrisisDetectedError) { logSafetyEvent(val(params.childMessage) || '', err.crisisType, err.riskLevel); router.push({ pathname: '/crisis', params: { crisisType: err.crisisType, riskLevel: err.riskLevel } }); return; } setFollowUpError("Couldn't get a response."); }
-    finally { setFollowUpLoading(null); }
-  };
 
   const isPlaying = voice.state === 'playing';
   const showEscalationHelp = feedbackGiven && feedbackHelpful === 'no';
@@ -267,28 +255,6 @@ export default function ResultScreen() {
             <Pressable onPress={handleGetHelp} style={s.escalationBtn}><Text style={s.escalationBtnText}>Talk to someone now →</Text></Pressable>
           </View>
         ) : null}
-
-        {/* Follow-up */}
-        <View style={s.followup}>
-          <Text style={s.followupLabel}>What if...</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.followupScroll}>
-            {[{ emoji: '🚫', text: "They won't budge", type: 'refused', color: C.rose },
-              { emoji: '📈', text: 'Getting worse', type: 'escalated', color: '#F79566' },
-              { emoji: '😶', text: 'Shut down', type: 'shutdown', color: '#5778A3' },
-              { emoji: '🗣️', text: 'Pushing back', type: 'pushback', color: C.rose },
-              { emoji: '💛', text: 'Starting to work', type: 'worked', color: C.sage },
-            ].map((item, i) => {
-              const isLoading = followUpLoading === item.type;
-              const anyLoading = followUpLoading !== null;
-              const isActive = followUpResult?.followup_type === item.type;
-              const active = isActive || isLoading;
-              return (<Pressable key={i} onPress={() => handleFollowUp(item.type)} disabled={anyLoading} style={[s.followupChip, active && { backgroundColor: `${item.color}15`, borderColor: `${item.color}40` }, anyLoading && !isLoading && !isActive && { opacity: 0.4 }]}><Text style={{ fontSize: 14 }}>{isLoading ? '⏳' : item.emoji}</Text><Text style={[s.followupChipText, active && { color: item.color }]}>{item.text}</Text></Pressable>);
-            })}
-          </ScrollView>
-
-          {followUpResult ? (<View style={s.followUpResultCard}><Text style={s.followUpBody}>{followUpResult.what_happened}{followUpResult.what_to_do ? ` ${followUpResult.what_to_do}` : ''}</Text><View style={s.followUpSayThis}><Text style={s.followUpSayLabel}>SAY THIS</Text><Text style={s.followUpSayText}>"{followUpResult.say_this}"</Text></View></View>) : null}
-          {followUpError ? <Text style={s.followupError}>{followUpError}</Text> : null}
-        </View>
 
         {/* Nudge */}
         <View style={s.nudgeCard}>
@@ -373,19 +339,6 @@ const s = StyleSheet.create({
   escalationBody: { fontFamily: F.body, fontSize: 14, color: C.text, lineHeight: 22 },
   escalationBtn: { alignSelf: 'flex-start', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(201,123,99,0.12)', borderWidth: 1, borderColor: 'rgba(201,123,99,0.25)' },
   escalationBtnText: { fontFamily: F.bodySemi, fontSize: 14, color: C.rose },
-
-  followup: { gap: 8 },
-  followupLabel: { fontFamily: F.bodyMedium, fontSize: 13, color: C.textMuted, textAlign: 'center', marginBottom: 4 },
-  followupScroll: { gap: 8, paddingRight: 16 },
-  followupChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, backgroundColor: C.cardGlass, borderWidth: 1, borderColor: C.border },
-  followupChipText: { fontFamily: F.bodyMedium, fontSize: 13, color: C.textSub },
-  followupError: { fontFamily: F.body, fontSize: 13, color: C.rose, textAlign: 'center', marginTop: 4 },
-
-  followUpResultCard: { borderRadius: 18, padding: 16, gap: 12, backgroundColor: 'rgba(201,123,99,0.05)', borderWidth: 1, borderColor: 'rgba(201,123,99,0.12)' },
-  followUpBody: { fontFamily: F.body, fontSize: 15, color: C.text, lineHeight: 23 },
-  followUpSayThis: { gap: 4, paddingTop: 12, borderTopWidth: 1, borderTopColor: C.border },
-  followUpSayLabel: { fontFamily: F.label, fontSize: 10, letterSpacing: 0.8, color: C.rose },
-  followUpSayText: { fontFamily: F.bodySemi, fontSize: 18, color: C.text, lineHeight: 26 },
 
   nudgeCard: { alignItems: 'center', gap: 4, borderRadius: 18, padding: 16, backgroundColor: 'rgba(129,178,154,0.06)', borderWidth: 1, borderColor: 'rgba(129,178,154,0.12)' },
   nudgeText: { fontFamily: F.body, fontSize: 13, color: C.textSub, textAlign: 'center' },
