@@ -349,8 +349,7 @@ function EmptyState() {
      <Pressable
        onPress={() => {
          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-         router.push('/now');
-       }}
+router.push('/(tabs)');       }}
        style={({ pressed }) => [s.emptyCta, pressed && { opacity: 0.9 }]}
      >
        <Text style={s.emptyCtaText}>Go to SOS</Text>

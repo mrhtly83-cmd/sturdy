@@ -158,7 +158,7 @@ export default function HistoryScreen() {
             Your script history will appear here after your first session.
           </Text>
           <Pressable
-            onPress={() => router.push('/now')}
+           onPress={() => router.push('/(tabs)')}
             style={({ pressed }) => [st.emptyBtn, pressed && { opacity: 0.85 }]}
           >
             <Text style={st.emptyBtnText}>Get your first script</Text>

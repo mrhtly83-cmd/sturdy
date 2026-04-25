@@ -50,14 +50,7 @@ export default function TabLayout() {
           ),
         }}
       />
-
-      {/* Child tab hidden — each child now lives at /child/[id] */}
-      <Tabs.Screen
-        name="child"
-        options={{
-          href: null,
-        }}
-      />
+  
     </Tabs>
   );
 }
