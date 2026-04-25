@@ -50,6 +50,40 @@ const CHILD_COLORS = [
   '#8B7AA8',
 ];
 
+ // ═══════════════════════════════════════════════
+  // CHILD AUTO-DETECTION
+  // Returns the child id if exactly ONE child name appears in the
+  // message. Returns null otherwise (no match, multiple matches,
+  // or empty input).
+  // ═══════════════════════════════════════════════
+
+  function detectChildFromMessage(
+    message: string,
+    children: Array<{ id: string; name?: string }>,
+  ): string | null {
+    if (!message || !Array.isArray(children) || children.length === 0) {
+      return null;
+    }
+
+    const lower = message.toLowerCase();
+    const matches: string[] = [];
+
+    for (const child of children) {
+      const name = (child?.name ?? '').trim().toLowerCase();
+      if (!name || name.length < 2) continue;
+
+      // Word-boundary match — name surrounded by non-letters or string edges
+      const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const pattern = new RegExp(`(^|[^a-z])${escaped}([^a-z]|$)`, 'i');
+      if (pattern.test(lower)) {
+        matches.push(child.id);
+      }
+    }
+
+    // Only return a single match — never guess if 2+ kids referenced
+    return matches.length === 1 ? matches[0] : null;
+  }
+
 
 // ═══════════════════════════════════════════════
 // SCREEN
@@ -125,12 +159,14 @@ export default function HomeScreen() {
     setSending(true);
 
     try {
+      const detectedChildId = detectChildFromMessage(msg, kidList);
+
       const result = await getQuestionResponse({
         message: msg,
         userId:  session?.user?.id,
         childName: null,
         childAge:  null,
-        childProfileId: null,
+        childProfileId: detectedChildId,
       } as any);
 
       // Clear input before navigating so coming back to Home is fresh

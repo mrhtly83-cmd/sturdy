@@ -26,8 +26,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 
 import { useAuth } from '../../src/context/AuthContext';
-import { supabase } from '../../src/lib/supabase';
-import { colors as C, fonts as F } from '../../src/theme';
+  import { useChildProfile } from '../../src/context/ChildProfileContext';
+  import { supabase } from '../../src/lib/supabase';
+  import { colors as C, fonts as F } from '../../src/theme';
 
 
 // ═══════════════════════════════════════════════
@@ -50,6 +51,7 @@ type ThoughtRow = {
 
 export default function ThoughtScreen() {
   const { session } = useAuth();
+    const { children } = useChildProfile() as any;
   const params = useLocalSearchParams<{
     id?:               string;
     fallbackResponse?: string;
@@ -125,7 +127,15 @@ export default function ThoughtScreen() {
 
   const isPinned = !!thought?.pinned_at;
 
-  // ─── Format the response into paragraphs ───
+    // Look up the matched child's name (if this thought was tied to one)
+    const matchedChildName = useMemo(() => {
+      const childId = thought?.child_profile_id;
+      if (!childId || !Array.isArray(children)) return null;
+      const match = children.find((c: any) => c?.id === childId);
+      return match?.name?.trim() ?? null;
+    }, [thought?.child_profile_id, children]);
+ 
+    // ─── Format the response into paragraphs ───
   const paragraphs = useMemo(() => {
     return displayResponse
       .split(/\n\n+/)
@@ -234,6 +244,11 @@ export default function ThoughtScreen() {
               <Text style={s.promptText} numberOfLines={3}>
                 {displayPrompt}
               </Text>
+              {matchedChildName ? (
+                <Text style={s.savedTo}>
+                  📎 Saved to {matchedChildName}'s notes
+                </Text>
+              ) : null}
             </View>
           ) : null}
 
@@ -358,9 +373,14 @@ const s = StyleSheet.create({
     letterSpacing: 0.5, textTransform: 'uppercase',
   },
   promptText: {
-    fontFamily: F.scriptItalic, fontSize: 15, color: C.textSub,
-    lineHeight: 22,
-  },
+      fontFamily: F.scriptItalic, fontSize: 15, color: C.textSub,
+      lineHeight: 22,
+    },
+    savedTo: {
+      fontFamily: F.bodyMedium, fontSize: 12, color: C.sage,
+      letterSpacing: 0.3, marginTop: 6,
+    },
+
 
   // Response
   responseCard: {
