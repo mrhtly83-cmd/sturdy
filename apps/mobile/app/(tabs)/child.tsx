@@ -275,7 +275,7 @@ export default function ChildTab() {
     }});
   };
 
-  const isEmpty = totalCount < EMPTY_THRESHOLD;
+   const isEmpty = totalCount < EMPTY_THRESHOLD;
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
@@ -294,6 +294,7 @@ export default function ChildTab() {
             tintColor={C.rose} progressBackgroundColor={C.base} />
         }
       >
+  
         {/* Hero */}
         <View style={s.hero}>
           <AvatarBreath initial={initial} color={childColor} />
