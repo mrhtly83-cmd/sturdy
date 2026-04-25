@@ -51,7 +51,7 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Hide the old Child tab route — the file still exists but is no longer exposed in the tab bar. */}
+      {/* Child tab hidden — each child now lives at /child/[id] */}
       <Tabs.Screen
         name="child"
         options={{
