@@ -160,3 +160,93 @@ export async function getParentingScript(
   return data;
 }
 
+// ═══════════════════════════════════════════════
+// Question mode — adds Sturdy as thinking partner
+// ═══════════════════════════════════════════════
+
+export type QuestionRequest = {
+  childName?:      string | null;
+  childAge?:       number | null;
+  childProfileId?: string | null;
+  message:         string;
+  userId?:         string;
+};
+
+export type QuestionResponse = {
+  response: string;
+};
+
+function isValidQuestionResponse(value: unknown): value is QuestionResponse {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return typeof v.response === 'string' && v.response.trim().length > 0;
+}
+
+export async function getQuestionResponse(
+  input: QuestionRequest,
+): Promise<QuestionResponse> {
+  let response: Response;
+
+  console.log('[API] Sending question request');
+
+  try {
+    response = await fetch(PARENTING_SCRIPT_URL, {
+      method:  'POST',
+      headers: HEADERS,
+      body:    JSON.stringify({
+        childName:      input.childName ?? null,
+        childAge:       input.childAge ?? 5,
+        childProfileId: input.childProfileId ?? null,
+        message:        input.message,
+        userId:         input.userId,
+        mode:           'question',
+      }),
+    });
+  } catch (e) {
+    console.log('[API] Network error:', e);
+    throw new Error('network-error');
+  }
+
+  console.log('[API] Question response status:', response.status);
+
+  let rawText = '';
+  try {
+    rawText = await response.text();
+    console.log('[API] Raw length:', rawText.length);
+  } catch (e) {
+    console.log('[API] Failed to read response:', e);
+    throw new Error('read-error');
+  }
+
+  let data: unknown = null;
+  try {
+    data = JSON.parse(rawText);
+  } catch (e) {
+    console.log('[API] JSON parse failed:', rawText.slice(0, 300));
+    throw new Error('parse-error');
+  }
+
+  if (!response.ok) {
+    const msg = typeof data === 'object' && data !== null && 'error' in data &&
+      typeof (data as { error: unknown }).error === 'string'
+        ? (data as { error: string }).error : 'request-failed';
+    console.log('[API] Question response not ok:', msg);
+    throw new Error(msg);
+  }
+
+  if (
+    typeof data === 'object' && data !== null && 'response_type' in data &&
+    (data as { response_type: unknown }).response_type === 'crisis'
+  ) {
+    const c = data as { crisis_type?: string; risk_level?: string };
+    throw new CrisisDetectedError(c.crisis_type ?? 'unknown', c.risk_level ?? 'ELEVATED_RISK');
+  }
+
+  if (!isValidQuestionResponse(data)) {
+    console.log('[API] Question validation failed:', JSON.stringify(data).slice(0, 300));
+    throw new Error('invalid-response');
+  }
+
+  console.log('[API] Question success');
+  return data;
+}

@@ -1,16 +1,24 @@
 // app/(tabs)/index.tsx
-// v3 — New Home (Parent Hub)
-// Rotating greeting + child selector. Single-child users pass through to their hub.
+// v4 — New Home (Parent Hub) with Question mode
+// - Rotating greeting (re-rolls each focus)
+// - 0 children → empty state
+// - 1 child → lite view: greeting + input + Open hub link
+// - 2+ children → full selector + input
+// - "What's on your mind?" input wired to getQuestionResponse
+// - Skeleton-while-loading via navigation to /thought/[id]
 // Journal identity: pastel gradient, frosted glass, rose accents.
-// Reserved space below the selector for Question mode input (Phase 2).
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
@@ -22,6 +30,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../src/context/AuthContext';
 import { useChildProfile } from '../../src/context/ChildProfileContext';
 import { supabase } from '../../src/lib/supabase';
+import { getQuestionResponse, CrisisDetectedError } from '../../src/lib/api';
 import { colors as C, fonts as F } from '../../src/theme';
 
 
@@ -51,8 +60,15 @@ export default function HomeScreen() {
   const { children, isLoadingChild } = useChildProfile() as any;
 
   const [firstName, setFirstName] = useState<string | null>(null);
+  const [greeting, setGreeting]   = useState<string>(GREETINGS[0]);
 
-  // ─── Fetch parent's name (full_name from profiles, falls back to email) ───
+  // Question input state
+  const [question, setQuestion]       = useState('');
+  const [inputFocused, setInputFocused] = useState(false);
+  const [sending, setSending]         = useState(false);
+  const [error, setError]             = useState('');
+
+  // ─── Fetch parent's name ───
   const fetchName = useCallback(async () => {
     if (!session?.user?.id) return;
     try {
@@ -63,7 +79,6 @@ export default function HomeScreen() {
         .single();
 
       if (data?.full_name) {
-        // Use first word only for a friendlier feel: "Mary Smith" → "Mary"
         const first = String(data.full_name).trim().split(/\s+/)[0];
         if (first) {
           setFirstName(first);
@@ -71,7 +86,6 @@ export default function HomeScreen() {
         }
       }
 
-      // Fallback: extract from email ("mary.smith@..." → "mary")
       const email = session.user.email ?? '';
       const local = email.split('@')[0] ?? '';
       const cleaned = local.split(/[._+-]/)[0] ?? '';
@@ -83,26 +97,13 @@ export default function HomeScreen() {
     }
   }, [session?.user?.id, session?.user?.email]);
 
+  // ─── Re-roll greeting + refetch name on each focus ───
   useFocusEffect(
     useCallback(() => {
+      setGreeting(GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
       fetchName();
     }, [fetchName])
   );
-
-  // ─── Single-child passthrough: route straight to their hub ───
-  useEffect(() => {
-    if (!isLoadingChild && Array.isArray(children) && children.length === 1) {
-      const only = children[0];
-      if (only?.id) {
-        router.replace(`/child/${only.id}` as any);
-      }
-    }
-  }, [children, isLoadingChild]);
-
-  // ─── Pick a greeting once per mount (simple randomizer) ───
-  const greeting = useMemo(() => {
-    return GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
-  }, []);
 
   // ─── Handlers ───
   const handleOpenChild = (childId: string) => {
@@ -115,9 +116,65 @@ export default function HomeScreen() {
     router.push('/child/new');
   };
 
+  const handleSend = async () => {
+    const msg = question.trim();
+    if (!msg || sending) return;
+
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setError('');
+    setSending(true);
+
+    try {
+      const result = await getQuestionResponse({
+        message: msg,
+        userId:  session?.user?.id,
+        childName: null,
+        childAge:  null,
+        childProfileId: null,
+      } as any);
+
+      // Clear input before navigating so coming back to Home is fresh
+      setQuestion('');
+
+      // Navigate to thought screen — pass response inline as fallback if
+      // thought_id is null (unauthenticated edge case)
+      const responsePayload = (result as any).response ?? '';
+      const thoughtId = (result as any).thought_id ?? null;
+
+      if (thoughtId) {
+        router.push({
+          pathname: `/thought/${thoughtId}` as any,
+          params: { fallbackResponse: responsePayload, prompt: msg },
+        });
+      } else {
+        // No id — pass response inline. Result screen will use params.
+        router.push({
+          pathname: '/thought/inline' as any,
+          params: { fallbackResponse: responsePayload, prompt: msg },
+        });
+      }
+    } catch (err) {
+      if (err instanceof CrisisDetectedError) {
+        router.push({
+          pathname: '/crisis',
+          params: { crisisType: err.crisisType, riskLevel: err.riskLevel },
+        });
+        return;
+      }
+      setError("Couldn't get a response right now. Please try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+
   // ─── Helpers ───
   const displayName = firstName ?? 'there';
   const kidList = Array.isArray(children) ? children : [];
+  const canSend = question.trim().length > 0 && !sending;
+  const isSingleChild = kidList.length === 1;
+  const isMultiChild = kidList.length > 1;
+  const onlyChild = isSingleChild ? kidList[0] : null;
+
 
   // ─── Loading gate ───
   if (isLoadingChild) {
@@ -136,7 +193,7 @@ export default function HomeScreen() {
     );
   }
 
-  // ─── Empty state: 0 children (safety fallback — shouldn't normally hit) ───
+  // ─── Empty state: 0 children ───
   if (kidList.length === 0) {
     return (
       <View style={s.root}>
@@ -155,7 +212,10 @@ export default function HomeScreen() {
             <Text style={s.emptyBody}>
               Sturdy tailors every response to your child's age and world. Start by telling us a little about them.
             </Text>
-            <Pressable onPress={handleAddChild} style={({ pressed }) => [pressed && { opacity: 0.9 }]}>
+            <Pressable
+              onPress={handleAddChild}
+              style={({ pressed }) => [pressed && { opacity: 0.9 }]}
+            >
               <View style={s.primaryBtn}>
                 <Text style={s.primaryBtnText}>Add a child</Text>
               </View>
@@ -166,24 +226,7 @@ export default function HomeScreen() {
     );
   }
 
-  // ─── Single child — show loading while redirect fires ───
-  if (kidList.length === 1) {
-    return (
-      <View style={s.root}>
-        <StatusBar style="dark" />
-        <LinearGradient
-          colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <SafeAreaView style={s.centerGate}>
-          <ActivityIndicator color={C.rose} />
-        </SafeAreaView>
-      </View>
-    );
-  }
-
-  // ─── Multi-child: selector view ───
+  // ─── 1 or more children: question input is always visible ───
   return (
     <View style={s.root}>
       <StatusBar style="dark" />
@@ -198,73 +241,128 @@ export default function HomeScreen() {
       <View style={[s.blob, s.blob2]} />
 
       <SafeAreaView style={s.safe} edges={['top']}>
-        <ScrollView
-          contentContainerStyle={s.scroll}
-          showsVerticalScrollIndicator={false}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
         >
-          {/* ─── Greeting ─── */}
-          <View style={s.greetingWrap}>
-            <Text style={s.greeting}>{greeting}, {displayName}.</Text>
-            <Text style={s.subGreeting}>Who would you like to focus on?</Text>
-          </View>
-
-          {/* ─── Child selector ─── */}
           <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={s.childRow}
+            contentContainerStyle={s.scroll}
+            keyboardDismissMode="interactive"
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            {kidList.map((kid: any, index: number) => {
-              const color = CHILD_COLORS[index % CHILD_COLORS.length];
-              const initial = (kid?.name?.trim()?.[0] ?? '?').toUpperCase();
-              return (
-                <Pressable
-                  key={kid.id}
-                  onPress={() => handleOpenChild(kid.id)}
-                  style={({ pressed }) => [
-                    s.childCard,
-                    pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] },
-                  ]}
-                >
-                  <View style={[s.childAvatar, { backgroundColor: color, shadowColor: color }]}>
-                    <Text style={s.childAvatarText}>{initial}</Text>
-                  </View>
-                  <Text style={s.childCardName} numberOfLines={1}>{kid.name}</Text>
-                  <Text style={s.childCardAge}>Age {kid.childAge}</Text>
-                </Pressable>
-              );
-            })}
+            {/* ─── Greeting ─── */}
+            <View style={s.greetingWrap}>
+              <Text style={s.greeting}>{greeting}, {displayName}.</Text>
+              <Text style={s.subGreeting}>What's on your mind?</Text>
+            </View>
 
-            {/* Add child card */}
+            {/* ─── Question input ─── */}
+            <View style={[s.textareaCard, inputFocused && s.textareaFocused]}>
+              <TextInput
+                multiline
+                numberOfLines={4}
+                placeholder="Ask anything about your child — sleep, behavior, big feelings, hard conversations…"
+                placeholderTextColor={C.textMuted}
+                value={question}
+                onChangeText={(t) => { setQuestion(t); if (error) setError(''); }}
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
+                style={s.textarea}
+                textAlignVertical="top"
+                editable={!sending}
+              />
+            </View>
+
+            {error ? <Text style={s.errorText}>{error}</Text> : null}
+
+            {/* ─── Send button ─── */}
             <Pressable
-              onPress={handleAddChild}
+              onPress={handleSend}
+              disabled={!canSend}
               style={({ pressed }) => [
-                s.addCard,
-                pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+                pressed && canSend && { opacity: 0.9, transform: [{ scale: 0.98 }] },
               ]}
             >
-              <View style={s.addAvatar}>
-                <Text style={s.addAvatarText}>+</Text>
+              <View style={[s.sendBtn, !canSend && s.sendBtnDisabled]}>
+                <Text style={[s.sendBtnText, !canSend && { color: C.textMuted }]}>
+                  {sending ? 'Asking Sturdy…' : 'Ask Sturdy'}
+                </Text>
               </View>
-              <Text style={s.addCardText}>Add child</Text>
             </Pressable>
-          </ScrollView>
 
-          {/* ─── Reserved space for Question mode (Phase 2) ─── */}
-          <View style={s.reservedWrap}>
-            <View style={s.reservedCard}>
-              <Text style={s.reservedTitle}>What's on your mind?</Text>
-              <Text style={s.reservedBody}>
-                Soon, you'll be able to ask Sturdy anything about your children — right here.
-              </Text>
-              <View style={s.reservedBadge}>
-                <Text style={s.reservedBadgeText}>Coming soon</Text>
+            {/* ─── 1 child: lite view shows quick link to their hub ─── */}
+            {isSingleChild && onlyChild ? (
+              <Pressable
+                onPress={() => handleOpenChild(onlyChild.id)}
+                style={({ pressed }) => [
+                  s.singleChildCard,
+                  pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] },
+                ]}
+              >
+                <View style={[s.singleChildAvatar, { backgroundColor: CHILD_COLORS[0] }]}>
+                  <Text style={s.singleChildAvatarText}>
+                    {(onlyChild.name?.trim()?.[0] ?? '?').toUpperCase()}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.singleChildName}>Open {onlyChild.name}'s hub</Text>
+                  <Text style={s.singleChildSub}>Saved scripts, history, and SOS</Text>
+                </View>
+                <Text style={s.singleChildArrow}>→</Text>
+              </Pressable>
+            ) : null}
+
+            {/* ─── 2+ children: child selector ─── */}
+            {isMultiChild ? (
+              <View style={s.selectorWrap}>
+                <Text style={s.selectorLabel}>Or open a child's hub</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={s.childRow}
+                >
+                  {kidList.map((kid: any, index: number) => {
+                    const color = CHILD_COLORS[index % CHILD_COLORS.length];
+                    const initial = (kid?.name?.trim()?.[0] ?? '?').toUpperCase();
+                    return (
+                      <Pressable
+                        key={kid.id}
+                        onPress={() => handleOpenChild(kid.id)}
+                        style={({ pressed }) => [
+                          s.childCard,
+                          pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] },
+                        ]}
+                      >
+                        <View style={[s.childAvatar, { backgroundColor: color, shadowColor: color }]}>
+                          <Text style={s.childAvatarText}>{initial}</Text>
+                        </View>
+                        <Text style={s.childCardName} numberOfLines={1}>{kid.name}</Text>
+                        <Text style={s.childCardAge}>Age {kid.childAge}</Text>
+                      </Pressable>
+                    );
+                  })}
+
+                  {/* Add child card */}
+                  <Pressable
+                    onPress={handleAddChild}
+                    style={({ pressed }) => [
+                      s.addCard,
+                      pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+                    ]}
+                  >
+                    <View style={s.addAvatar}>
+                      <Text style={s.addAvatarText}>+</Text>
+                    </View>
+                    <Text style={s.addCardText}>Add child</Text>
+                  </Pressable>
+                </ScrollView>
               </View>
-            </View>
-          </View>
+            ) : null}
 
-          <View style={{ height: 40 }} />
-        </ScrollView>
+            <View style={{ height: 40 }} />
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
   );
@@ -278,7 +376,7 @@ export default function HomeScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.base },
   safe: { flex: 1 },
-  scroll: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 20, gap: 28 },
+  scroll: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 20, gap: 22 },
 
   centerGate: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
@@ -300,10 +398,69 @@ const s = StyleSheet.create({
     letterSpacing: -0.5, lineHeight: 38,
   },
   subGreeting: {
-    fontFamily: F.body, fontSize: 15, color: C.textSub, lineHeight: 22,
+    fontFamily: F.body, fontSize: 16, color: C.textSub, lineHeight: 22,
   },
 
-  // Child row
+  // Question input
+  textareaCard: {
+    backgroundColor: C.cardGlass,
+    borderWidth: 1, borderColor: C.border,
+    borderRadius: 18, overflow: 'hidden',
+  },
+  textareaFocused: { borderColor: 'rgba(129,178,154,0.40)' },
+  textarea: {
+    padding: 16,
+    fontFamily: F.body, fontSize: 16,
+    color: C.text, lineHeight: 24, minHeight: 110,
+  },
+
+  errorText: {
+    fontFamily: F.body, fontSize: 14, color: C.rose, textAlign: 'center',
+  },
+
+  // Send button
+  sendBtn: {
+    borderRadius: 18, minHeight: 56,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: C.rose,
+  },
+  sendBtnDisabled: { backgroundColor: 'rgba(0,0,0,0.06)' },
+  sendBtnText: {
+    fontFamily: F.subheading, fontSize: 17, color: '#FFFFFF', letterSpacing: 0.3,
+  },
+
+  // Single-child lite link card
+  singleChildCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: C.cardGlass,
+    borderWidth: 1, borderColor: C.border,
+  },
+  singleChildAvatar: {
+    width: 48, height: 48, borderRadius: 24,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  singleChildAvatarText: {
+    fontFamily: F.heading, fontSize: 20, color: '#FFFFFF', letterSpacing: -0.3,
+  },
+  singleChildName: {
+    fontFamily: F.bodySemi, fontSize: 15, color: C.text,
+  },
+  singleChildSub: {
+    fontFamily: F.body, fontSize: 13, color: C.textSub,
+  },
+  singleChildArrow: {
+    fontFamily: F.bodySemi, fontSize: 20, color: C.rose,
+  },
+
+  // Multi-child selector
+  selectorWrap: { gap: 10 },
+  selectorLabel: {
+    fontFamily: F.bodyMedium, fontSize: 13, color: C.textMuted, letterSpacing: 0.3,
+  },
   childRow: { gap: 12, paddingRight: 8 },
   childCard: {
     width: 130,
@@ -316,10 +473,8 @@ const s = StyleSheet.create({
   childAvatar: {
     width: 56, height: 56, borderRadius: 28,
     alignItems: 'center', justifyContent: 'center',
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    shadowOpacity: 0.25, shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 }, elevation: 3,
   },
   childAvatarText: {
     fontFamily: F.heading, fontSize: 24, color: '#FFFFFF', letterSpacing: -0.3,
@@ -353,33 +508,7 @@ const s = StyleSheet.create({
     fontFamily: F.bodyMedium, fontSize: 13, color: C.textMuted,
   },
 
-  // Reserved (Question mode placeholder)
-  reservedWrap: { gap: 8 },
-  reservedCard: {
-    padding: 20, gap: 10,
-    borderRadius: 20,
-    backgroundColor: C.cardGlass,
-    borderWidth: 1, borderColor: C.border,
-  },
-  reservedTitle: {
-    fontFamily: F.heading, fontSize: 20, color: C.text, letterSpacing: -0.3,
-  },
-  reservedBody: {
-    fontFamily: F.body, fontSize: 14, color: C.textSub, lineHeight: 21,
-  },
-  reservedBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10, paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: 'rgba(129,178,154,0.15)',
-    borderWidth: 1, borderColor: 'rgba(129,178,154,0.30)',
-    marginTop: 4,
-  },
-  reservedBadgeText: {
-    fontFamily: F.bodyMedium, fontSize: 11, color: C.sage, letterSpacing: 0.3,
-  },
-
-  // Empty state (0 children safety fallback)
+  // Empty state (0 children)
   emptyWrap: {
     flex: 1, paddingHorizontal: 8, gap: 14,
     justifyContent: 'center',

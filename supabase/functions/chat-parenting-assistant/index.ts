@@ -5,10 +5,12 @@ declare const Deno: {
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
-import { buildPrompt }      from "../_shared/buildPrompt.ts";
-import { validateResponse } from "../_shared/validateResponse.ts";
-import { runSafetyFilter }  from "../_shared/safetyFilter.ts";
-import { classifyTrigger }  from "../_shared/triggerClassifier.ts";
+import { buildPrompt }              from "../_shared/buildPrompt.ts";
+import { validateResponse }         from "../_shared/validateResponse.ts";
+import { runSafetyFilter }          from "../_shared/safetyFilter.ts";
+import { classifyTrigger }          from "../_shared/triggerClassifier.ts";
+import { buildQuestionPrompt }      from "../_shared/prompts/question.ts";
+import { validateQuestionResponse } from "../_shared/validateQuestionResponse.ts";
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 const ANTHROPIC_MODEL   = "claude-sonnet-4-20250514";
@@ -58,8 +60,11 @@ function validateInput(body: RequestBody) {
     ? body.originalScript as { situation_summary: string; regulate: string; connect: string; guide: string; }
     : null;
 
-  if (!childName)    throw new Error("childName is required.");
-  if (!Number.isFinite(childAge) || childAge < 2 || childAge > 17) throw new Error("childAge must be between 2 and 17.");
+  // SOS mode requires child context. Question mode does not (auto-detection in Phase 2.5).
+  if (mode !== 'question') {
+    if (!childName)    throw new Error("childName is required.");
+    if (!Number.isFinite(childAge) || childAge < 2 || childAge > 17) throw new Error("childAge must be between 2 and 17.");
+  }
   if (!message)      throw new Error("message is required.");
 
   return { childName, childAge, message, userId, childProfileId, intensity, mode, isFollowUp, followUpType, originalScript };
@@ -125,6 +130,41 @@ async function logInteractionEvent(data: {
   } catch { console.warn("[STURDY_INTERACTION] Failed to log"); }
 }
 
+  async function logParentThought(data: {
+    userId:         string | null;
+    childProfileId: string | null;
+    promptText:     string;
+    responseText:   string;
+  }): Promise<string | null> {
+    if (!SUPABASE_URL || !SUPABASE_KEY || !data.userId) return null;
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/parent_thoughts`, {
+        method: "POST",
+        headers: {
+          "Content-Type":  "application/json",
+          "apikey":        SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+          "Prefer":        "return=representation",
+        },
+        body: JSON.stringify({
+          user_id:          data.userId,
+          child_profile_id: data.childProfileId,
+          prompt_text:      data.promptText,
+          response_text:    data.responseText,
+        }),
+      });
+      if (!res.ok) return null;
+      const rows = await res.json();
+      if (Array.isArray(rows) && rows.length > 0 && typeof rows[0]?.id === "string") {
+        return rows[0].id;
+      }
+      return null;
+    } catch {
+      console.warn("[STURDY_THOUGHT] Failed to log");
+      return null;
+    }
+  }
+
 async function generateScript(prompt: string) {
   if (!ANTHROPIC_API_KEY) throw new Error("Missing ANTHROPIC_API_KEY.");
 
@@ -173,6 +213,53 @@ async function generateScript(prompt: string) {
   }
 }
 
+async function generateQuestionResponse(prompt: string) {
+    if (!ANTHROPIC_API_KEY) throw new Error("Missing ANTHROPIC_API_KEY.");
+
+    const controller = new AbortController();
+    const timeoutId  = setTimeout(() => controller.abort(), 30000);
+
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type":      "application/json",
+          "x-api-key":         ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model:      ANTHROPIC_MODEL,
+          max_tokens: 2048,
+          system:     "You are Sturdy — a warm, knowing parent friend. You answer parenting questions in your own voice. Return strict JSON only. No markdown. No explanation. No preamble.",
+          messages:   [{ role: "user", content: prompt }],
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.text();
+        throw new Error(`Anthropic error: ${response.status} ${err}`);
+      }
+
+      const payload = await response.json();
+      const content = payload?.content?.[0]?.text;
+      if (!content || typeof content !== "string") throw new Error("No content in Claude response.");
+
+      let jsonText = content.trim();
+      if (jsonText.startsWith("```")) {
+        jsonText = jsonText.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+      }
+
+      let parsed: unknown;
+      try { parsed = JSON.parse(jsonText); }
+      catch { throw new Error("Invalid JSON from Claude."); }
+
+      if (!validateQuestionResponse(parsed)) throw new Error("Invalid question response shape.");
+      return parsed;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
 
 // @ts-ignore
 serve(async (req) => {
@@ -192,16 +279,52 @@ serve(async (req) => {
   try { input = validateInput(body); }
   catch (e) { return jsonRes({ error: e instanceof Error ? e.message : "Invalid request." }, 400); }
 
-  // Safety filter — only for SOS mode
-  if (!input.mode || input.mode === 'sos') {
-    const safety = runSafetyFilter(input.message);
-    if (!safety.isSafe) {
-      logSafetyEvent({ userId: input.userId, childProfileId: input.childProfileId, messageExcerpt: input.message, riskLevel: safety.riskLevel, policyRoute: safety.policyRoute, crisisType: safety.crisisType });
-      return jsonRes({ response_type: "crisis", crisis_type: safety.crisisType, risk_level: safety.riskLevel, policy_route: safety.policyRoute }, 200);
-    }
-  }
+// Safety filter — also for question mode (questions can carry crisis content too)
+      if (input.mode === 'question') {
+        const safety = runSafetyFilter(input.message);
+        if (!safety.isSafe) {
+          logSafetyEvent({ userId: input.userId, childProfileId: input.childProfileId, messageExcerpt: input.message, riskLevel: safety.riskLevel, policyRoute: safety.policyRoute, crisisType: safety.crisisType });
+          return jsonRes({ response_type: "crisis", crisis_type: safety.crisisType, risk_level: safety.riskLevel, policy_route: safety.policyRoute }, 200);
+        }
+      }
 
-  try {
+      // ─── Question mode branch ───
+      if (input.mode === 'question') {
+        try {
+          const questionPrompt = buildQuestionPrompt({
+            childName: input.childName || null,
+            childAge:  Number.isFinite(input.childAge) ? input.childAge : null,
+            message:   input.message,
+            parentName: null,
+          });
+
+          const result = await generateQuestionResponse(questionPrompt) as { response: string };
+
+         const thoughtId = await logParentThought({
+            userId:         input.userId,
+            childProfileId: input.childProfileId,
+            promptText:     input.message,
+            responseText:   result.response,
+          });
+
+
+          logUsageEvent({
+            userId:         input.userId,
+            childProfileId: input.childProfileId,
+            eventType:      "question_generated",
+            eventMeta: { child_age: input.childAge, mode: 'question', model: ANTHROPIC_MODEL },
+          });
+
+          return jsonRes({ response_type: "question", response: result.response, thought_id: thoughtId }, 200);
+        } catch (err) {
+          console.error("[STURDY_ERROR]", err);
+          return jsonRes({ error: "Couldn't generate a response right now." }, 500);
+        }
+      }
+
+      try {
+
+
     const prompt = buildPrompt({
       childName:      input.childName,
       childAge:       input.childAge,
