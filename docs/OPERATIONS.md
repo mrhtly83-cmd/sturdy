@@ -36,3 +36,22 @@ created a natural home for Phase 2 Question mode (the reserved card on
 Home), and cleaned up 1,021 lines of legacy code in the process.
 Phase 2 (Question mode + auto-detection of child from message text) is
 the next major build.
+
+## April 2026 — Build process learnings (post-Phase 1)
+**Context:** Phase 1 had ~5 distinct error episodes during build. Reviewed
+all of them to identify root causes and prevent recurrence in Phase 2.
+
+**Decision:** Adopting 7 build rules going forward:
+1. Verify state before write (cat/grep before edit)
+2. One change at a time, test before next
+3. JSX always multi-line, never elements on same line with whitespace
+4. Multi-line handlers extracted to named functions
+5. File delete + reference cleanup happen in same commit
+6. Real device logs beat theorizing for async/routing bugs
+7. Migrations always transactional with documented rollback
+
+**Reasoning:** Every Phase 1 error traced to an assumption that wasn't
+verified. Cost of verification is small (~30 sec per check). Cost of
+each error was 10-90 minutes. The math is obvious.
+
+Added a 12-step pre-flight checklist to follow before each feature.
