@@ -11,24 +11,12 @@ import { runSafetyFilter }          from "../_shared/safetyFilter.ts";
 import { classifyTrigger }          from "../_shared/triggerClassifier.ts";
 import { buildQuestionPrompt }      from "../_shared/prompts/question.ts";
 import { validateQuestionResponse } from "../_shared/validateQuestionResponse.ts";
+import { validateInput, extractContent, type RequestBody } from "../_shared/requestHelpers.ts";
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 const ANTHROPIC_MODEL   = "claude-sonnet-4-20250514";
 const SUPABASE_URL      = Deno.env.get("SUPABASE_URL");
 const SUPABASE_KEY      = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-type RequestBody = {
-  childName?:      unknown;
-  childAge?:       unknown;
-  message?:        unknown;
-  userId?:         unknown;
-  childProfileId?: unknown;
-  intensity?:      unknown;
-  mode?:           unknown;
-  isFollowUp?:     unknown;
-  followUpType?:   unknown;
-  originalScript?: unknown;
-};
 
 function cors() {
   return {
@@ -43,31 +31,6 @@ function jsonRes(body: unknown, status = 200) {
     status,
     headers: { ...cors(), "Content-Type": "application/json" },
   });
-}
-
-function validateInput(body: RequestBody) {
-  const childName      = typeof body.childName === "string" ? body.childName.trim() : "";
-  const childAge       = typeof body.childAge  === "number" ? body.childAge          : Number.NaN;
-  const message        = typeof body.message   === "string" ? body.message.trim()    : "";
-  const userId         = typeof body.userId    === "string" ? body.userId             : null;
-  const childProfileId = typeof body.childProfileId === "string" ? body.childProfileId : null;
-  const intensity      = typeof body.intensity === "number" && body.intensity >= 1 && body.intensity <= 5
-                           ? Math.round(body.intensity) : null;
-  const mode           = typeof body.mode === "string" ? body.mode : null;
-  const isFollowUp     = body.isFollowUp === true;
-  const followUpType   = typeof body.followUpType === "string" ? body.followUpType : null;
-  const originalScript = body.originalScript && typeof body.originalScript === "object"
-    ? body.originalScript as { situation_summary: string; regulate: string; connect: string; guide: string; }
-    : null;
-
-  // SOS mode requires child context. Question mode does not (auto-detection in Phase 2.5).
-  if (mode !== 'question') {
-    if (!childName)    throw new Error("childName is required.");
-    if (!Number.isFinite(childAge) || childAge < 2 || childAge > 17) throw new Error("childAge must be between 2 and 17.");
-  }
-  if (!message)      throw new Error("message is required.");
-
-  return { childName, childAge, message, userId, childProfileId, intensity, mode, isFollowUp, followUpType, originalScript };
 }
 
 async function logSafetyEvent(data: { userId: string | null; childProfileId: string | null; messageExcerpt: string; riskLevel: string; policyRoute: string; crisisType: string | null; }) {
@@ -194,13 +157,7 @@ async function generateScript(prompt: string) {
     }
 
     const payload = await response.json();
-    const content = payload?.content?.[0]?.text;
-    if (!content || typeof content !== "string") throw new Error("No content in Claude response.");
-
-    let jsonText = content.trim();
-    if (jsonText.startsWith("```")) {
-      jsonText = jsonText.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
-    }
+    const jsonText = extractContent(payload);
 
     let parsed: unknown;
     try { parsed = JSON.parse(jsonText); }
@@ -242,13 +199,7 @@ async function generateQuestionResponse(prompt: string) {
       }
 
       const payload = await response.json();
-      const content = payload?.content?.[0]?.text;
-      if (!content || typeof content !== "string") throw new Error("No content in Claude response.");
-
-      let jsonText = content.trim();
-      if (jsonText.startsWith("```")) {
-        jsonText = jsonText.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
-      }
+      const jsonText = extractContent(payload);
 
       let parsed: unknown;
       try { parsed = JSON.parse(jsonText); }
