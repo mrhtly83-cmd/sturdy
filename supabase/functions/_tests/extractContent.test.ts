@@ -10,7 +10,7 @@
 //   - Whitespace trimming
 //   - All error paths (null, non-object, missing content, wrong types)
 
-import { assertEquals, assertThrows } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { assertEquals, assertThrows } from "jsr:@std/assert@1";
 import { extractContent } from "../_shared/requestHelpers.ts";
 
 // ─── Array content shape (production Anthropic Messages API) ───

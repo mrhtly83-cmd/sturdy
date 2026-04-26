@@ -10,7 +10,7 @@
 //   - intensity rounding + range gate (1..5)
 //   - originalScript shape gate
 
-import { assertEquals, assertThrows, assertStrictEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { assertEquals, assertThrows, assertStrictEquals } from "jsr:@std/assert@1";
 import { validateInput } from "../_shared/requestHelpers.ts";
 
 // ─── SOS mode (default) ───────────────────────
