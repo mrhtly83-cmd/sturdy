@@ -76,7 +76,7 @@ function isValidStep(v: unknown): v is ScriptStep {
 }
 
 
-function isValidResponse(v: unknown): v is ParentingScriptResponse {
+export function isParentingScriptResponse(v: unknown): v is ParentingScriptResponse {
   if (!v || typeof v !== 'object') return false;
   const c = v as Record<string, unknown>;
   return (
@@ -150,7 +150,7 @@ export async function getParentingScript(
   }
 
 
-  if (!isValidResponse(data)) {
+  if (!isParentingScriptResponse(data)) {
     console.log('[API] Validation failed:', JSON.stringify(data).slice(0, 300));
     throw new Error('invalid-response');
   }

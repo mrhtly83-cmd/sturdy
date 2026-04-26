@@ -14,7 +14,7 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function normalizeAuthError(message: string) {
+export function normalizeAuthError(message: string) {
   if (message.toLowerCase().includes('invalid login credentials')) {
     return 'That email or password did not match. Please try again.';
   }

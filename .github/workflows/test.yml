@@ -1,0 +1,66 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  deno-tests:
+    name: Deno (Edge Function unit tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Show Deno version
+        run: deno --version
+
+      - name: List test files (sanity)
+        run: ls -la supabase/functions/_tests/
+
+      - name: Cache test imports (surface import errors clearly)
+        run: deno cache --reload supabase/functions/_tests/*.ts
+
+      - name: Run Deno tests (verbose, log-capturing)
+        run: |
+          set -o pipefail
+          deno test --reporter=pretty supabase/functions/_tests/ 2>&1 | tee /tmp/deno-out.txt || EXITCODE=$?
+          echo "---"
+          echo "deno test exit: ${EXITCODE:-0}"
+          # If the run failed, surface the last 60 lines as a GitHub error
+          # annotation so the failure reason is visible without log access.
+          if [ "${EXITCODE:-0}" != "0" ]; then
+            echo "::group::Last 60 lines of deno output"
+            tail -n 60 /tmp/deno-out.txt
+            echo "::endgroup::"
+            echo "::error::Deno test failed with exit ${EXITCODE}. See log above."
+            exit "${EXITCODE}"
+          fi
+
+  mobile-tests:
+    name: Mobile (Jest unit tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Jest
+        run: npm test -- --ci
