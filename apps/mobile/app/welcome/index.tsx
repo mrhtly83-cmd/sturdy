@@ -50,14 +50,14 @@ const HORIZON_PHOTO = require('../../assets/images/welcome/welcome-horizon.jpg')
 
 const FEATURES = [
   {
-    badge:       'In the moment',
+    badge:       'When chaos hits',
     badgeBg:     'rgba(232,116,97,0.22)',
     badgeColor:  '#FFA294',
-    titlePre:    'Know ',
-    titleAccent: 'what to say',
-    titlePost:   '\nin seconds.',
+    titlePre:    'The right words.',
+    titleAccent: '',
+    titlePost:   '\nIn seconds.',
     accentColor: '#FFA294',
-    desc:        'Describe a hard moment. Get calm, age-specific words you can actually say out loud.',
+    desc:        'Describe the moment. Get calm, age-specific words you can say out loud — before it escalates.',
     items: [
       { icon: '⚡', text: 'Scripts in under 5 seconds' },
       { icon: '🎯', text: "Adapted to your child's exact age" },
@@ -65,37 +65,36 @@ const FEATURES = [
     ],
   },
   {
-    badge:       'Thinking partner',
+    badge:       'When you need to think',
     badgeBg:     'rgba(106,146,188,0.24)',
     badgeColor:  '#A8C4E2',
-    titlePre:    'Ask ',
-    titleAccent: 'anything.',
-    titlePost:   '\nGet a real answer.',
+    titlePre:    'Ask the question',
+    titleAccent: '',
+    titlePost:   "\nyou can't ask anyone.",
     accentColor: '#A8C4E2',
-    desc:        'Why are they doing this? Is it normal? How do I handle it? Sturdy answers in plain words.',
+    desc:        'Why is this happening? Is it normal? What do I do next? Sturdy answers — no judgment, no jargon.',
     items: [
-      { icon: '🎙️', text: 'No therapy speak. No textbook tone.' },
-      { icon: '📌', text: 'Save thoughts to revisit later' },
+      { icon: '🎙️', text: 'No therapy speak. No lectures.' },
+      { icon: '📌', text: 'Saves your thoughts for later' },
       { icon: '✨', text: "Knows which child you're asking about" },
     ],
   },
   {
-    badge:       'Built on what works',
+    badge:       'Always specific',
     badgeBg:     'rgba(212,148,74,0.24)',
     badgeColor:  '#E8A855',
-    titlePre:    'The voice of ',
-    titleAccent: '12 books',
-    titlePost:   '\nin one calm friend.',
+    titlePre:    'Built around',
+    titleAccent: '',
+    titlePost:   '\nyour child.',
     accentColor: '#E8A855',
-    desc:        "Every response draws from the world's best parenting research — but speaks in a real voice.",
+    desc:        "Every script, every answer shaped by their exact age and what you actually described. Never generic.",
     items: [
-      { icon: '📕', text: 'The Whole-Brain Child · Good Inside' },
-      { icon: '📗', text: 'No-Drama Discipline · How to Talk' },
-      { icon: '📘', text: 'The Explosive Child + 8 more' },
+      { icon: '👶', text: 'Exact age, every time' },
+      { icon: '📖', text: 'Reads what you share' },
+      { icon: '📈', text: 'Adapts as things escalate' },
     ],
   },
 ];
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function WelcomeScreen() {
@@ -263,8 +262,8 @@ export default function WelcomeScreen() {
 
             <Text style={s.splashName}>Sturdy</Text>
             <Text style={s.splashTagline}>
-              For the hours that matter most.
-            </Text>
+  The bridge between chaos and calm.
+</Text>
           </Animated.View>
         </View>
 
@@ -395,20 +394,20 @@ export default function WelcomeScreen() {
 
               {/* Headline */}
               <Text style={s.finalTitle}>
-                {'For the hours that\n'}
-                <Text style={s.finalAccent}>matter most.</Text>
-              </Text>
+  {'From chaos.\n'}
+  <Text style={s.finalAccent}>To calm.</Text>
+</Text>
 
-              <Text style={s.finalSub}>
-                Join parents who don't want to do this alone.
-              </Text>
+<Text style={s.finalSub}>
+  The two things every parent needs — exactly when you need them.
+</Text>
 
               {/* Feature list */}
               <View style={s.finalFeats}>
                 {[
-                  { icon: '🧘', title: 'In the moment scripts',      sub: 'Free · Always' },
-                  { icon: '💭', title: 'Ask Sturdy anything',         sub: 'Free · Always' },
-                  { icon: '📚', title: 'Voice of 12 parenting books', sub: 'Free · Always' },
+                 { icon: '⚡', title: 'Hard moment scripts',   sub: 'Free · Always' },
+{ icon: '💭', title: 'Ask Sturdy anything',   sub: 'Free · Always' },
+{ icon: '👶', title: 'Adapts to your child',  sub: 'Free · Always' },
                 ].map((f, i) => (
                   <View key={i} style={s.finalFeat}>
                     <Text style={s.finalFeatIcon}>{f.icon}</Text>
