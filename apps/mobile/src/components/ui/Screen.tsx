@@ -1,6 +1,7 @@
 // src/components/ui/Screen.tsx
-// v5 — Clean dark base, no gradient, no stars
-
+// v5 — Warm dark gradient base. Children render over a LinearGradient
+// from colors.gradientTop → colors.gradientBottom (warm charcoal, NOT
+// the old plum night sky and NOT the cream linen).
 
 import { PropsWithChildren, ReactNode } from 'react';
 import {
@@ -10,17 +11,16 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
-
 
 type ScreenProps = PropsWithChildren<{
   footer?: ReactNode;
   scrollable?: boolean;
   edges?: Edge[];
 }>;
-
 
 export function Screen({
   children,
@@ -41,9 +41,12 @@ export function Screen({
     <View style={styles.fixed}>{children}</View>
   );
 
-
   return (
     <View style={styles.root}>
+      <LinearGradient
+        colors={[colors.gradientTop, colors.gradientBottom]}
+        style={StyleSheet.absoluteFillObject}
+      />
       <SafeAreaView edges={edges} style={styles.safe}>
         <StatusBar style="light" />
         <KeyboardAvoidingView
@@ -58,11 +61,10 @@ export function Screen({
   );
 }
 
-
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.base,
+    backgroundColor: colors.background,
   },
   safe: {
     flex: 1,
@@ -86,6 +88,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 16,
-    backgroundColor: colors.base,
+    backgroundColor: 'transparent',
   },
 });
