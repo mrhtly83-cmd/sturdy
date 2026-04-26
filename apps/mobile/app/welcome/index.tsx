@@ -1,704 +1,823 @@
 // app/welcome/index.tsx
-// v12 — Unified welcome flow
-// Journal design system: pastel gradient + Manrope + rose accent
-// Flow: Animated splash (S0) → 4 feature slides (S1-S4) → Final CTA (S5)
-// Auto-advance with progress bar + Skip + tap nav
-
+// v12 — Native photo identity welcome flow
+//
+// 5 screens: splash → 3 feature slides → final CTA
+// Native patterns:
+//   - Paged horizontal ScrollView (real swipe)
+//   - BlurView glass cards anchored to bottom edge
+//   - LinearGradient photo dim overlays
+//   - Spring card entrance animation (Animated API)
+//   - Page dots (not progress bar)
+//   - Plain text Skip (not pill button)
+//   - Haptics on every interaction
+//
+// Auth wiring preserved from v11:
+//   - Session check → redirect to tabs
+//   - GUEST_SEEN_KEY in AsyncStorage
+//   - Get started → /child-setup
+//   - Try without account → guest flag → tabs
+//   - Sign in → /auth/sign-in
 
 import { useEffect, useRef, useState } from 'react';
 import {
- Dimensions,
- Image,
- Pressable,
- StyleSheet,
- Text,
- View,
+  Animated,
+  Dimensions,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
-import { router } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
-import Animated, {
- useSharedValue,
- useAnimatedStyle,
- withTiming,
- withSpring,
- withDelay,
- withRepeat,
- withSequence,
- Easing,
-} from 'react-native-reanimated';
-import { colors as C, fonts as F } from '../../src/theme';
+import { router }          from 'expo-router';
+import { StatusBar }       from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient }  from 'expo-linear-gradient';
+import { BlurView }        from 'expo-blur';
+import * as Haptics        from 'expo-haptics';
+import AsyncStorage        from '@react-native-async-storage/async-storage';
+import { useAuth }         from '../../src/context/AuthContext';
+import { colors as C, fonts as F } from '../../src/theme/colors';
 
+const { width: W, height: H } = Dimensions.get('window');
+const GUEST_SEEN_KEY = 'sturdy_guest_seen_v1';
 
-const { width: SW } = Dimensions.get('window');
+// Static requires — resolved at build time, images must exist before running
+const FAMILY_PHOTO  = require('../../assets/images/welcome/welcome-family.jpg');
+const HORIZON_PHOTO = require('../../assets/images/welcome/welcome-horizon.jpg');
 
+// ─── Feature slide data ───────────────────────────────────────────────────────
 
-// ═══════════════════════════════════════════════
-// TIMING
-// ═══════════════════════════════════════════════
-
-
-const SPLASH_AUTO = 3500; // Screen 0 shows for 3.5s total (2.9s reveal + 0.6s settle)
-const SLIDE_AUTO  = 4000; // Screens 1-4 show for 4s each
-const TOTAL_SCREENS = 6;  // 0..5
-
-
-const EASE_OUT = Easing.bezier(0.25, 0.1, 0.25, 1);
-
-
-// ═══════════════════════════════════════════════
-// FEATURE SLIDE DATA
-// ═══════════════════════════════════════════════
-
-
-const SLIDES = [
- {
-   emoji: '🧘',
-   badge: 'IN THE MOMENT',
-   titleParts: ['Know ', 'what to say', '\nin seconds'],
-   desc: 'Describe the moment. Get calm, age-specific words you can say out loud.',
-   items: [
-     { icon: '⚡', text: 'Scripts in under 5 seconds' },
-     { icon: '🎯', text: "Adapted to your child's exact age" },
-     { icon: '🧩', text: 'Neurotype-aware (ADHD, Autism, PDA)' },
-   ],
- },
- {
-   emoji: '📊',
-   badge: 'UNDERSTAND',
-   titleParts: ['See ', 'patterns', '\nover time'],
-   desc: 'Track what triggers your child and what works — break the cycle.',
-   items: [
-     { icon: '📈', text: 'Weekly behavior insights' },
-     { icon: '📋', text: 'Downloadable progress reports' },
-     { icon: '💡', text: 'AI-powered "what works" analysis' },
-   ],
- },
- {
-   emoji: '👥',
-   badge: 'TOGETHER',
-   titleParts: ['Parent ', 'together', ',\neven apart'],
-   desc: 'Share scripts, sync profiles, stay on the same page with your co-parent.',
-   items: [
-     { icon: '🔗', text: 'Shared child profiles' },
-     { icon: '📤', text: 'Send scripts to your partner' },
-     { icon: '📖', text: 'Shared script library & journal' },
-   ],
- },
- {
-   emoji: '🔬',
-   badge: 'SCIENCE-BACKED',
-   titleParts: ['', 'Backed', ' by\nscience.'],
-   desc: "Every script draws from the world's best parenting research.",
-   items: [
-     { icon: '🧠', text: 'Developmental psychology' },
-     { icon: '💛', text: 'Attachment science' },
-     { icon: '🛡️', text: 'Trauma-informed practice' },
-   ],
- },
+const FEATURES = [
+  {
+    badge:       'In the moment',
+    badgeBg:     'rgba(232,116,97,0.22)',
+    badgeColor:  '#FFA294',
+    titlePre:    'Know ',
+    titleAccent: 'what to say',
+    titlePost:   '\nin seconds.',
+    accentColor: '#FFA294',
+    desc:        'Describe a hard moment. Get calm, age-specific words you can actually say out loud.',
+    items: [
+      { icon: '⚡', text: 'Scripts in under 5 seconds' },
+      { icon: '🎯', text: "Adapted to your child's exact age" },
+      { icon: '🧩', text: 'Aware of ADHD, autism, anxiety' },
+    ],
+  },
+  {
+    badge:       'Thinking partner',
+    badgeBg:     'rgba(106,146,188,0.24)',
+    badgeColor:  '#A8C4E2',
+    titlePre:    'Ask ',
+    titleAccent: 'anything.',
+    titlePost:   '\nGet a real answer.',
+    accentColor: '#A8C4E2',
+    desc:        'Why are they doing this? Is it normal? How do I handle it? Sturdy answers in plain words.',
+    items: [
+      { icon: '🎙️', text: 'No therapy speak. No textbook tone.' },
+      { icon: '📌', text: 'Save thoughts to revisit later' },
+      { icon: '✨', text: "Knows which child you're asking about" },
+    ],
+  },
+  {
+    badge:       'Built on what works',
+    badgeBg:     'rgba(212,148,74,0.24)',
+    badgeColor:  '#E8A855',
+    titlePre:    'The voice of ',
+    titleAccent: '12 books',
+    titlePost:   '\nin one calm friend.',
+    accentColor: '#E8A855',
+    desc:        "Every response draws from the world's best parenting research — but speaks in a real voice.",
+    items: [
+      { icon: '📕', text: 'The Whole-Brain Child · Good Inside' },
+      { icon: '📗', text: 'No-Drama Discipline · How to Talk' },
+      { icon: '📘', text: 'The Explosive Child + 8 more' },
+    ],
+  },
 ];
 
-
-// ═══════════════════════════════════════════════
-// SCREEN
-// ═══════════════════════════════════════════════
-
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function WelcomeScreen() {
- const [current, setCurrent] = useState(0);
- const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-
- // Splash animations (Screen 0)
- const gradientOpacity = useSharedValue(0);
- const blob1 = useSharedValue(0);
- const blob2 = useSharedValue(0);
- const logoScale = useSharedValue(0.6);
- const logoOpacity = useSharedValue(0);
- const logoBreathe = useSharedValue(1);
- const wordmarkT = useSharedValue(14);
- const wordmarkO = useSharedValue(0);
- const dot1 = useSharedValue(0);
- const dot2 = useSharedValue(0);
- const dot3 = useSharedValue(0);
- const taglineT = useSharedValue(14);
- const taglineO = useSharedValue(0);
-
-
- // Screen transition fade
- const sceneOpacity = useSharedValue(1);
-
-
- // Feature slide entrance (shared — re-runs on screen change)
- const slideT = useSharedValue(16);
- const slideO = useSharedValue(0);
-
-
- // Progress bar fill (animated per active segment)
- const progFill = useSharedValue(0);
-
-
- // ───── Initial splash animation ─────
- useEffect(() => {
-   gradientOpacity.value = withTiming(1, { duration: 1600, easing: EASE_OUT });
-   blob1.value = withDelay(400, withTiming(1, { duration: 2400, easing: EASE_OUT }));
-   blob2.value = withDelay(400, withTiming(1, { duration: 2400, easing: EASE_OUT }));
-
-
-   logoOpacity.value = withDelay(300, withTiming(1, { duration: 300 }));
-   logoScale.value = withDelay(
-     300,
-     withSpring(1, { damping: 8, stiffness: 100, mass: 0.8 })
-   );
-   logoBreathe.value = withDelay(
-     1500,
-     withRepeat(
-       withSequence(
-         withTiming(1.03, { duration: 2000, easing: EASE_OUT }),
-         withTiming(1, { duration: 2000, easing: EASE_OUT })
-       ),
-       -1,
-       false
-     )
-   );
-
-
-   wordmarkO.value = withDelay(900, withTiming(1, { duration: 650, easing: EASE_OUT }));
-   wordmarkT.value = withDelay(900, withTiming(0, { duration: 650, easing: EASE_OUT }));
-
-
-   dot1.value = withDelay(1400, withTiming(1, { duration: 400, easing: EASE_OUT }));
-   dot2.value = withDelay(1550, withTiming(1, { duration: 400, easing: EASE_OUT }));
-   dot3.value = withDelay(1700, withTiming(1, { duration: 400, easing: EASE_OUT }));
-
-
-   taglineO.value = withDelay(2000, withTiming(1, { duration: 650, easing: EASE_OUT }));
-   taglineT.value = withDelay(2000, withTiming(0, { duration: 650, easing: EASE_OUT }));
- }, []);
-
-
- // ───── Auto-advance + slide entrance ─────
- useEffect(() => {
-   if (current > 0 && current <= 4) {
-     // Re-run the slide entrance animation
-     slideO.value = 0;
-     slideT.value = 16;
-     slideO.value = withTiming(1, { duration: 500, easing: EASE_OUT });
-     slideT.value = withTiming(0, { duration: 500, easing: EASE_OUT });
-   }
-
-
-   // Progress bar: animate the active segment filling
-   if (current > 0 && current <= 4) {
-     progFill.value = 0;
-     progFill.value = withTiming(1, { duration: SLIDE_AUTO, easing: Easing.linear });
-   }
-
-
-   // Schedule auto-advance
-   if (autoTimer.current) clearTimeout(autoTimer.current);
-   if (current < 5) {
-     const delay = current === 0 ? SPLASH_AUTO : SLIDE_AUTO;
-     autoTimer.current = setTimeout(() => goTo(current + 1), delay);
-   }
-
-
-   return () => {
-     if (autoTimer.current) clearTimeout(autoTimer.current);
-   };
- }, [current]);
-
-
- // ───── Navigation ─────
-
-
- const goTo = (idx: number) => {
-   if (idx < 0 || idx >= TOTAL_SCREENS) return;
-   if (autoTimer.current) clearTimeout(autoTimer.current);
-   // Quick scene fade
-   sceneOpacity.value = withTiming(0, { duration: 200, easing: EASE_OUT }, () => {
-     sceneOpacity.value = withTiming(1, { duration: 300, easing: EASE_OUT });
-   });
-   setTimeout(() => setCurrent(idx), 200);
- };
-
-
- const next = () => {
-   Haptics.selectionAsync();
-   if (current < 5) goTo(current + 1);
- };
- const prev = () => {
-   Haptics.selectionAsync();
-   if (current > 0) goTo(current - 1);
- };
- const skip = () => {
-   Haptics.selectionAsync();
-   goTo(5);
- };
-
-
- const handleGetStarted = () => {
-   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-   router.push('/auth/sign-up');
- };
- const handleSignIn = () => {
-   Haptics.selectionAsync();
-   router.push('/auth/sign-in');
- };
-
-
- // ───── Animated styles ─────
-
-
- const gradientStyle = useAnimatedStyle(() => ({ opacity: gradientOpacity.value }));
- const blob1Style = useAnimatedStyle(() => ({
-   opacity: blob1.value,
-   transform: [{ scale: 0.9 + blob1.value * 0.1 }],
- }));
- const blob2Style = useAnimatedStyle(() => ({
-   opacity: blob2.value,
-   transform: [{ scale: 0.9 + blob2.value * 0.1 }],
- }));
-
-
- const logoStyle = useAnimatedStyle(() => ({
-   opacity: logoOpacity.value,
-   transform: [{ scale: logoScale.value * logoBreathe.value }],
- }));
- const wordmarkStyle = useAnimatedStyle(() => ({
-   opacity: wordmarkO.value,
-   transform: [{ translateY: wordmarkT.value }],
- }));
- const taglineStyle = useAnimatedStyle(() => ({
-   opacity: taglineO.value,
-   transform: [{ translateY: taglineT.value }],
- }));
- const dot1Style = useAnimatedStyle(() => ({ opacity: dot1.value, transform: [{ scale: dot1.value }] }));
- const dot2Style = useAnimatedStyle(() => ({ opacity: dot2.value, transform: [{ scale: dot2.value }] }));
- const dot3Style = useAnimatedStyle(() => ({ opacity: dot3.value, transform: [{ scale: dot3.value }] }));
-
-
- const sceneStyle = useAnimatedStyle(() => ({ opacity: sceneOpacity.value }));
- const slideStyle = useAnimatedStyle(() => ({
-   opacity: slideO.value,
-   transform: [{ translateY: slideT.value }],
- }));
-
-
- const activeProgFillStyle = useAnimatedStyle(() => ({ width: `${progFill.value * 100}%` }));
-
-
- // ───── Render ─────
-
-
- const showChrome = current >= 1 && current <= 4;
- const slideData = current >= 1 && current <= 4 ? SLIDES[current - 1] : null;
-
-
- return (
-   <View style={s.root}>
-     <StatusBar style="dark" />
-
-
-     {/* Base cream */}
-     <View style={s.baseBg} />
-
-
-     {/* Pastel gradient — fades in on mount, persists */}
-     <Animated.View style={[StyleSheet.absoluteFill, gradientStyle]}>
-       <LinearGradient
-         colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]}
-         start={{ x: 0, y: 0 }}
-         end={{ x: 1, y: 1 }}
-         style={StyleSheet.absoluteFill}
-       />
-     </Animated.View>
-
-
-     {/* Decorative blobs */}
-     <Animated.View style={[s.blob, s.blob1, blob1Style]} />
-     <Animated.View style={[s.blob, s.blob2, blob2Style]} />
-
-
-     <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
-       {/* ─── Progress bar + Skip (screens 1-4) ─── */}
-       {showChrome && (
-         <View style={s.chrome}>
-           <View style={s.progressRow}>
-             {[0, 1, 2, 3, 4].map((i) => (
-               <View key={i} style={s.progSeg}>
-                 {i < current - 1 && <View style={[s.progFill, { width: '100%' }]} />}
-                 {i === current - 1 && (
-                   <Animated.View style={[s.progFill, activeProgFillStyle]} />
-                 )}
-               </View>
-             ))}
-           </View>
-           <Pressable onPress={skip} hitSlop={12} style={s.skipBtn}>
-             <Text style={s.skipText}>Skip</Text>
-           </Pressable>
-         </View>
-       )}
-
-
-       {/* ─── Scene ─── */}
-       <Animated.View style={[s.scene, sceneStyle]}>
-         {/* Screen 0 — Splash */}
-         {current === 0 && (
-           <View style={s.splashContent}>
-             <Animated.View style={[s.logoWrap, logoStyle]}>
-               <Image
-                 source={require('../../assets/logo.png')}
-                 style={s.logoImg}
-                 resizeMode="contain"
-               />
-             </Animated.View>
-
-
-             <Animated.Text style={[s.wordmark, wordmarkStyle]}>Sturdy</Animated.Text>
-
-
-             <View style={s.dotsRow}>
-               <Animated.View style={[s.dot, dot1Style]} />
-               <Animated.View style={[s.dot, dot2Style]} />
-               <Animated.View style={[s.dot, dot3Style]} />
-             </View>
-
-
-             <Animated.Text style={[s.tagline, taglineStyle]}>
-               Know what to say{'\n'}in hard moments.
-             </Animated.Text>
-           </View>
-         )}
-
-
-         {/* Screens 1-4 — Feature slides */}
-         {slideData && (
-           <Animated.View style={[s.featContent, slideStyle]}>
-             <View style={s.featImage}>
-               <Text style={s.featImageEmoji}>{slideData.emoji}</Text>
-             </View>
-
-
-             <View style={s.featBadge}>
-               <Text style={s.featBadgeText}>{slideData.badge}</Text>
-             </View>
-
-
-             <Text style={s.featTitle}>
-               {slideData.titleParts[0]}
-               <Text style={s.accent}>{slideData.titleParts[1]}</Text>
-               {slideData.titleParts[2]}
-             </Text>
-
-
-             <Text style={s.featDesc}>{slideData.desc}</Text>
-
-
-             <View style={s.featList}>
-               {slideData.items.map((item, i) => (
-                 <View key={i} style={s.featItem}>
-                   <Text style={s.featItemIcon}>{item.icon}</Text>
-                   <Text style={s.featItemText}>{item.text}</Text>
-                 </View>
-               ))}
-             </View>
-           </Animated.View>
-         )}
-
-
-         {/* Screen 5 — Final CTA */}
-         {current === 5 && (
-           <View style={s.finalContent}>
-             <Image
-               source={require('../../assets/logo.png')}
-               style={s.finalLogo}
-               resizeMode="contain"
-             />
-
-
-             <Text style={s.finalTitle}>
-               Ready to parent{'\n'}with <Text style={s.accent}>confidence</Text>?
-             </Text>
-
-
-             <Text style={s.finalSub}>
-               Join thousands of parents who respond better in hard moments.
-             </Text>
-
-
-             <Pressable
-               onPress={handleGetStarted}
-               style={({ pressed }) => [
-                 s.cta,
-                 pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] },
-               ]}
-             >
-               <Text style={s.ctaText}>Get started — free</Text>
-             </Pressable>
-
-
-             <Pressable onPress={handleSignIn} hitSlop={12}>
-               <Text style={s.signIn}>Already have an account? Sign in</Text>
-             </Pressable>
-
-
-             <Text style={s.micro}>Your data stays private · Free forever for SOS</Text>
-           </View>
-         )}
-       </Animated.View>
-
-
-       {/* ─── Tap zones (screens 0-4 only) ─── */}
-       {current < 5 && (
-         <>
-           <Pressable style={s.tapLeft} onPress={prev} />
-           <Pressable style={s.tapRight} onPress={next} />
-         </>
-       )}
-     </SafeAreaView>
-   </View>
- );
+  const { session }  = useAuth();
+  const insets       = useSafeAreaInsets();
+  const scrollRef    = useRef<ScrollView>(null);
+  const [page, setPage] = useState(0);
+
+  // Splash fade-in
+  const splashOpacity = useRef(new Animated.Value(0)).current;
+
+  // Card spring entrance (shared, reset per page)
+  const cardY       = useRef(new Animated.Value(40)).current;
+  const cardOpacity = useRef(new Animated.Value(0)).current;
+
+  // ─── Effects ───────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (session) {
+      router.replace('/(tabs)');
+      return;
+    }
+
+    // Fade in splash branding
+    Animated.timing(splashOpacity, {
+      toValue:         1,
+      duration:        700,
+      useNativeDriver: true,
+    }).start();
+
+    // Auto-advance to first feature slide after 3s
+    const timer = setTimeout(() => {
+      goToPage(1);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [session]);
+
+  // Animate card in whenever page changes to a non-splash screen
+  useEffect(() => {
+    if (page === 0) return;
+    cardY.setValue(40);
+    cardOpacity.setValue(0);
+    Animated.parallel([
+      Animated.spring(cardY, {
+        toValue:         0,
+        damping:         22,
+        stiffness:       180,
+        useNativeDriver: true,
+      }),
+      Animated.timing(cardOpacity, {
+        toValue:         1,
+        duration:        350,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [page]);
+
+  // ─── Handlers ──────────────────────────────────────────────────────────────
+
+  const goToPage = (index: number) => {
+    scrollRef.current?.scrollTo({ x: W * index, animated: true });
+    setPage(index);
+  };
+
+  const onMomentumScrollEnd = (e: any) => {
+    const newPage = Math.round(e.nativeEvent.contentOffset.x / W);
+    if (newPage !== page) {
+      setPage(newPage);
+    }
+  };
+
+  const handleSkip = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await AsyncStorage.setItem(GUEST_SEEN_KEY, 'true');
+    router.replace('/(tabs)');
+  };
+
+  const handleGetStarted = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/child-setup');
+  };
+
+  const handleTryWithout = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await AsyncStorage.setItem(GUEST_SEEN_KEY, 'true');
+    router.replace('/(tabs)');
+  };
+
+  const handleSignIn = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/auth/sign-in');
+  };
+
+  // ─── Shared animated card style ────────────────────────────────────────────
+
+  const cardAnimStyle = {
+    opacity:   cardOpacity,
+    transform: [{ translateY: cardY }],
+  };
+
+  // ─── Render ────────────────────────────────────────────────────────────────
+
+  return (
+    <View style={s.root}>
+      <StatusBar style="light" />
+
+      {/* Skip — plain text, top-right, only on feature slides */}
+      {page >= 1 && page <= 3 && (
+        <Pressable
+          style={[s.skipBtn, { top: insets.top + 16 }]}
+          onPress={handleSkip}
+          hitSlop={12}
+        >
+          <Text style={s.skipText}>Skip</Text>
+        </Pressable>
+      )}
+
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+      >
+        {/* ══════════════════════════════════════════
+            PAGE 0 — SPLASH
+            Logo at top, family photo full-bleed
+            Family figures visible in lower portion
+            ══════════════════════════════════════════ */}
+        <View style={s.page}>
+          <Image
+            source={FAMILY_PHOTO}
+            style={s.photoBg}
+            resizeMode="cover"
+          />
+          <LinearGradient
+            colors={[
+              'rgba(15,10,18,0.52)',
+              'rgba(15,10,18,0.18)',
+              'rgba(15,10,18,0.04)',
+              'rgba(15,10,18,0.22)',
+            ]}
+            locations={[0, 0.28, 0.60, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+
+          {/* Branding anchored to top */}
+          <Animated.View
+            style={[
+              s.splashContent,
+              { paddingTop: insets.top + 70 },
+              { opacity: splashOpacity },
+            ]}
+          >
+            <LinearGradient
+              colors={['#D4944A', '#E87461']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={s.logoBox}
+            >
+              <Text style={s.logoLetter}>S</Text>
+            </LinearGradient>
+
+            <Text style={s.splashName}>Sturdy</Text>
+            <Text style={s.splashTagline}>
+              For the hours that matter most.
+            </Text>
+          </Animated.View>
+        </View>
+
+        {/* ══════════════════════════════════════════
+            PAGES 1-3 — FEATURE SLIDES
+            Horizon photo background
+            BlurView glass card anchored to bottom
+            ══════════════════════════════════════════ */}
+        {FEATURES.map((feat, i) => {
+          const slideIndex = i + 1;
+          return (
+            <View key={i} style={s.page}>
+              <Image
+                source={HORIZON_PHOTO}
+                style={s.photoBg}
+                resizeMode="cover"
+              />
+              <LinearGradient
+                colors={[
+                  'rgba(15,10,18,0.25)',
+                  'rgba(15,10,18,0.20)',
+                  'rgba(15,10,18,0.62)',
+                ]}
+                locations={[0, 0.40, 1]}
+                style={StyleSheet.absoluteFill}
+              />
+
+              {/* Page dots */}
+              <View style={[s.dotsRow, { top: insets.top + 20 }]}>
+                {FEATURES.map((_, di) => (
+                  <View
+                    key={di}
+                    style={[s.dot, di === i && s.dotActive]}
+                  />
+                ))}
+              </View>
+
+              {/* Glass card — bottom anchored */}
+              <Animated.View
+                style={[
+                  s.cardWrap,
+                  { paddingBottom: insets.bottom + 36 },
+                  page === slideIndex ? cardAnimStyle : null,
+                ]}
+              >
+                <BlurView
+                  intensity={50}
+                  tint="dark"
+                  style={s.card}
+                >
+                  {/* Badge */}
+                  <View style={[s.badge, { backgroundColor: feat.badgeBg }]}>
+                    <Text style={[s.badgeText, { color: feat.badgeColor }]}>
+                      {feat.badge.toUpperCase()}
+                    </Text>
+                  </View>
+
+                  {/* Title */}
+                  <Text style={s.featTitle}>
+                    {feat.titlePre}
+                    <Text style={[s.featAccent, { color: feat.accentColor }]}>
+                      {feat.titleAccent}
+                    </Text>
+                    {feat.titlePost}
+                  </Text>
+
+                  {/* Description */}
+                  <Text style={s.featDesc}>{feat.desc}</Text>
+
+                  {/* Feature list */}
+                  <View style={s.itemList}>
+                    {feat.items.map((item, ii) => (
+                      <View key={ii} style={s.item}>
+                        <Text style={s.itemIcon}>{item.icon}</Text>
+                        <Text style={s.itemText}>{item.text}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </BlurView>
+              </Animated.View>
+            </View>
+          );
+        })}
+
+        {/* ══════════════════════════════════════════
+            PAGE 4 — FINAL CTA
+            Family photo returns (bookend)
+            BlurView card with buttons
+            ══════════════════════════════════════════ */}
+        <View style={s.page}>
+          <Image
+            source={FAMILY_PHOTO}
+            style={s.photoBg}
+            resizeMode="cover"
+          />
+          <LinearGradient
+            colors={[
+              'rgba(15,10,18,0.22)',
+              'rgba(15,10,18,0.30)',
+              'rgba(15,10,18,0.72)',
+            ]}
+            locations={[0, 0.30, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+
+          {/* Glass CTA card — bottom anchored */}
+          <Animated.View
+            style={[
+              s.cardWrap,
+              { paddingBottom: insets.bottom + 36 },
+              page === 4 ? cardAnimStyle : null,
+            ]}
+          >
+            <BlurView
+              intensity={50}
+              tint="dark"
+              style={[s.card, s.finalCard]}
+            >
+              {/* Logo */}
+              <LinearGradient
+                colors={['#D4944A', '#E87461']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={s.finalLogoBox}
+              >
+                <Text style={s.finalLogoLetter}>S</Text>
+              </LinearGradient>
+
+              {/* Headline */}
+              <Text style={s.finalTitle}>
+                {'For the hours that\n'}
+                <Text style={s.finalAccent}>matter most.</Text>
+              </Text>
+
+              <Text style={s.finalSub}>
+                Join parents who don't want to do this alone.
+              </Text>
+
+              {/* Feature list */}
+              <View style={s.finalFeats}>
+                {[
+                  { icon: '🧘', title: 'In the moment scripts',      sub: 'Free · Always' },
+                  { icon: '💭', title: 'Ask Sturdy anything',         sub: 'Free · Always' },
+                  { icon: '📚', title: 'Voice of 12 parenting books', sub: 'Free · Always' },
+                ].map((f, i) => (
+                  <View key={i} style={s.finalFeat}>
+                    <Text style={s.finalFeatIcon}>{f.icon}</Text>
+                    <View style={s.finalFeatInfo}>
+                      <Text style={s.finalFeatTitle}>{f.title}</Text>
+                      <Text style={s.finalFeatSub}>{f.sub}</Text>
+                    </View>
+                    <Text style={s.check}>✓</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Get started */}
+              <Pressable
+                onPress={handleGetStarted}
+                style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1, width: '100%' }]}
+              >
+                <LinearGradient
+                  colors={['#C8883A', '#E8A855']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={s.btnPrimary}
+                >
+                  <Text style={s.btnPrimaryText}>Get started</Text>
+                </LinearGradient>
+              </Pressable>
+
+              {/* Try without account */}
+              <Pressable
+                style={({ pressed }) => [s.btnSecondary, { opacity: pressed ? 0.7 : 1 }]}
+                onPress={handleTryWithout}
+              >
+                <Text style={s.btnSecondaryText}>Try it without an account</Text>
+              </Pressable>
+
+              {/* Sign in */}
+              <View style={s.signInRow}>
+                <Text style={s.signInGrey}>Already with us? </Text>
+                <Pressable onPress={handleSignIn} hitSlop={8}>
+                  <Text style={s.signInLink}>Sign in</Text>
+                </Pressable>
+              </View>
+            </BlurView>
+          </Animated.View>
+        </View>
+      </ScrollView>
+    </View>
+  );
 }
 
-
-// ═══════════════════════════════════════════════
-// STYLES
-// ═══════════════════════════════════════════════
-
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
- root: { flex: 1, backgroundColor: C.base },
- baseBg: { ...StyleSheet.absoluteFillObject, backgroundColor: '#FDFAF5' },
+  root: {
+    flex:            1,
+    backgroundColor: '#0E0A12',
+  },
 
+page: {
+    width:          W,
+    height:         H,
+    justifyContent: 'center',
+    alignItems:     'stretch',
+  },
 
- // Blobs
- blob: { position: 'absolute', borderRadius: 999 },
- blob1: {
-   top: -80, right: -60, width: 280, height: 280,
-   backgroundColor: 'rgba(253, 221, 230, 0.55)',
- },
- blob2: {
-   bottom: -60, left: -80, width: 240, height: 240,
-   backgroundColor: 'rgba(212, 232, 209, 0.50)',
- },
+  photoBg: {
+    position: 'absolute',
+    top:      0,
+    left:     0,
+    width:    W,
+    height:   H,
+  },
 
+  // ── Skip ────────────────────────────────────────────────────────────────────
 
- // Layout
- safe: { flex: 1 },
- scene: { flex: 1, paddingHorizontal: 32, alignItems: 'center', justifyContent: 'center' },
+  skipBtn: {
+    position: 'absolute',
+    right:    24,
+    zIndex:   50,
+    padding:  8,
+  },
 
+  skipText: {
+    fontFamily: F.body,
+    fontSize:   14,
+    color:      'rgba(255,255,255,0.75)',
+    letterSpacing: 0.5,
+  },
 
- // Chrome (progress + skip)
- chrome: {
-   position: 'absolute',
-   top: 60, left: 20, right: 20,
-   zIndex: 50,
-   flexDirection: 'row',
-   alignItems: 'center',
-   gap: 12,
- },
- progressRow: {
-   flex: 1,
-   flexDirection: 'row',
-   gap: 4,
- },
- progSeg: {
-   flex: 1,
-   height: 3,
-   borderRadius: 2,
-   backgroundColor: 'rgba(42,37,32,0.10)',
-   overflow: 'hidden',
- },
- progFill: {
-   height: 3,
-   borderRadius: 2,
-   backgroundColor: C.rose,
- },
- skipBtn: { paddingHorizontal: 6, paddingVertical: 4 },
- skipText: {
-   fontFamily: F.bodySemi,
-   fontSize: 13,
-   color: C.textMuted,
- },
+  // ── Splash ──────────────────────────────────────────────────────────────────
 
+  splashContent: {
+    position:        'absolute',
+    top:             0,
+    left:            0,
+    right:           0,
+    alignItems:      'center',
+    paddingHorizontal: 32,
+  },
 
- // Splash (S0)
- splashContent: { alignItems: 'center', gap: 12 },
- logoWrap: {
-   width: 72, height: 72,
-   alignItems: 'center', justifyContent: 'center',
-   shadowColor: '#2A2520',
-   shadowOpacity: 0.10,
-   shadowRadius: 16,
-   shadowOffset: { width: 0, height: 6 },
-   elevation: 6,
- },
- logoImg: { width: 72, height: 72 },
- wordmark: {
-   fontFamily: F.display,
-   fontSize: 32,
-   letterSpacing: -0.8,
-   color: C.text,
-   marginTop: 4,
- },
- dotsRow: { flexDirection: 'row', gap: 8, marginTop: 2, marginBottom: 2 },
- dot: {
-   width: 5, height: 5, borderRadius: 999,
-   backgroundColor: C.rose, opacity: 0.6,
- },
- tagline: {
-   fontFamily: F.body,
-   fontSize: 15,
-   lineHeight: 23,
-   color: C.textBody,
-   textAlign: 'center',
-   maxWidth: 280,
-   marginTop: 8,
- },
+  logoBox: {
+    width:          60,
+    height:         60,
+    borderRadius:   17,
+    alignItems:     'center',
+    justifyContent: 'center',
+    marginBottom:   12,
+    shadowColor:    '#D4944A',
+    shadowOffset:   { width: 0, height: 8 },
+    shadowOpacity:  0.55,
+    shadowRadius:   20,
+    elevation:      12,
+  },
 
+  logoLetter: {
+    fontFamily:    F.heading,
+    fontSize:      28,
+    color:         '#FFFFFF',
+    letterSpacing: -1,
+  },
 
- // Feature slides (S1-S4)
- featContent: {
-   alignItems: 'center',
-   gap: 14,
-   width: '100%',
-   maxWidth: 340,
- },
- featImage: {
-   width: 160, height: 160,
-   borderRadius: 24,
-   backgroundColor: C.cardGlassSoft,
-   borderWidth: 1,
-   borderStyle: 'dashed',
-   borderColor: 'rgba(42,37,32,0.12)',
-   alignItems: 'center',
-   justifyContent: 'center',
- },
- featImageEmoji: { fontSize: 56 },
- featBadge: {
-   paddingHorizontal: 12,
-   paddingVertical: 5,
-   borderRadius: 999,
-   backgroundColor: C.roseMuted,
- },
- featBadgeText: {
-   fontFamily: F.label,
-   fontSize: 10,
-   letterSpacing: 1,
-   color: C.rose,
- },
- featTitle: {
-   fontFamily: F.subheading,
-   fontSize: 22,
-   lineHeight: 29,
-   letterSpacing: -0.3,
-   color: C.text,
-   textAlign: 'center',
- },
- accent: { color: C.rose },
- featDesc: {
-   fontFamily: F.body,
-   fontSize: 13,
-   lineHeight: 20,
-   color: C.textBody,
-   textAlign: 'center',
-   paddingHorizontal: 4,
- },
- featList: { width: '100%', gap: 6, marginTop: 4 },
- featItem: {
-   flexDirection: 'row',
-   alignItems: 'center',
-   gap: 10,
-   paddingHorizontal: 14,
-   paddingVertical: 10,
-   borderRadius: 12,
-   backgroundColor: C.cardGlass,
-   borderWidth: 1,
-   borderColor: C.border,
- },
- featItemIcon: { fontSize: 16 },
- featItemText: {
-   fontFamily: F.bodyMedium,
-   fontSize: 12,
-   lineHeight: 17,
-   color: C.text,
-   flex: 1,
- },
+  splashName: {
+    fontFamily:       F.heading,
+    fontSize:         32,
+    color:            '#FFFFFF',
+    letterSpacing:    0.5,
+    marginBottom:     8,
+    textShadowColor:  'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 12,
+  },
 
+  splashTagline: {
+    fontFamily:       F.body,
+    fontSize:         14,
+    color:            'rgba(255,255,255,0.88)',
+    letterSpacing:    0.3,
+    textAlign:        'center',
+    textShadowColor:  'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 8,
+  },
 
- // Final CTA (S5)
- finalContent: { alignItems: 'center', gap: 14, width: '100%', maxWidth: 340 },
- finalLogo: {
-   width: 56, height: 56,
- },
- finalTitle: {
-   fontFamily: F.subheading,
-   fontSize: 24,
-   lineHeight: 31,
-   letterSpacing: -0.3,
-   color: C.text,
-   textAlign: 'center',
-   marginTop: 4,
- },
- finalSub: {
-   fontFamily: F.body,
-   fontSize: 13,
-   lineHeight: 20,
-   color: C.textBody,
-   textAlign: 'center',
-   paddingHorizontal: 6,
- },
- cta: {
-   width: '100%',
-   backgroundColor: C.rose,
-   borderRadius: 14,
-   paddingVertical: 16,
-   alignItems: 'center',
-   shadowColor: C.rose,
-   shadowOpacity: 0.25,
-   shadowRadius: 20,
-   shadowOffset: { width: 0, height: 6 },
-   elevation: 4,
-   marginTop: 6,
- },
- ctaText: {
-   fontFamily: F.bodySemi,
-   fontSize: 15,
-   color: '#FFFFFF',
-   letterSpacing: 0.2,
- },
- signIn: {
-   fontFamily: F.bodySemi,
-   fontSize: 13,
-   color: C.textMuted,
-   textAlign: 'center',
-   textDecorationLine: 'underline',
- },
- micro: {
-   fontFamily: F.body,
-   fontSize: 11,
-   color: C.textMuted,
-   textAlign: 'center',
-   letterSpacing: 0.3,
-   marginTop: 2,
- },
+  // ── Page dots ───────────────────────────────────────────────────────────────
 
+  dotsRow: {
+    position:        'absolute',
+    left:            0,
+    right:           0,
+    flexDirection:   'row',
+    justifyContent:  'center',
+    alignItems:      'center',
+    gap:             6,
+    zIndex:          10,
+  },
 
- // Tap zones
- tapLeft: {
-   position: 'absolute',
-   top: 100, bottom: 80,
-   left: 0, width: '30%',
-   zIndex: 30,
- },
- tapRight: {
-   position: 'absolute',
-   top: 100, bottom: 80,
-   right: 0, width: '70%',
-   zIndex: 30,
- },
+  dot: {
+    width:           6,
+    height:          6,
+    borderRadius:    3,
+    backgroundColor: 'rgba(255,255,255,0.30)',
+  },
+
+  dotActive: {
+    width:           18,
+    backgroundColor: '#E8A855',
+  },
+
+  // ── Card wrapper (bottom-anchored) ──────────────────────────────────────────
+cardWrap: {
+    alignSelf:         'stretch',
+    paddingHorizontal: 20,
+    paddingVertical:   20,
+  },
+
+  card: {
+    borderRadius:  24,
+    overflow:      'hidden',
+    padding:       22,
+    borderWidth:   1,
+    borderColor:   'rgba(255,255,255,0.14)',
+  },
+
+  // ── Feature slide card content ───────────────────────────────────────────────
+
+  badge: {
+    alignSelf:       'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius:    20,
+    marginBottom:    12,
+  },
+
+  badgeText: {
+    fontFamily:    F.label,
+    fontSize:      10,
+    letterSpacing: 1.4,
+  },
+
+  featTitle: {
+    fontFamily:       F.heading,
+    fontSize:         26,
+    color:            '#FFFFFF',
+    lineHeight:       32,
+    letterSpacing:    -0.4,
+    marginBottom:     10,
+    textShadowColor:  'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 8,
+  },
+
+  featAccent: {
+    fontFamily: F.heading,
+    fontSize:   26,
+    lineHeight: 32,
+  },
+
+  featDesc: {
+    fontFamily:    F.body,
+    fontSize:      14,
+    color:         'rgba(255,255,255,0.78)',
+    lineHeight:    21,
+    marginBottom:  12,
+  },
+
+  itemList: {
+    gap: 7,
+  },
+
+  item: {
+    flexDirection:   'row',
+    alignItems:      'center',
+    gap:             11,
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+    borderRadius:    11,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth:     1,
+    borderColor:     'rgba(255,255,255,0.08)',
+  },
+
+  itemIcon: {
+    fontSize:   14,
+    lineHeight: 18,
+  },
+
+  itemText: {
+    fontFamily: F.bodyMedium,
+    fontSize:   13,
+    color:      'rgba(255,255,255,0.92)',
+    lineHeight: 18,
+    flex:       1,
+  },
+
+  // ── Final CTA card ──────────────────────────────────────────────────────────
+
+  finalCard: {
+    alignItems: 'center',
+  },
+
+  finalLogoBox: {
+    width:          52,
+    height:         52,
+    borderRadius:   15,
+    alignItems:     'center',
+    justifyContent: 'center',
+    marginBottom:   10,
+    shadowColor:    '#D4944A',
+    shadowOffset:   { width: 0, height: 6 },
+    shadowOpacity:  0.50,
+    shadowRadius:   16,
+    elevation:      10,
+  },
+
+  finalLogoLetter: {
+    fontFamily:    F.heading,
+    fontSize:      24,
+    color:         '#FFFFFF',
+    letterSpacing: -1,
+  },
+
+  finalTitle: {
+    fontFamily:       F.heading,
+    fontSize:         22,
+    color:            '#FFFFFF',
+    textAlign:        'center',
+    lineHeight:       28,
+    letterSpacing:    -0.3,
+    marginBottom:     6,
+    textShadowColor:  'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 8,
+  },
+
+  finalAccent: {
+    color: '#E8A855',
+  },
+
+  finalSub: {
+    fontFamily:    F.body,
+    fontSize:      13,
+    color:         'rgba(255,255,255,0.72)',
+    textAlign:     'center',
+    lineHeight:    19,
+    marginBottom:  12,
+  },
+
+  finalFeats: {
+    width:         '100%',
+    gap:           6,
+    marginBottom:  14,
+  },
+
+  finalFeat: {
+    flexDirection:   'row',
+    alignItems:      'center',
+    gap:             10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius:    11,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth:     1,
+    borderColor:     'rgba(255,255,255,0.08)',
+  },
+
+  finalFeatIcon: {
+    fontSize:   16,
+    lineHeight: 20,
+  },
+
+  finalFeatInfo: {
+    flex: 1,
+  },
+
+  finalFeatTitle: {
+    fontFamily: F.bodySemi,
+    fontSize:   13,
+    color:      '#FFFFFF',
+  },
+
+  finalFeatSub: {
+    fontFamily: F.body,
+    fontSize:   11,
+    color:      'rgba(255,255,255,0.50)',
+    marginTop:  1,
+  },
+
+  check: {
+    fontSize:   13,
+    color:      '#A0C880',
+    fontWeight: '700',
+  },
+
+  // ── Buttons ─────────────────────────────────────────────────────────────────
+
+  btnPrimary: {
+    width:           '100%',
+    paddingVertical: 15,
+    borderRadius:    14,
+    alignItems:      'center',
+    marginBottom:    10,
+    shadowColor:     '#D4944A',
+    shadowOffset:    { width: 0, height: 8 },
+    shadowOpacity:   0.55,
+    shadowRadius:    20,
+    elevation:       12,
+  },
+
+  btnPrimaryText: {
+    fontFamily:    F.heading,
+    fontSize:      15,
+    color:         '#FFFFFF',
+    letterSpacing: 0.3,
+  },
+
+  btnSecondary: {
+    width:           '100%',
+    paddingVertical: 13,
+    borderRadius:    12,
+    borderWidth:     1,
+    borderColor:     'rgba(255,255,255,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems:      'center',
+    marginBottom:    10,
+  },
+
+  btnSecondaryText: {
+    fontFamily: F.body,
+    fontSize:   13,
+    color:      'rgba(255,255,255,0.88)',
+  },
+
+  signInRow: {
+    flexDirection:  'row',
+    alignItems:     'center',
+    justifyContent: 'center',
+  },
+
+  signInGrey: {
+    fontFamily: F.body,
+    fontSize:   12,
+    color:      'rgba(255,255,255,0.50)',
+  },
+
+  signInLink: {
+    fontFamily:          F.bodySemi,
+    fontSize:            12,
+    color:               '#E8A855',
+    textDecorationLine:  'underline',
+    textDecorationColor: '#E8A855',
+  },
 });
-
