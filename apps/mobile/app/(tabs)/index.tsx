@@ -15,6 +15,7 @@ import {
   Animated,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -52,6 +53,32 @@ const CHILD_COLORS = [
   '#F79566',
   '#C4A46C',
   '#8B7AA8',
+];
+
+// ═══════════════════════════════════════════════
+// OUTCOME MODES
+// 4 internal modes, surfaced as tap cards below the Question input.
+// Routes to /child/[id]?mode=<key>; the per-child hub reads the mode
+// param and adapts its prompt + UI. Backend prompts already exist
+// (getSOSPrompt / getReconnectPrompt / getUnderstandPrompt /
+// getConversationPrompt) — this is purely a UI surface.
+// ═══════════════════════════════════════════════
+
+type OutcomeMode = 'sos' | 'reconnect' | 'understand' | 'conversation';
+
+type Outcome = {
+  mode:        OutcomeMode;
+  emoji:       string;
+  title:       string;
+  subtitle:    string;
+  accentColor: string;
+};
+
+const OUTCOMES: Outcome[] = [
+  { mode: 'sos',          emoji: '🆘', title: 'Right now',         subtitle: 'They\'re melting down',   accentColor: '#E87461' },
+  { mode: 'reconnect',    emoji: '🤝', title: 'Repair',            subtitle: 'After it went sideways',  accentColor: '#C4A46C' },
+  { mode: 'understand',   emoji: '💡', title: 'Understand',        subtitle: 'Why do they do this?',    accentColor: '#5778A3' },
+  { mode: 'conversation', emoji: '💬', title: 'Plan a talk',       subtitle: 'A hard conversation',     accentColor: '#8AA060' },
 ];
 
  // ═══════════════════════════════════════════════
@@ -106,6 +133,10 @@ export default function HomeScreen() {
   const [sending, setSending]         = useState(false);
   const [error, setError]             = useState('');
 
+  // Outcome-selector picker state (shown when 2+ children exist and
+  // the parent taps an outcome card — picks WHICH child the mode is for).
+  const [pickerMode, setPickerMode] = useState<OutcomeMode | null>(null);
+
   // ─── Fetch parent's name ───
   const fetchName = useCallback(async () => {
     if (!session?.user?.id) return;
@@ -152,6 +183,37 @@ export default function HomeScreen() {
   const handleAddChild = () => {
     Haptics.selectionAsync();
     router.push('/child/new');
+  };
+
+  // Outcome card tapped — route to a child's hub with the selected mode.
+  // 0 children: bounce to /child/new (parent adds a child first).
+  // 1 child:    auto-route, no picker.
+  // 2+ children: open picker modal so the parent picks which child this
+  //              outcome applies to.
+  const handleSelectOutcome = (mode: OutcomeMode) => {
+    Haptics.selectionAsync();
+    if (kidList.length === 0) {
+      router.push('/child/new');
+      return;
+    }
+    if (kidList.length === 1) {
+      const onlyKid = kidList[0];
+      router.push({ pathname: `/child/${onlyKid.id}` as any, params: { mode } });
+      return;
+    }
+    setPickerMode(mode);
+  };
+
+  const handlePickerSelectChild = (childId: string) => {
+    if (!pickerMode) return;
+    Haptics.selectionAsync();
+    const mode = pickerMode;
+    setPickerMode(null);
+    router.push({ pathname: `/child/${childId}` as any, params: { mode } });
+  };
+
+  const handlePickerCancel = () => {
+    setPickerMode(null);
   };
 
   const handleSend = async () => {
@@ -350,6 +412,34 @@ export default function HomeScreen() {
               </View>
             </Pressable>
 
+            {/* ─── Outcome selector ─── */}
+            {/* 4 modes surfaced as a 2×2 grid; tapping routes to the
+                per-child hub with mode preset. SOS is visually distinct
+                with a sos-color border accent; the others are calmer. */}
+            <View style={s.outcomeWrap}>
+              <Text style={s.outcomeLabel}>Or pick a mode</Text>
+              <View style={s.outcomeGrid}>
+                {OUTCOMES.map((o) => (
+                  <Pressable
+                    key={o.mode}
+                    onPress={() => handleSelectOutcome(o.mode)}
+                    style={({ pressed }) => [
+                      s.outcomeCard,
+                      { borderColor: `${o.accentColor}55` },
+                      o.mode === 'sos' && s.outcomeCardSos,
+                      pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] },
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${o.title} — ${o.subtitle}`}
+                  >
+                    <Text style={s.outcomeEmoji}>{o.emoji}</Text>
+                    <Text style={s.outcomeTitle}>{o.title}</Text>
+                    <Text style={s.outcomeSubtitle} numberOfLines={1}>{o.subtitle}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
             {/* ─── 1 child: lite view shows quick link to their hub ─── */}
             {isSingleChild && onlyChild ? (
               <Pressable
@@ -423,6 +513,50 @@ export default function HomeScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      {/* ─── Outcome → multi-child picker modal ─── */}
+      {/* Only used when 2+ children exist. Single-child + zero-child
+          paths route directly without showing the modal. */}
+      <Modal
+        visible={pickerMode !== null}
+        animationType="fade"
+        transparent
+        onRequestClose={handlePickerCancel}
+      >
+        <Pressable style={s.pickerBackdrop} onPress={handlePickerCancel}>
+          <Pressable style={s.pickerSheet} onPress={() => {}}>
+            <Text style={s.pickerTitle}>Which child?</Text>
+            <Text style={s.pickerSub}>
+              {pickerMode ? OUTCOMES.find((o) => o.mode === pickerMode)?.subtitle : ''}
+            </Text>
+            <View style={s.pickerRow}>
+              {kidList.map((kid: any, index: number) => {
+                const color = CHILD_COLORS[index % CHILD_COLORS.length];
+                const initial = (kid?.name?.trim()?.[0] ?? '?').toUpperCase();
+                return (
+                  <Pressable
+                    key={kid.id}
+                    onPress={() => handlePickerSelectChild(kid.id)}
+                    style={({ pressed }) => [
+                      s.pickerChild,
+                      pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] },
+                    ]}
+                  >
+                    <View style={[s.pickerAvatar, { backgroundColor: color, shadowColor: color }]}>
+                      <Text style={s.pickerAvatarText}>{initial}</Text>
+                    </View>
+                    <Text style={s.pickerChildName} numberOfLines={1}>{kid.name}</Text>
+                    <Text style={s.pickerChildAge}>Age {kid.childAge}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Pressable onPress={handlePickerCancel} style={s.pickerCancel}>
+              <Text style={s.pickerCancelText}>Cancel</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -569,6 +703,99 @@ const s = StyleSheet.create({
   },
   addCardText: {
     fontFamily: F.bodyMedium, fontSize: 13, color: C.textMuted,
+  },
+
+  // Outcome selector (4 mode cards in a 2×2 grid)
+  outcomeWrap: { gap: 10 },
+  outcomeLabel: {
+    fontFamily: F.bodyMedium, fontSize: 13, color: C.textMuted, letterSpacing: 0.3,
+  },
+  outcomeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  outcomeCard: {
+    flexBasis: '47%',
+    flexGrow: 1,
+    padding: 14,
+    gap: 4,
+    borderRadius: 18,
+    borderWidth: 1,
+    backgroundColor: C.cardGlass,
+    minHeight: 96,
+  },
+  outcomeCardSos: {
+    // SOS gets a slightly stronger tint so it reads as the urgent option.
+    backgroundColor: 'rgba(232,116,97,0.08)',
+  },
+  outcomeEmoji: {
+    fontSize: 22,
+    lineHeight: 26,
+    marginBottom: 2,
+  },
+  outcomeTitle: {
+    fontFamily: F.subheading, fontSize: 15, color: C.text, letterSpacing: -0.1,
+  },
+  outcomeSubtitle: {
+    fontFamily: F.body, fontSize: 12, color: C.textSub,
+  },
+
+  // Outcome → child picker modal
+  pickerBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15,10,18,0.65)',
+    justifyContent: 'flex-end',
+  },
+  pickerSheet: {
+    backgroundColor: 'rgba(28,22,30,0.98)',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 36,
+    gap: 16,
+  },
+  pickerTitle: {
+    fontFamily: F.heading, fontSize: 22, color: C.text, letterSpacing: -0.3,
+  },
+  pickerSub: {
+    fontFamily: F.body, fontSize: 14, color: C.textSub,
+  },
+  pickerRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    paddingTop: 4,
+  },
+  pickerChild: {
+    width: 96,
+    padding: 12, gap: 6,
+    alignItems: 'center', justifyContent: 'center',
+    borderRadius: 16,
+    backgroundColor: C.cardGlass,
+    borderWidth: 1, borderColor: C.border,
+  },
+  pickerAvatar: {
+    width: 48, height: 48, borderRadius: 24,
+    alignItems: 'center', justifyContent: 'center',
+    shadowOpacity: 0.25, shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 }, elevation: 3,
+  },
+  pickerAvatarText: {
+    fontFamily: F.heading, fontSize: 20, color: '#FFFFFF', letterSpacing: -0.3,
+  },
+  pickerChildName: {
+    fontFamily: F.bodySemi, fontSize: 13, color: C.text, textAlign: 'center',
+  },
+  pickerChildAge: {
+    fontFamily: F.body, fontSize: 11, color: C.textSub,
+  },
+  pickerCancel: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  pickerCancelText: {
+    fontFamily: F.bodyMedium, fontSize: 15, color: C.textMuted,
   },
 
   // Empty state (0 children)

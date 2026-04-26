@@ -45,6 +45,59 @@ const INTENSITY_OPTIONS = [
 
 const TIMEOUT_MS = 20 * 60 * 1000; // 20 min idle → sign out
 
+// ═══════════════════════════════════════════════
+// MODE COPY
+// The hub serves all 4 outcome modes (SOS / Reconnect / Understand /
+// Conversation). The mode comes from the URL `mode` param (set when the
+// parent taps an outcome card on Home). All four backend prompts return
+// the same R/C/G shape — we just adapt the input copy + intensity gating
+// so the parent knows what they're getting.
+// Intensity only matters for SOS — buildPrompt ignores it for the others.
+// ═══════════════════════════════════════════════
+
+type HubMode = 'sos' | 'reconnect' | 'understand' | 'conversation';
+
+const MODE_COPY: Record<HubMode, {
+  placeholder: (name: string) => string;
+  hint:        string;
+  cta:         string;
+  ctaLoading:  string;
+  showIntensity: boolean;
+}> = {
+  sos: {
+    placeholder: (n) => `What's happening with ${n} right now?`,
+    hint:        'A simple snapshot is enough.',
+    cta:         'Get Script',
+    ctaLoading:  'Getting script…',
+    showIntensity: true,
+  },
+  reconnect: {
+    placeholder: (n) => `What needs repair with ${n}?`,
+    hint:        'A few sentences about what just happened.',
+    cta:         'Find the words',
+    ctaLoading:  'Finding the words…',
+    showIntensity: false,
+  },
+  understand: {
+    placeholder: (n) => `What are you trying to understand about ${n}?`,
+    hint:        'Describe the pattern or behaviour.',
+    cta:         'Help me see it',
+    ctaLoading:  'Reading the pattern…',
+    showIntensity: false,
+  },
+  conversation: {
+    placeholder: (n) => `What conversation are you preparing with ${n}?`,
+    hint:        'Tell Sturdy the topic and what makes it hard.',
+    cta:         'Plan it with me',
+    ctaLoading:  'Planning…',
+    showIntensity: false,
+  },
+};
+
+function isHubMode(v: unknown): v is HubMode {
+  return v === 'sos' || v === 'reconnect' || v === 'understand' || v === 'conversation';
+}
+
 
 // ═══════════════════════════════════════════════
 // SCREEN
@@ -52,9 +105,13 @@ const TIMEOUT_MS = 20 * 60 * 1000; // 20 min idle → sign out
 
 export default function ChildHubScreen() {
   const navigation = useRouter();
-  const params = useLocalSearchParams<{ id?: string }>();
+  const params = useLocalSearchParams<{ id?: string; mode?: string }>();
   const { session, signOut } = useAuth();
   const { children, activeChild, setActiveChild } = useChildProfile() as any;
+
+  // ─── Mode (defaults to 'sos' if param absent or invalid) ───
+  const mode: HubMode = isHubMode(params.mode) ? params.mode : 'sos';
+  const copy = MODE_COPY[mode];
 
   // ─── Resolve the child from the URL id ───
   const child = useMemo(() => {
@@ -169,8 +226,10 @@ export default function ChildHubScreen() {
         childAge:  child.childAge ?? 4,
         message:   msg,
         userId:    session?.user?.id,
-        intensity,
-        mode:      'sos',
+        // Intensity is only meaningful for SOS — buildPrompt ignores it
+        // for the other modes anyway, but keep the request body clean.
+        intensity: mode === 'sos' ? intensity : null,
+        mode,
       } as any);
 
       navigation.push({
@@ -192,7 +251,7 @@ export default function ChildHubScreen() {
           guideStrategies:    JSON.stringify(script.guide.strategies ?? []),
           avoid:              JSON.stringify(script.avoid),
           childMessage:       msg,
-          mode:               'sos',
+          mode,
         },
       });
 
@@ -323,7 +382,7 @@ export default function ChildHubScreen() {
               <TextInput
                 multiline
                 numberOfLines={5}
-                placeholder={`What's happening with ${child.name} right now?`}
+                placeholder={copy.placeholder(child.name ?? 'them')}
                 placeholderTextColor={C.textMuted}
                 value={situation}
                 onChangeText={handleTextChange}
@@ -332,7 +391,7 @@ export default function ChildHubScreen() {
                 style={s.textarea}
                 textAlignVertical="top"
               />
-              <Text style={s.textareaHint}>A simple snapshot is enough.</Text>
+              <Text style={s.textareaHint}>{copy.hint}</Text>
 
               {/* Inline crisis banner */}
               <Animated.View style={[s.crisisBanner, { opacity: crisisOpacity }]}>
@@ -346,33 +405,35 @@ export default function ChildHubScreen() {
               </Animated.View>
             </View>
 
-            {/* ─── Intensity ─── */}
-            <View style={s.intensitySection}>
-              <View style={s.intensityHeader}>
-                <Text style={s.intensityLabel}>How intense?</Text>
-                <Text style={s.intensityOpt}>optional</Text>
+            {/* ─── Intensity (SOS mode only) ─── */}
+            {copy.showIntensity ? (
+              <View style={s.intensitySection}>
+                <View style={s.intensityHeader}>
+                  <Text style={s.intensityLabel}>How intense?</Text>
+                  <Text style={s.intensityOpt}>optional</Text>
+                </View>
+                <View style={s.intensityRow}>
+                  {INTENSITY_OPTIONS.map((opt) => {
+                    const sel = intensity === opt.level;
+                    return (
+                      <Pressable
+                        key={opt.level}
+                        onPress={() => handleSelectIntensity(opt.level)}
+                        style={({ pressed }) => [
+                          s.intensityPill,
+                          sel && { backgroundColor: `${opt.color}18`, borderColor: `${opt.color}45` },
+                          pressed && { opacity: 0.8 },
+                        ]}
+                      >
+                        <Text style={[s.intensityPillText, sel && { color: opt.color }]}>
+                          {opt.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
-              <View style={s.intensityRow}>
-                {INTENSITY_OPTIONS.map((opt) => {
-                  const sel = intensity === opt.level;
-                  return (
-                    <Pressable
-                      key={opt.level}
-                      onPress={() => handleSelectIntensity(opt.level)}
-                      style={({ pressed }) => [
-                        s.intensityPill,
-                        sel && { backgroundColor: `${opt.color}18`, borderColor: `${opt.color}45` },
-                        pressed && { opacity: 0.8 },
-                      ]}
-                    >
-                      <Text style={[s.intensityPillText, sel && { color: opt.color }]}>
-                        {opt.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
+            ) : null}
 
             {error ? <Text style={s.errorText}>{error}</Text> : null}
 
@@ -386,7 +447,7 @@ export default function ChildHubScreen() {
             >
               <View style={[s.ctaBtn, (!canSubmit || loading) && s.ctaBtnDisabled]}>
                 <Text style={[s.ctaLabel, (!canSubmit || loading) && { color: C.textMuted }]}>
-                  {loading ? 'Getting script…' : 'Get Script'}
+                  {loading ? copy.ctaLoading : copy.cta}
                 </Text>
               </View>
             </Pressable>
