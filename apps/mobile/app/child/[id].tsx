@@ -498,13 +498,28 @@ export default function ChildHubScreen() {
               </View>
             ) : null}
 
-            {/* ─── Insights placeholder ─── */}
-            <View style={s.insightsSection}>
-              <Text style={s.insightsTitle}>Patterns for {child.name}</Text>
-              <Text style={s.insightsBody}>
-                Keep talking to Sturdy and patterns will appear here — what triggers {child.name} most, what calms them, and what keeps working.
-              </Text>
-            </View>
+            {/* ─── Profile link (replaces static placeholder) ─── */}
+            {/* Doubles as the discoverable entry to the Your Child profile
+                screen (Feature 2) — patterns, what works, weekly insight. */}
+            <Pressable
+              onPress={() => router.push(`/child-profile/${child.id}` as any)}
+              style={({ pressed }) => [
+                s.insightsSection,
+                pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={`Open ${child.name}'s profile`}
+            >
+              <View style={s.insightsRow}>
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Text style={s.insightsTitle}>{child.name}'s profile</Text>
+                  <Text style={s.insightsBody}>
+                    Triggers, what works, and what Sturdy is noticing about {child.name}.
+                  </Text>
+                </View>
+                <Text style={s.insightsArrow}>→</Text>
+              </View>
+            </Pressable>
 
             {/* ─── Edit profile link ─── */}
             <Pressable
@@ -649,17 +664,17 @@ const s = StyleSheet.create({
     fontFamily: F.scriptItalic, fontSize: 13, color: C.textBody, lineHeight: 19,
   },
 
-  // Insights
+  // Insights / profile-link card
   insightsSection: {
     padding: 16, gap: 6,
     borderRadius: 16,
     backgroundColor: 'rgba(129,178,154,0.08)',
     borderWidth: 1, borderColor: 'rgba(129,178,154,0.18)',
   },
-  insightsTitle: { fontFamily: F.bodySemi, fontSize: 14, color: C.sage },
-  insightsBody: {
-    fontFamily: F.body, fontSize: 13, color: C.textBody, lineHeight: 20,
-  },
+  insightsRow:    { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  insightsTitle:  { fontFamily: F.bodySemi, fontSize: 14, color: C.sage },
+  insightsBody:   { fontFamily: F.body, fontSize: 13, color: C.textBody, lineHeight: 20 },
+  insightsArrow:  { fontFamily: F.bodySemi, fontSize: 18, color: C.sage },
 
   // Edit
   editBtn: { alignSelf: 'center', paddingVertical: 8 },
