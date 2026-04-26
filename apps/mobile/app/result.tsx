@@ -30,6 +30,7 @@ import { CrisisDetectedError } from '../src/lib/api';
 import { supabase }       from '../src/lib/supabase';
 import { saveScript }     from '../src/lib/saveScript';
 import { detectCrisis } from '../src/hooks/useCrisisMode';
+import { shouldShowProfileNudge, markNudgeShown } from '../src/utils/profileNudge';
 import { colors as C, fonts as F } from '../src/theme';
 
 const { width: W } = Dimensions.get('window');
@@ -122,6 +123,12 @@ export default function ResultScreen() {
   const [feedbackStep, setFeedbackStep] = useState<'helpful' | 'outcome' | 'done'>('helpful');
   const [feedbackHelpful, setFeedbackHelpful] = useState<string | null>(null);
 
+  // Profile nudge — Master Blueprint: shown once per child after the
+  // 3rd script. Gate via AsyncStorage so the parent sees it at exactly
+  // the moment the personalisation feels real, never again.
+  const [showNudge, setShowNudge] = useState(false);
+  const nudgeOpacity = useRef(new Animated.Value(0)).current;
+
   const isFallback = !isValid(val(params.regulateScript));
   const mode = val(params.mode) ?? 'sos';
   const coachingDefaultOpen = mode !== 'sos';
@@ -156,6 +163,37 @@ export default function ResultScreen() {
     setFeedbackGiven(false); setFeedbackStep('helpful'); setFeedbackHelpful(null);
     return () => { voice.stop(); };
   }, [params.regulateScript]);
+
+  // ─── Profile-nudge gate ───
+  // Check once per child / per script. If eligible, mark shown
+  // immediately so the nudge never reappears for this child on a
+  // subsequent script (even if the parent doesn't tap it). Then fade
+  // in 1s after script renders so it doesn't compete.
+  useEffect(() => {
+    const cid = typeof params.childId === 'string' ? params.childId : null;
+    if (!cid) return;
+    let cancelled = false;
+    nudgeOpacity.setValue(0);
+    setShowNudge(false);
+
+    shouldShowProfileNudge(cid).then((should) => {
+      if (cancelled || !should) return;
+      setShowNudge(true);
+      markNudgeShown(cid).catch(() => { /* no-op */ });
+      const t = setTimeout(() => {
+        Animated.timing(nudgeOpacity, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }).start();
+      }, 1000);
+      // store the timer in a closure so cancel can clear it
+      cancelTimer = () => clearTimeout(t);
+    });
+
+    let cancelTimer: (() => void) | null = null;
+    return () => { cancelled = true; if (cancelTimer) cancelTimer(); };
+  }, [params.childId, params.regulateScript]);
 
   const logSafetyEvent = async (excerpt: string, crisisType: string, riskLevel: string) => {
     if (!session?.user?.id) return;
@@ -259,11 +297,29 @@ const handleRetry = () => {
           </View>
         ) : null}
 
-        {/* Nudge */}
-        <View style={s.nudgeCard}>
-          <Text style={s.nudgeText}>Sturdy is learning how {childName || 'your child'} responds.</Text>
-          <Pressable onPress={() => { const cid = typeof params.childId === 'string' ? params.childId : null; if (cid) router.push(`/child/${cid}` as any); else router.replace('/(tabs)'); }}><Text style={s.nudgeLink}>See {childName ? `${childName}'s` : 'their'} profile →</Text></Pressable>
-        </View>
+        {/* Nudge — gated to once-per-child after 3+ scripts; routes to the
+            Your Child profile screen (the spec'd conversion trigger). */}
+        {showNudge ? (
+          <Animated.View style={[s.nudgeCard, { opacity: nudgeOpacity }]}>
+            <Text style={s.nudgeText}>
+              Sturdy is learning how{' '}
+              <Text style={s.nudgeName}>{childName || 'your child'}</Text>
+              {' '}responds.
+            </Text>
+            <Pressable
+              onPress={() => {
+                const cid = typeof params.childId === 'string' ? params.childId : null;
+                if (cid) router.push(`/child-profile/${cid}` as any);
+                else router.replace('/(tabs)');
+              }}
+              hitSlop={8}
+            >
+              <Text style={s.nudgeLink}>
+                See {childName ? `${childName}'s` : 'their'} profile →
+              </Text>
+            </Pressable>
+          </Animated.View>
+        ) : null}
         <Pressable onPress={handleShare} style={{ alignSelf: 'center', paddingVertical: 8 }}><Text style={s.shareText}>Share script</Text></Pressable>
         {saveErr ? <Text style={s.errorText}>{saveErr}</Text> : null}
         <View style={{ height: 100 }} />
@@ -342,8 +398,9 @@ const s = StyleSheet.create({
   escalationBtn: { alignSelf: 'flex-start', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(201,123,99,0.12)', borderWidth: 1, borderColor: 'rgba(201,123,99,0.25)' },
   escalationBtnText: { fontFamily: F.bodySemi, fontSize: 14, color: C.rose },
 
-  nudgeCard: { alignItems: 'center', gap: 4, borderRadius: 18, padding: 16, backgroundColor: 'rgba(129,178,154,0.06)', borderWidth: 1, borderColor: 'rgba(129,178,154,0.12)' },
+  nudgeCard: { alignSelf: 'center', maxWidth: 360, alignItems: 'center', gap: 6, borderRadius: 18, paddingVertical: 14, paddingHorizontal: 18, backgroundColor: 'rgba(129,178,154,0.06)', borderWidth: 1, borderColor: 'rgba(129,178,154,0.12)' },
   nudgeText: { fontFamily: F.body, fontSize: 13, color: C.textSub, textAlign: 'center' },
+  nudgeName: { fontFamily: F.headingItalic, fontSize: 14, color: C.text },
   nudgeLink: { fontFamily: F.bodySemi, fontSize: 13, color: C.sage },
 
   shareText: { fontFamily: F.bodySemi, fontSize: 13, color: C.rose, textDecorationLine: 'underline' },

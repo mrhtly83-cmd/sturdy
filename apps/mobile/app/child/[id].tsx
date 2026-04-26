@@ -28,6 +28,7 @@ import { useChildProfile } from '../../src/context/ChildProfileContext';
 import { getParentingScript, CrisisDetectedError } from '../../src/lib/api';
 import { detectCrisis } from '../../src/hooks/useCrisisMode';
 import { loadSavedScripts, type SavedScriptRow } from '../../src/lib/loadSavedScripts';
+import { incrementScriptCount } from '../../src/utils/profileNudge';
 import { colors as C, fonts as F } from '../../src/theme';
 
 const HORIZON_PHOTO = require('../../assets/images/welcome/welcome-horizon.jpg');
@@ -231,6 +232,11 @@ export default function ChildHubScreen() {
         intensity: mode === 'sos' ? intensity : null,
         mode,
       } as any);
+
+      // Bump per-child script counter — feeds the "after 3+ interactions"
+      // profile nudge on the result screen. Fire-and-forget; failures
+      // never block the navigation.
+      incrementScriptCount(child.id).catch(() => { /* no-op */ });
 
       navigation.push({
         pathname: '/result',
