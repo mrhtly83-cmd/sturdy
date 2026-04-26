@@ -9,7 +9,7 @@
 //   - buildPrompt: assembles the right sections per mode (sos / reconnect /
 //                  understand / conversation), follow-up branch, neurotype + intensity injection
 
-import { assertEquals, assertStringIncludes } from "jsr:@std/assert@1";
+import { assertEquals, assertStringIncludes } from "./_assert.ts";
 import {
   buildPrompt,
   detectNeurotype,
@@ -88,7 +88,8 @@ Deno.test("getIntensityGuidance — level 4 → VERY HARD", () => {
 Deno.test("getIntensityGuidance — level 5 → OVERWHELMING + sets coaching empty", () => {
   const out = getIntensityGuidance(5);
   assertStringIncludes(out, "OVERWHELMING");
-  assertStringIncludes(out, '"coaching"');
+  // Source uses single-quoted 'coaching' inside a backtick template
+  assertStringIncludes(out, "'coaching'");
   assertStringIncludes(out, "4 words absolute max");
 });
 

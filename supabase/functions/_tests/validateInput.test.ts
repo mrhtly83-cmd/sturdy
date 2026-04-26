@@ -10,7 +10,7 @@
 //   - intensity rounding + range gate (1..5)
 //   - originalScript shape gate
 
-import { assertEquals, assertThrows, assertStrictEquals } from "jsr:@std/assert@1";
+import { assertEquals, assertThrows, assertStrictEquals } from "./_assert.ts";
 import { validateInput } from "../_shared/requestHelpers.ts";
 
 // ─── SOS mode (default) ───────────────────────

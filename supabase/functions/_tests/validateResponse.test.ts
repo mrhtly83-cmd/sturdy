@@ -8,7 +8,7 @@
 //   - avoid array gate
 //   - Optional `coaching` + `strategies` ignored when missing
 
-import { assertEquals } from "jsr:@std/assert@1";
+import { assertEquals } from "./_assert.ts";
 import {
   validateResponse,
   validateFollowUpResponse,

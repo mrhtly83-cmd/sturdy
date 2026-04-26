@@ -10,7 +10,7 @@
 //   - Whitespace trimming
 //   - All error paths (null, non-object, missing content, wrong types)
 
-import { assertEquals, assertThrows } from "jsr:@std/assert@1";
+import { assertEquals, assertThrows } from "./_assert.ts";
 import { extractContent } from "../_shared/requestHelpers.ts";
 
 // ─── Array content shape (production Anthropic Messages API) ───
