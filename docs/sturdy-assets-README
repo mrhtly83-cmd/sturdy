@@ -1,0 +1,146 @@
+# Sturdy — Welcome Flow Assets
+
+**Generated:** April 25, 2026
+**For:** Welcome flow v8/v9 implementation in `apps/mobile`
+
+---
+
+## What's in this bundle
+
+```
+sturdy-assets/
+└── images/
+    ├── source/                          ← Master files. Never edit. Archive.
+    │   ├── welcome-family-source.jpg    ← Original family silhouette photo
+    │   └── welcome-horizon-source.png   ← Original empty horizon photo
+    │
+    └── welcome/                         ← Production variants. Bundle these in app.
+        ├── welcome-family.jpg           ← 1x phone (405×715, 52 KB)
+        ├── welcome-family@2x.jpg        ← Retina phone (810×1430, 139 KB)
+        ├── welcome-horizon.jpg          ← 1x phone (405×715, 40 KB)
+        └── welcome-horizon@2x.jpg       ← Retina phone (810×1430, 110 KB)
+```
+
+**Total welcome bundle: 332 KB** (all four variants combined)
+
+---
+
+## File usage in the app
+
+### `welcome-family@2x.jpg`
+- **Where:** Welcome splash screen (Screen 0) + Final CTA screen (Screen 4)
+- **Why:** Brand bookends — the family photo opens and closes the welcome flow
+- **Treatment:** Full-bleed background, slow Ken Burns zoom on splash, frosted glass card overlay on final CTA
+
+### `welcome-horizon@2x.jpg`
+- **Where:** Feature slides (Screens 1, 2, 3) — In the moment / Thinking partner / 12 books
+- **Why:** Same atmosphere, no characters competing with feature content
+- **Treatment:** Full-bleed background, frosted glass card at bottom holds the feature copy
+
+### 1x variants (`welcome-family.jpg`, `welcome-horizon.jpg`)
+- Fallbacks for low-DPI devices
+- Expo automatically picks 1x or @2x based on `PixelRatio.get()`
+
+---
+
+## Where to place these in your repo
+
+```
+apps/mobile/assets/images/welcome/
+  ├── welcome-family.jpg
+  ├── welcome-family@2x.jpg
+  ├── welcome-horizon.jpg
+  └── welcome-horizon@2x.jpg
+```
+
+Source files (masters) should NOT be in the app bundle. Keep them archived elsewhere — outside the repo or in a `.gitignore`d folder. Only the four `welcome/*.jpg` files ship to users.
+
+---
+
+## Naming convention going forward
+
+When you create new variations from these source files (blurred for empty states, cropped for marketing, etc.), follow this pattern:
+
+```
+welcome-{purpose}.jpg          ← 1x
+welcome-{purpose}@2x.jpg       ← Retina
+
+Examples:
+welcome-family-blur.jpg        ← Heavily blurred for cards
+welcome-horizon-tight.jpg      ← Cropped tight for empty states
+welcome-family-dim.jpg         ← Pre-dimmed for final CTA
+```
+
+For non-welcome surfaces (settings, about, hub):
+
+```
+{screen}-{purpose}.jpg
+
+Examples:
+about-hero.jpg
+hub-banner.jpg
+empty-state.jpg
+```
+
+---
+
+## Compression notes
+
+All production variants compressed at:
+- **Format:** JPEG (universal compatibility, smaller than PNG for photos)
+- **Quality:** 85 (sweet spot — visually indistinguishable from source, ~50% smaller)
+- **Tool:** Pillow with `optimize=True` flag
+
+For future updates, the standard tool is **squoosh.app** (browser-based, by Google). Drag the source in, choose MozJPEG q85, export.
+
+---
+
+## When porting to React Native
+
+Reference these in code as:
+
+```jsx
+const FAMILY_PHOTO = require('../../assets/images/welcome/welcome-family.jpg');
+const HORIZON_PHOTO = require('../../assets/images/welcome/welcome-horizon.jpg');
+
+// Expo will auto-resolve @2x for retina devices
+```
+
+For backgrounds, use `expo-image` (faster + better caching than React Native's `Image`):
+
+```jsx
+import { Image } from 'expo-image';
+
+<Image
+  source={FAMILY_PHOTO}
+  style={StyleSheet.absoluteFill}
+  contentFit="cover"
+  transition={1000}
+/>
+```
+
+For glass cards, use `expo-blur`:
+
+```jsx
+import { BlurView } from 'expo-blur';
+
+<BlurView intensity={50} tint="dark" style={cardStyle}>
+  {/* card contents */}
+</BlurView>
+```
+
+---
+
+## Future asset roadmap (when needed)
+
+These four files cover v1 launch. Future additions:
+
+| Asset | When to create | Priority |
+|---|---|---|
+| `welcome-family-blur.jpg` | If the welcome flow needs a 6th slide with frosted card behavior | LOW |
+| `app-icon-bg.png` (1024×1024) | App store launch | HIGH (before launch) |
+| `marketing-hero.jpg` | Landing page / App Store screenshots | MEDIUM |
+| `empty-state.jpg` (small horizon crop) | When empty states need visual warmth | LOW |
+| `about-hero.jpg` | Settings → About screen design | LOW |
+
+All future assets derive from the two source images. **One photo session, infinite variants.**

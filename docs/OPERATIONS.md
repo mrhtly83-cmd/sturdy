@@ -55,3 +55,13 @@ verified. Cost of verification is small (~30 sec per check). Cost of
 each error was 10-90 minutes. The math is obvious.
 
 Added a 12-step pre-flight checklist to follow before each feature.
+
+## April 2026 — Visual identity direction (parked for next session)
+**Context:** Theme refresh shipping today. Logo + imagery deferred.
+**Decision:** When logo work begins, also plan matching warm imagery
+for empty states, onboarding, splash, settings/about. Imagery is the
+antidote to "too serious" — keeps Sturdy feeling human while looking
+mature.
+**Reasoning:** Mature ≠ severe. Calm meditation app aesthetic loses
+the warmth that makes Sturdy distinct. A few well-placed atmospheric
+images will preserve emotional warmth across the maturity refresh.

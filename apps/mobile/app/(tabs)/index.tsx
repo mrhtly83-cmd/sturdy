@@ -8,6 +8,13 @@
 // - Skeleton-while-loading via navigation to /thought/[id]
 // Journal identity: pastel gradient, frosted glass, rose accents.
 
+import { setForcedHour } from '../../src/theme/colors';
+setForcedHour(19); // 7pm = Golden Hour
+// setForcedHour(22); // 10pm = Deep Dusk
+// setForcedHour(7);  // 7am = Sunrise
+// setForcedHour(13); // 1pm = Daylight
+// setForcedHour(null); // back to real time
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
