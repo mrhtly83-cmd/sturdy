@@ -42,18 +42,28 @@ Database migrations are plain SQL under `supabase/migrations/` (timestamped). Ap
 ## Mobile app architecture
 
 Routing is Expo Router with the file tree under `apps/mobile/app/`:
-- `_layout.tsx` mounts `AuthProvider` → `ChildProfileProvider` → `<Stack>`. `AuthGate` redirects to `/(tabs)` when there's a session and `/welcome` otherwise.
+- `_layout.tsx` mounts `AuthProvider` → `ChildProfileProvider` → `<Stack>`. `AuthGate` routes:
+  - signed in → `/(tabs)`
+  - no session + onboarding-flag set in `AsyncStorage` (`@sturdy/onboarding-complete`) → `/auth/sign-in`
+  - no session + first-time → `/welcome`
 - `(tabs)/` is currently a 2-tab structure: `index.tsx` (Home / child selector) and `settings.tsx`. The legacy `(tabs)/child.tsx` and root `now.tsx` were removed in the Phase 1 architecture shift — do not reintroduce a single shared SOS screen.
+- `welcome/` is the 5-screen onboarding stack. `_layout.tsx` mounts `OnboardingProvider` so trial input + result + child-setup data carry across screens. Screens: `index` (the moment) → `trial` → `trial-result` (regulate visible, connect/guide blurred via `expo-blur`) → `child-setup` → `signup`. The trial calls `getParentingScript` with no `userId` (no logging, no profile attachment) so it works without an account; crisis responses still route to `/crisis`. `signup` writes the optional child profile to `child_profiles` (with `preferences.challenges` jsonb), calls `markOnboardingComplete()`, and routes to `/(tabs)`.
 - `child/[id].tsx` is the per-child hub. SOS flows are scoped to a specific child here, then route to `result.tsx`. `result.tsx` back-navigates to the originating child hub.
 - `thought/[id].tsx` is the Question-mode result screen.
 - `crisis.tsx` is the safety-support screen reached when the Edge Function returns `response_type: "crisis"`.
 
 State:
 - `src/context/AuthContext.tsx` wraps Supabase auth; `src/context/ChildProfileContext.tsx` loads `child_profiles` for signed-in users and falls back to `AsyncStorage` (`sturdy_guest_child` key) for guests. Guest data migrates on sign-up.
+- `src/context/OnboardingContext.tsx` is scoped to the welcome stack only — holds trial input, AI result, and child-setup data so screens 1→5 carry forward without URL params.
 - `src/lib/supabase.ts` reads `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` and throws at import if missing.
 - `src/lib/api.ts` is the only call-site to the Edge Function. It exposes `getParentingScript()` (SOS) and `getQuestionResponse()` (question mode), both POSTing to `/functions/v1/chat-parenting-assistant`. A `crisis` `response_type` is converted into a thrown `CrisisDetectedError` carrying `crisisType` and `riskLevel` so callers can route to `/crisis`.
+- `src/utils/onboarding.ts` — `hasCompletedOnboarding()` / `markOnboardingComplete()` / `resetOnboarding()` (dev-only) wrap the AsyncStorage key.
+- `src/utils/analytics.ts` — `track(event, props)` stub. Logs in `__DEV__`, no-op in prod until a tracking backend is wired.
 
-Fonts: only Manrope (loaded in `_layout.tsx`). Other Google Font packages are dependencies but the journal-identity layout deliberately uses Manrope alone.
+Theme + fonts (v5 — locked):
+- `src/theme/colors.ts` is the single source of truth. v5 "Logo-derived premium dark" — warm dark base (`#1A1614`, NOT pure black, NOT blue-black) over a `LinearGradient` from `gradientTop` → `gradientBottom`. Brand: coral `#FF5C75` (primary), amber `#F79566` (CTA / active tab), steel `#5778A3` (trust), sage `#8AA060` (success), sos `#E87461` (crisis). Glass surfaces (`surface`, `surfaceRaised`) at 4.5% / 7% white. Backwards-compat aliases (`rose`, `base`, `subtle`, `raised`, `coral`, `peach`, `blue`, `textSub`, `textSecondary`, `cardGlass*`, `cat*`) retained because 21 unmigrated screens still reference them — tracked in Issue #3.
+- Fonts switched from Manrope-only to **Fraunces (serif) + DM Sans (sans)**. Loaded in `app/_layout.tsx`. `fonts.heading`/`script` → Fraunces; `fonts.body`/`label`/`subheading` → DM Sans. Components use the family name string directly: `<Text style={{ fontFamily: fonts.body }}>`.
+- `Screen.tsx` wraps children in the warm-dark gradient. `Card.tsx` (re-exported as `GlassCard`) is a glass-on-dark surface — `surface` fill, `border` border, no `borderTopWidth` (it creates a visible highlight line bug on dark surfaces).
 
 ## Edge Function pipeline
 

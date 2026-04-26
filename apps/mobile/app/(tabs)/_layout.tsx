@@ -1,11 +1,10 @@
 // app/(tabs)/_layout.tsx
-// v5 — Journal identity: frosted glass tab bar, rose active
-// 2 tabs: Home · Settings
-// Child tab removed — each child now has their own hub at /child/[id]
+// v5 — Premium dark tab bar; amber active, muted inactive.
+// Two tabs (post-Phase-1 architecture): Home · Settings.
 
 import { Text } from 'react-native';
 import { Tabs } from 'expo-router';
-import { colors as C, fonts as F } from '../../src/theme';
+import { colors as C, fonts as F } from '../../src/theme/colors';
 
 export default function TabLayout() {
   return (
@@ -13,17 +12,17 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: 'rgba(253,250,245,0.85)',
+          backgroundColor: 'rgba(20,17,14,0.92)',   // warm dark, near-opaque
           borderTopWidth: 1,
-          borderTopColor: 'rgba(0,0,0,0.06)',
+          borderTopColor: C.border,
           paddingBottom: 24,
           paddingTop: 8,
           height: 80,
           position: 'absolute',
           elevation: 0,
         },
-        tabBarActiveTintColor: C.rose,
-        tabBarInactiveTintColor: C.textMuted,
+        tabBarActiveTintColor:   C.tabActive,        // amber #F79566
+        tabBarInactiveTintColor: C.tabInactive,
         tabBarLabelStyle: {
           fontFamily: F.bodySemi,
           fontSize: 10,
@@ -50,7 +49,6 @@ export default function TabLayout() {
           ),
         }}
       />
-  
     </Tabs>
   );
 }

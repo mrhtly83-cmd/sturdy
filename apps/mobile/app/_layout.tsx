@@ -1,20 +1,27 @@
 // app/_layout.tsx
-// v8 — Journal identity: Manrope only
+// v5 — Logo-derived premium dark theme; Fraunces (serif) + DM Sans (sans).
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform, Text, TextInput } from 'react-native';
 import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import {
-  Manrope_400Regular,
-  Manrope_500Medium,
-  Manrope_600SemiBold,
-  Manrope_700Bold,
-  Manrope_800ExtraBold,
-} from '@expo-google-fonts/manrope';
+  Fraunces_600SemiBold,
+  Fraunces_600SemiBold_Italic,
+  Fraunces_700Bold,
+  Fraunces_700Bold_Italic,
+} from '@expo-google-fonts/fraunces';
+import {
+  DMSans_400Regular,
+  DMSans_500Medium,
+  DMSans_600SemiBold,
+  DMSans_700Bold,
+} from '@expo-google-fonts/dm-sans';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
-import { ChildProfileProvider }  from '../src/context/ChildProfileContext';
+import { ChildProfileProvider }   from '../src/context/ChildProfileContext';
+import { colors }                 from '../src/theme/colors';
+import { hasCompletedOnboarding } from '../src/utils/onboarding';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -42,6 +49,7 @@ if (Platform.OS !== 'web') {
 
 function AuthGate() {
   const { session, isLoading } = useAuth();
+  const [routed, setRouted] = useState(false);
 
   useEffect(() => {
     if (!isLoading) {
@@ -50,25 +58,45 @@ function AuthGate() {
   }, [isLoading]);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || routed) return;
+    let cancelled = false;
 
-    if (session) {
-      router.replace('/(tabs)');
-      return;
-    }
-    router.replace('/welcome');
-  }, [session, isLoading]);
+    (async () => {
+      // Signed-in users skip onboarding entirely.
+      if (session) {
+        if (!cancelled) {
+          router.replace('/(tabs)');
+          setRouted(true);
+        }
+        return;
+      }
+
+      // No session — branch on whether they've finished onboarding before.
+      // Returning users land on sign-in; first-timers land on /welcome.
+      const done = await hasCompletedOnboarding();
+      if (cancelled) return;
+      router.replace(done ? '/auth/sign-in' : '/welcome');
+      setRouted(true);
+    })();
+
+    return () => { cancelled = true; };
+  }, [session, isLoading, routed]);
 
   return null;
 }
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    'Manrope-Regular':    Manrope_400Regular,
-    'Manrope-Medium':     Manrope_500Medium,
-    'Manrope-SemiBold':   Manrope_600SemiBold,
-    'Manrope-Bold':       Manrope_700Bold,
-    'Manrope-ExtraBold':  Manrope_800ExtraBold,
+    // Fraunces (serif) — headings, hero, AI script text
+    Fraunces_600SemiBold,
+    Fraunces_600SemiBold_Italic,
+    Fraunces_700Bold,
+    Fraunces_700Bold_Italic,
+    // DM Sans (sans) — body, controls, labels
+    DMSans_400Regular,
+    DMSans_500Medium,
+    DMSans_600SemiBold,
+    DMSans_700Bold,
   });
 
   if (!fontsLoaded) return null;
@@ -80,7 +108,7 @@ export default function RootLayout() {
         <Stack
           screenOptions={{
             headerShown: false,
-            contentStyle: { backgroundColor: '#FDFAF5' },
+            contentStyle: { backgroundColor: colors.background },
             animation: 'slide_from_right',
             orientation: 'portrait',
           }}
@@ -89,4 +117,3 @@ export default function RootLayout() {
     </AuthProvider>
   );
 }
-
