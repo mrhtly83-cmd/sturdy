@@ -11,7 +11,7 @@ module.exports = {
   preset: 'jest-expo',
   setupFiles: ['<rootDir>/jest-setup.ts'],
   testMatch: [
-    '<rootDir>/src/__tests__/**/*.test.(ts|tsx)',
+    '<rootDir>/src/__tests__/**/*.test.{ts,tsx}',
   ],
   // jest-expo's preset already supplies a sensible transformIgnorePatterns
   // (it allows expo / @expo / react-native packages through Babel). Don't
