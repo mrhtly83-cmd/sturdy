@@ -18,10 +18,13 @@ jobs:
         with:
           deno-version: v2.x
 
+      - name: Show Deno version
+        run: deno --version
+
       - name: Run Deno tests
-        # --allow-read for std/assert imports; --no-check skips the slow
-        # full type-check pass, the tests themselves still run typed.
-        run: deno test --allow-read --no-check supabase/functions/_tests/
+        # Deno 2 defaults are correct for these unit tests — they don't
+        # need file or network permissions at runtime.
+        run: deno test supabase/functions/_tests/
 
   mobile-tests:
     name: Mobile (Jest unit tests)
