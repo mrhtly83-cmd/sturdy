@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -29,6 +30,7 @@ import { detectCrisis } from '../../src/hooks/useCrisisMode';
 import { loadSavedScripts, type SavedScriptRow } from '../../src/lib/loadSavedScripts';
 import { colors as C, fonts as F } from '../../src/theme';
 
+const HORIZON_PHOTO = require('../../assets/images/welcome/welcome-horizon.jpg');
 
 // ═══════════════════════════════════════════════
 // CONSTANTS
@@ -243,10 +245,18 @@ export default function ChildHubScreen() {
   if (!child) {
     return (
       <View style={s.root}>
-        <StatusBar style="dark" />
+        <StatusBar style="light" />
+        <Image
+          source={HORIZON_PHOTO}
+          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+        />
         <LinearGradient
-          colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          colors={[
+            'rgba(15,10,18,0.45)',
+            'rgba(15,10,18,0.65)',
+            'rgba(15,10,18,0.82)',
+          ]}
           style={StyleSheet.absoluteFill}
         />
       </View>
@@ -255,18 +265,21 @@ export default function ChildHubScreen() {
 
   return (
     <View style={s.root}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
 
-      {/* Pastel gradient background */}
+      <Image
+        source={HORIZON_PHOTO}
+        style={StyleSheet.absoluteFill}
+        resizeMode="cover"
+      />
       <LinearGradient
-        colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]}
-        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        colors={[
+          'rgba(15,10,18,0.45)',
+          'rgba(15,10,18,0.65)',
+          'rgba(15,10,18,0.82)',
+        ]}
         style={StyleSheet.absoluteFill}
       />
-
-      {/* Decorative blobs */}
-      <View style={[s.blob, s.blob1]} />
-      <View style={[s.blob, s.blob2]} />
 
       <SafeAreaView style={s.safe} edges={['top']}>
         <KeyboardAvoidingView
@@ -487,8 +500,8 @@ const s = StyleSheet.create({
     elevation: 4,
   },
   avatarText: { fontFamily: F.heading, fontSize: 36, color: '#FFFFFF', letterSpacing: -0.5 },
-  childName: { fontFamily: F.heading, fontSize: 28, color: C.text, letterSpacing: -0.3, marginTop: 4 },
-  childAge: { fontFamily: F.body, fontSize: 14, color: C.textSub },
+  childName: { fontFamily: F.heading, fontSize: 28, color: '#FFFFFF', letterSpacing: -0.3, marginTop: 4 },
+  childAge: { fontFamily: F.body, fontSize: 14, color: 'rgba(255,255,255,0.72)' },
 
   // Textarea
   textareaCard: {
@@ -539,10 +552,13 @@ const s = StyleSheet.create({
   errorText: { fontFamily: F.body, fontSize: 14, color: C.rose, textAlign: 'center' },
 
   // CTA
-  ctaBtn: {
-    borderRadius: 18, minHeight: 56,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: C.rose,
+ ctaBtn: {
+    backgroundColor: '#C8883A',
+    shadowColor:     '#D4944A',
+    shadowOffset:    { width: 0, height: 4 },
+    shadowOpacity:   0.40,
+    shadowRadius:    12,
+    elevation:       8,
   },
   ctaBtnDisabled: { backgroundColor: 'rgba(0,0,0,0.06)' },
   ctaLabel: { fontFamily: F.subheading, fontSize: 17, color: '#FFFFFF', letterSpacing: 0.3 },

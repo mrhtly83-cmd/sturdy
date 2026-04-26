@@ -8,17 +8,12 @@
 // - Skeleton-while-loading via navigation to /thought/[id]
 // Journal identity: pastel gradient, frosted glass, rose accents.
 
-import { setForcedHour } from '../../src/theme/colors';
-setForcedHour(19); // 7pm = Golden Hour
-// setForcedHour(22); // 10pm = Deep Dusk
-// setForcedHour(7);  // 7am = Sunrise
-// setForcedHour(13); // 1pm = Daylight
-// setForcedHour(null); // back to real time
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -28,6 +23,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+
 import { router, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -40,6 +36,7 @@ import { supabase } from '../../src/lib/supabase';
 import { getQuestionResponse, CrisisDetectedError } from '../../src/lib/api';
 import { colors as C, fonts as F } from '../../src/theme';
 
+const HORIZON_PHOTO = require('../../assets/images/welcome/welcome-horizon.jpg');
 
 // ═══════════════════════════════════════════════
 // CONSTANTS
@@ -223,14 +220,22 @@ export default function HomeScreen() {
   if (isLoadingChild) {
     return (
       <View style={s.root}>
-        <StatusBar style="dark" />
+        <StatusBar style="light" />
+        <Image
+          source={HORIZON_PHOTO}
+          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+        />
         <LinearGradient
-          colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          colors={[
+            'rgba(15,10,18,0.45)',
+            'rgba(15,10,18,0.65)',
+            'rgba(15,10,18,0.82)',
+          ]}
           style={StyleSheet.absoluteFill}
         />
         <SafeAreaView style={s.centerGate}>
-          <ActivityIndicator color={C.rose} />
+         <ActivityIndicator color={'#E8A855'} />
         </SafeAreaView>
       </View>
     );
@@ -240,14 +245,20 @@ export default function HomeScreen() {
   if (kidList.length === 0) {
     return (
       <View style={s.root}>
-        <StatusBar style="dark" />
+        <StatusBar style="light" />
+        <Image
+          source={HORIZON_PHOTO}
+          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+        />
         <LinearGradient
-          colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          colors={[
+            'rgba(15,10,18,0.45)',
+            'rgba(15,10,18,0.65)',
+            'rgba(15,10,18,0.82)',
+          ]}
           style={StyleSheet.absoluteFill}
         />
-        <View style={[s.blob, s.blob1]} />
-        <View style={[s.blob, s.blob2]} />
         <SafeAreaView style={s.safe} edges={['top']}>
           <View style={s.emptyWrap}>
             <Text style={s.greeting}>{greeting}, {displayName}.</Text>
@@ -272,16 +283,21 @@ export default function HomeScreen() {
   // ─── 1 or more children: question input is always visible ───
   return (
     <View style={s.root}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
 
+      <Image
+        source={HORIZON_PHOTO}
+        style={StyleSheet.absoluteFill}
+        resizeMode="cover"
+      />
       <LinearGradient
-        colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]}
-        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        colors={[
+          'rgba(15,10,18,0.45)',
+          'rgba(15,10,18,0.65)',
+          'rgba(15,10,18,0.82)',
+        ]}
         style={StyleSheet.absoluteFill}
       />
-
-      <View style={[s.blob, s.blob1]} />
-      <View style={[s.blob, s.blob2]} />
 
       <SafeAreaView style={s.safe} edges={['top']}>
         <KeyboardAvoidingView
@@ -437,11 +453,11 @@ const s = StyleSheet.create({
   // Greeting
   greetingWrap: { gap: 6, marginTop: 8 },
   greeting: {
-    fontFamily: F.heading, fontSize: 32, color: C.text,
+    fontFamily: F.heading, fontSize: 32, color: '#FFFFFF',
     letterSpacing: -0.5, lineHeight: 38,
   },
   subGreeting: {
-    fontFamily: F.body, fontSize: 16, color: C.textSub, lineHeight: 22,
+    fontFamily: F.body, fontSize: 16, color: 'rgba(255,255,255,0.78)', lineHeight: 22,
   },
 
   // Question input
@@ -462,11 +478,15 @@ const s = StyleSheet.create({
   },
 
   // Send button
-  sendBtn: {
-    borderRadius: 18, minHeight: 56,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: C.rose,
+ sendBtn: {
+    backgroundColor: '#C8883A',
+    shadowColor:     '#D4944A',
+    shadowOffset:    { width: 0, height: 4 },
+    shadowOpacity:   0.40,
+    shadowRadius:    12,
+    elevation:       8,
   },
+
   sendBtnDisabled: { backgroundColor: 'rgba(0,0,0,0.06)' },
   sendBtnText: {
     fontFamily: F.subheading, fontSize: 17, color: '#FFFFFF', letterSpacing: 0.3,
