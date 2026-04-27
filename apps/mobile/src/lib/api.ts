@@ -37,6 +37,11 @@ export type ParentingScriptRequest = {
   childProfileId?: string;
   intensity?:      number | null;
   mode?:           string;
+  // Tone preference — Soft / Gentle / Direct. Sent in the request body
+  // as a forward-compat hook; backend currently accepts and ignores
+  // (validateInput strips unknown fields). Activates once buildPrompt
+  // adds a tone-injection block.
+  tone?:           'soft' | 'gentle' | 'direct';
   isFollowUp?:     boolean;
   followUpType?:   string;
   originalScript?: {

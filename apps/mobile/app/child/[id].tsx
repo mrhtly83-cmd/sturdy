@@ -29,6 +29,9 @@ import { getParentingScript, CrisisDetectedError } from '../../src/lib/api';
 import { detectCrisis } from '../../src/hooks/useCrisisMode';
 import { loadSavedScripts, type SavedScriptRow } from '../../src/lib/loadSavedScripts';
 import { incrementScriptCount } from '../../src/utils/profileNudge';
+import { useSubscription } from '../../src/hooks/useSubscription';
+import { getTone, setTone, type Tone, TONE_DEFAULT } from '../../src/utils/tone';
+import { PaywallSheet } from '../../src/components/ui/PaywallSheet';
 import { colors as C, fonts as F } from '../../src/theme';
 
 const HORIZON_PHOTO = require('../../assets/images/welcome/welcome-horizon.jpg');
@@ -43,6 +46,14 @@ const INTENSITY_OPTIONS = [
   { level: 3, label: 'Hard',     color: '#F79566' },
   { level: 4, label: 'Intense',  color: C.rose },
 ] as const;
+
+// Tone selector — Sturdy+ only. Free users default to Gentle (per
+// Master Blueprint); Soft + Direct are locked behind PaywallSheet.
+const TONE_OPTIONS: Array<{ key: Tone; label: string; sub: string; premium: boolean }> = [
+  { key: 'soft',   label: 'Soft',   sub: 'Warm, spacious',  premium: true },
+  { key: 'gentle', label: 'Gentle', sub: 'Calm but clear',  premium: false },
+  { key: 'direct', label: 'Direct', sub: 'Short, firm',     premium: true },
+];
 
 const TIMEOUT_MS = 20 * 60 * 1000; // 20 min idle → sign out
 
@@ -142,6 +153,27 @@ export default function ChildHubScreen() {
   const [crisisFlag, setCrisisFlag]     = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
 
+  // ─── Tone (Sturdy+) ───
+  const { isPremium } = useSubscription();
+  const [tone, setToneState]            = useState<Tone>(TONE_DEFAULT);
+  const [paywallFor, setPaywallFor]     = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getTone().then((t) => { if (!cancelled) setToneState(t); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleSelectTone = (next: Tone, premium: boolean) => {
+    Haptics.selectionAsync();
+    if (premium && !isPremium) {
+      setPaywallFor(`${next.charAt(0).toUpperCase() + next.slice(1)} tone`);
+      return;
+    }
+    setToneState(next);
+    setTone(next).catch(() => { /* no-op */ });
+  };
+
   // ─── State: saved scripts ───
   const [savedScripts, setSavedScripts] = useState<SavedScriptRow[]>([]);
   const [refreshing, setRefreshing]     = useState(false);
@@ -231,6 +263,10 @@ export default function ChildHubScreen() {
         // for the other modes anyway, but keep the request body clean.
         intensity: mode === 'sos' ? intensity : null,
         mode,
+        // Tone preference — sent forward-compat. Free users always send
+        // Gentle (the locked default); premium users send their pick.
+        // Backend will use this once buildPrompt accepts a tone block.
+        tone: isPremium ? tone : 'gentle',
       } as any);
 
       // Bump per-child script counter — feeds the "after 3+ interactions"
@@ -411,6 +447,41 @@ export default function ChildHubScreen() {
               </Animated.View>
             </View>
 
+            {/* ─── Tone selector ─── */}
+            {/* Sturdy+ feature. Free users see all 3 chips; tapping a
+                locked one (Soft/Direct) opens the PaywallSheet. */}
+            <View style={s.toneSection}>
+              <View style={s.toneHeader}>
+                <Text style={s.toneLabel}>Tone</Text>
+                {!isPremium ? <Text style={s.tonePremiumPill}>Sturdy+</Text> : null}
+              </View>
+              <View style={s.toneRow}>
+                {TONE_OPTIONS.map((opt) => {
+                  const sel = tone === opt.key;
+                  const locked = opt.premium && !isPremium;
+                  return (
+                    <Pressable
+                      key={opt.key}
+                      onPress={() => handleSelectTone(opt.key, opt.premium)}
+                      style={({ pressed }) => [
+                        s.tonePill,
+                        sel && s.tonePillSelected,
+                        pressed && { opacity: 0.85 },
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: sel, disabled: locked }}
+                    >
+                      <View style={s.toneTopRow}>
+                        <Text style={[s.tonePillLabel, sel && s.tonePillLabelSelected]}>{opt.label}</Text>
+                        {locked ? <Text style={s.toneLockIcon}>🔒</Text> : null}
+                      </View>
+                      <Text style={s.tonePillSub}>{opt.sub}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+
             {/* ─── Intensity (SOS mode only) ─── */}
             {copy.showIntensity ? (
               <View style={s.intensitySection}>
@@ -539,6 +610,12 @@ export default function ChildHubScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      <PaywallSheet
+        visible={paywallFor !== null}
+        onClose={() => setPaywallFor(null)}
+        feature={paywallFor ?? ''}
+      />
     </View>
   );
 }
@@ -669,6 +746,33 @@ const s = StyleSheet.create({
   savedPreview: {
     fontFamily: F.scriptItalic, fontSize: 13, color: C.textBody, lineHeight: 19,
   },
+
+  // Tone selector
+  toneSection: { gap: 8 },
+  toneHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  toneLabel: { fontFamily: F.bodyMedium, fontSize: 13, color: C.textMuted, letterSpacing: 0.3 },
+  tonePremiumPill: {
+    fontFamily: F.label, fontSize: 9, letterSpacing: 0.8,
+    color: C.amber, backgroundColor: 'rgba(247,149,102,0.12)',
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 999, overflow: 'hidden',
+  },
+  toneRow: { flexDirection: 'row', gap: 8 },
+  tonePill: {
+    flex: 1, padding: 12, gap: 4,
+    borderRadius: 14,
+    backgroundColor: C.cardGlass,
+    borderColor: C.border, borderWidth: 1,
+  },
+  tonePillSelected: {
+    backgroundColor: 'rgba(247,149,102,0.10)',
+    borderColor: 'rgba(247,149,102,0.45)',
+  },
+  toneTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  tonePillLabel: { fontFamily: F.bodySemi, fontSize: 14, color: C.text },
+  tonePillLabelSelected: { color: C.amber },
+  tonePillSub: { fontFamily: F.body, fontSize: 11, color: C.textSub },
+  toneLockIcon: { fontSize: 11 },
 
   // Insights / profile-link card
   insightsSection: {

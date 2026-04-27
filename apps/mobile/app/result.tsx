@@ -31,6 +31,8 @@ import { supabase }       from '../src/lib/supabase';
 import { saveScript }     from '../src/lib/saveScript';
 import { detectCrisis } from '../src/hooks/useCrisisMode';
 import { shouldShowProfileNudge, markNudgeShown } from '../src/utils/profileNudge';
+import { useSubscription } from '../src/hooks/useSubscription';
+import { PaywallSheet } from '../src/components/ui/PaywallSheet';
 import { colors as C, fonts as F } from '../src/theme';
 
 const { width: W } = Dimensions.get('window');
@@ -129,9 +131,15 @@ export default function ResultScreen() {
   const [showNudge, setShowNudge] = useState(false);
   const nudgeOpacity = useRef(new Animated.Value(0)).current;
 
+  // Voice playback gating — SOS is free for everyone; other modes
+  // require Sturdy+. Free user tapping locked voice opens PaywallSheet.
+  const { isPremium } = useSubscription();
+  const [voicePaywall, setVoicePaywall] = useState(false);
+
   const isFallback = !isValid(val(params.regulateScript));
   const mode = val(params.mode) ?? 'sos';
   const coachingDefaultOpen = mode !== 'sos';
+  const voiceLocked = mode !== 'sos' && !isPremium;
   const childName = activeChild?.name?.trim() ?? '';
   const childAge = activeChild?.childAge;
   const childInitial = childName ? childName[0].toUpperCase() : '?';
@@ -253,18 +261,31 @@ const handleRetry = () => {
           <Text style={s.safetyText}>If this feels unsafe, <Text style={s.safetyLinkText}>get immediate help →</Text></Text>
         </Pressable>
 
-        {/* Voice */}
-        <Pressable onPress={voice.toggle}>
+        {/* Voice — SOS free; other modes Sturdy+ */}
+        <Pressable onPress={() => voiceLocked ? setVoicePaywall(true) : voice.toggle()}>
           <View style={s.voiceCard}>
-            <View style={[s.playBtn, isPlaying && s.playBtnActive]}>
-              <Text style={{ color: '#FFF', fontSize: 14, marginLeft: isPlaying ? 0 : 2 }}>{isPlaying ? '⏹' : '▶'}</Text>
+            <View style={[s.playBtn, isPlaying && s.playBtnActive, voiceLocked && s.playBtnLocked]}>
+              <Text style={{ color: '#FFF', fontSize: 14, marginLeft: isPlaying ? 0 : 2 }}>
+                {voiceLocked ? '🔒' : isPlaying ? '⏹' : '▶'}
+              </Text>
             </View>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={s.voiceTitle}>{isPlaying ? 'Playing script…' : 'Listen to this script'}</Text>
+                <Text style={s.voiceTitle}>
+                  {voiceLocked
+                    ? 'Listen to this script'
+                    : isPlaying ? 'Playing script…' : 'Listen to this script'}
+                </Text>
                 {isPlaying && <PulsingDot />}
+                {voiceLocked ? <Text style={s.voicePremiumPill}>Sturdy+</Text> : null}
               </View>
-              <Text style={s.voiceSub}>{isPlaying ? `Now: ${voice.currentStep === 'regulate' ? 'Regulate' : voice.currentStep === 'connect' ? 'Connect' : 'Guide'}` : 'Put in your earbuds — Sturdy walks you through it'}</Text>
+              <Text style={s.voiceSub}>
+                {voiceLocked
+                  ? 'Voice playback is part of Sturdy+ for non-SOS modes.'
+                  : isPlaying
+                    ? `Now: ${voice.currentStep === 'regulate' ? 'Regulate' : voice.currentStep === 'connect' ? 'Connect' : 'Guide'}`
+                    : 'Put in your earbuds — Sturdy walks you through it'}
+              </Text>
             </View>
           </View>
         </Pressable>
@@ -325,6 +346,13 @@ const handleRetry = () => {
         <View style={{ height: 100 }} />
       </ScrollView>
 
+      <PaywallSheet
+        visible={voicePaywall}
+        onClose={() => setVoicePaywall(false)}
+        feature="Voice playback"
+        body="Sturdy reads the script aloud for Reconnect, Understand, and Conversation modes when you're on Sturdy+. SOS voice is always free."
+      />
+
       {/* Footer */}
       <View style={s.footer}>
         <LinearGradient colors={['transparent', 'rgba(253,250,245,0.95)', C.base]} locations={[0, 0.35, 0.75]} style={s.footerFade} pointerEvents="none" />
@@ -374,6 +402,13 @@ const s = StyleSheet.create({
   voiceCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 18, backgroundColor: C.cardGlass, borderWidth: 1, borderColor: C.border },
   playBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: C.sage, alignItems: 'center', justifyContent: 'center' },
   playBtnActive: { backgroundColor: C.rose },
+  playBtnLocked: { backgroundColor: 'rgba(247,149,102,0.45)' },
+  voicePremiumPill: {
+    fontFamily: F.label, fontSize: 9, letterSpacing: 0.8,
+    color: C.amber, backgroundColor: 'rgba(247,149,102,0.12)',
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 999, overflow: 'hidden', marginLeft: 4,
+  },
   voiceTitle: { fontFamily: F.bodySemi, fontSize: 14, color: C.text },
   voiceSub: { fontFamily: F.body, fontSize: 12, color: C.textMuted, marginTop: 2 },
 
