@@ -243,11 +243,11 @@ const s = StyleSheet.create({
   accountPlan: { fontFamily: F.body, fontSize: 12, color: C.textMuted },
 
   upgradeRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
-  upgradeLabel: { fontFamily: F.bodySemi, fontSize: 15, color: C.rose },
+  upgradeLabel: { fontFamily: F.bodySemi, fontSize: 15, color: '#D4944A' },
   upgradeSub: { fontFamily: F.body, fontSize: 12, color: C.textMuted },
   upgradeBtn: {
     width: 36, height: 36, borderRadius: 12,
-    backgroundColor: C.rose,
+    backgroundColor: '#C8883A',
     alignItems: 'center', justifyContent: 'center',
   },
   upgradeBtnText: { fontSize: 16, color: '#FFFFFF', fontFamily: F.bodySemi },
