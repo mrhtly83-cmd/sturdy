@@ -98,7 +98,7 @@ export default function WelcomeSignup() {
 
   function onSignInLink() {
     track('onboarding_screen_dropped', { screen: 5, action: 'sign_in' });
-    router.push('/auth/sign-in');
+    router.push('/auth?mode=signin');
   }
 
   return (

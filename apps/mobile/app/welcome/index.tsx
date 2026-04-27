@@ -16,7 +16,7 @@
 //   - GUEST_SEEN_KEY in AsyncStorage
 //   - Get started → /child-setup
 //   - Try without account → guest flag → tabs
-//   - Sign in → /auth/sign-in
+//   - Sign in → /auth?mode=signin
 
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -186,7 +186,7 @@ export default function WelcomeScreen() {
 
   const handleSignIn = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/auth/sign-in');
+    router.push('/auth?mode=signin');
   };
 
   // ─── Shared animated card style ────────────────────────────────────────────
