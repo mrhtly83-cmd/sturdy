@@ -8,7 +8,7 @@ const ONBOARDING_KEY = '@sturdy/onboarding-complete';
 /**
  * Has this device finished the welcome flow at least once?
  * Used by the root layout to decide whether to route a signed-out user
- * to /welcome (first-time) or /auth/sign-in (returning).
+ * to /welcome (first-time) or /auth?mode=signin (returning).
  */
 export async function hasCompletedOnboarding(): Promise<boolean> {
   try {

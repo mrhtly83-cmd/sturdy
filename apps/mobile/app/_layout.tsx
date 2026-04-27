@@ -75,7 +75,7 @@ function AuthGate() {
       // Returning users land on sign-in; first-timers land on /welcome.
       const done = await hasCompletedOnboarding();
       if (cancelled) return;
-      router.replace(done ? '/auth/sign-in' : '/welcome');
+      router.replace(done ? '/auth?mode=signin' : '/welcome');
       setRouted(true);
     })();
 

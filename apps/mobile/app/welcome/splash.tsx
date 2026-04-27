@@ -253,7 +253,7 @@ export default function SplashScreen() {
 
  const handleSignIn = () => {
    Haptics.selectionAsync();
-   router.push('/auth/sign-in');
+   router.push('/auth?mode=signin');
  };
 
 

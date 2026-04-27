@@ -55,7 +55,7 @@ export default function WelcomeTrialResult() {
 
   function onSignIn() {
     track('onboarding_screen_dropped', { screen: 3, action: 'sign_in' });
-    router.push('/auth/sign-in');
+    router.push('/auth?mode=signin');
   }
 
   return (
