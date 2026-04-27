@@ -11,12 +11,14 @@
 // 4. Follow-up mode — "What happened next?" context carries forward
 
 import { buildCategorySection } from './prompts/categories/index.ts';
+import { getToneBlock, type ToneLabel } from './prompts/tones/index.ts';
 export type BuildPromptInput = {
   childName:     string;
   childAge:      number;
   message:       string;
   intensity?:    number | null;
   mode?:         string | null; // 'sos' | 'reconnect' | 'understand' | 'conversation'
+  tone?:         ToneLabel | string | null; // 'soft' | 'gentle' | 'direct' (default = gentle = no-op)
   isFollowUp?:   boolean;
   followUpType?: string | null;
   originalScript?: {
@@ -273,10 +275,12 @@ function getSOSPrompt(
   neurotypePart: string[],
   intensityPart: string[],
   lengthRule: string,
+  tonePart: string[],
 ): string {
   return [
     ...neurotypePart,
     ...intensityPart,
+    ...tonePart,
     'You are Sturdy — a calm parenting guide.',
     'Write three things a parent can say OUT LOUD in a hard moment.',
     'Not advice. Not coaching. Actual words to say.',
@@ -337,7 +341,7 @@ function getSOSPrompt(
   ].filter(Boolean).join('\n');
 }
 
-function getReconnectPrompt(childName: string, childAge: number, message: string): string {
+function getReconnectPrompt(childName: string, childAge: number, message: string, toneBlock: string): string {
   return `You are Sturdy — a calm parenting guide.
 The parent is not in a crisis. They need help reconnecting after a rupture.
 
@@ -347,6 +351,7 @@ Situation: ${message.trim()}
 ${getAgeContext(childAge)}
 ${getMessageLengthRule(message)}
 ${GLOBAL_NEGATIVE_CONSTRAINTS}
+${toneBlock ? '\n' + toneBlock : ''}
 
 RECONNECT MODE CONSTRAINTS:
 - BANNED: Any form of correction, boundary-setting, or "I'm sorry but..."
@@ -369,7 +374,7 @@ ${JSON_ENFORCEMENT}
 }`;
 }
 
-function getUnderstandPrompt(childName: string, childAge: number, message: string): string {
+function getUnderstandPrompt(childName: string, childAge: number, message: string, toneBlock: string): string {
   return `You are Sturdy — a developmental expert. Explain the "WHY" behind behavior.
 
 Child: ${childName}, age ${childAge}
@@ -378,6 +383,7 @@ Observation: ${message.trim()}
 ${getAgeContext(childAge)}
 ${getMessageLengthRule(message)}
 ${GLOBAL_NEGATIVE_CONSTRAINTS}
+${toneBlock ? '\n' + toneBlock : ''}
 
 UNDERSTAND MODE CONSTRAINTS:
 - BANNED: Clinical/Academic jargon (e.g., "executive dysfunction", "amygdala hijack").
@@ -400,7 +406,7 @@ ${JSON_ENFORCEMENT}
 }`;
 }
 
-function getConversationPrompt(childName: string, childAge: number, message: string): string {
+function getConversationPrompt(childName: string, childAge: number, message: string, toneBlock: string): string {
   return `You are Sturdy. Help a parent plan a calm, non-crisis conversation.
 
 Child: ${childName}, age ${childAge}
@@ -409,6 +415,7 @@ Topic: ${message.trim()}
 ${getAgeContext(childAge)}
 ${getMessageLengthRule(message)}
 ${GLOBAL_NEGATIVE_CONSTRAINTS}
+${toneBlock ? '\n' + toneBlock : ''}
 
 CONVERSATION MODE CONSTRAINTS:
 - BANNED: Lecturing or "I-messages" that sound robotic.
@@ -438,11 +445,13 @@ function getFollowUpCoachingPrompt(
   childAge: number,
   message: string,
   intensity: number | null,
+  toneBlock: string,
 ): string {
   const neurotype = detectNeurotype(message);
   const neurotypePart = neurotype && NEUROTYPE_BLOCKS[neurotype]
     ? NEUROTYPE_BLOCKS[neurotype] + '\n'
     : '';
+  const tonePart = toneBlock ? toneBlock + '\n' : '';
 
   const titles: Record<string, string> = {
     refused:   "They won't budge — that's normal",
@@ -484,7 +493,7 @@ Read what the parent described. Respond to where the child is NOW, not where the
 The goal is: orient the parent, one clear next step.`,
   };
 
-  return `${neurotypePart}You are Sturdy — a calm parenting guide.
+  return `${neurotypePart}${tonePart}You are Sturdy — a calm parenting guide.
 
 The parent already received a 3-part script (Regulate, Connect, Guide) and tried it. Now they are telling you what happened next.
 CRITICAL RULE: DO NOT generate another 3-step script. DO NOT use the Regulate/Connect/Guide format. 
@@ -543,6 +552,7 @@ export function buildPrompt({
   message,
   intensity,
   mode,
+  tone,
   isFollowUp,
   followUpType,
   originalScript,
@@ -551,6 +561,11 @@ export function buildPrompt({
   // Resolve neurotype as an array of keys to pass into getSOSPrompt
   const detectedNeurotype = detectNeurotype(message);
   const activeNeurotypes = detectedNeurotype ? [detectedNeurotype] : [];
+
+  // Resolve tone block once — empty string for 'gentle' / null / unknown
+  // (no-op, mirrors pre-tone behaviour). 'soft' / 'direct' inject a
+  // short voice-modulation block.
+  const toneBlock = getToneBlock(tone ?? null);
 
   // Follow-up mode — warm guidance instead of full script
   if (isFollowUp && followUpType) {
@@ -561,6 +576,7 @@ export function buildPrompt({
       childAge,
       message,
       intensity ?? null,
+      toneBlock,
     );
   }
 
@@ -568,15 +584,15 @@ export function buildPrompt({
   const resolvedMode = mode ?? 'sos';
 
   if (resolvedMode === 'reconnect') {
-    return getReconnectPrompt(childName, childAge, message);
+    return getReconnectPrompt(childName, childAge, message, toneBlock);
   }
 
   if (resolvedMode === 'understand') {
-    return getUnderstandPrompt(childName, childAge, message);
+    return getUnderstandPrompt(childName, childAge, message, toneBlock);
   }
 
   if (resolvedMode === 'conversation') {
-    return getConversationPrompt(childName, childAge, message);
+    return getConversationPrompt(childName, childAge, message, toneBlock);
   }
 
   // Default — SOS mode
@@ -584,20 +600,23 @@ export function buildPrompt({
   const neurotypePart = detectedNeurotype && NEUROTYPE_BLOCKS[detectedNeurotype]
     ? [NEUROTYPE_BLOCKS[detectedNeurotype]]
     : [];
-  
+
   const intensityPart = intensity !== null && intensity !== undefined
     ? [getIntensityGuidance(intensity)]
     : [];
-  
+
+  const tonePart = toneBlock ? [toneBlock] : [];
+
   const lengthRule = getMessageLengthRule(message);
 
   return getSOSPrompt(
-    childName, 
-    childAge, 
-    message, 
-    intensity ?? null, 
+    childName,
+    childAge,
+    message,
+    intensity ?? null,
     neurotypePart,
     intensityPart,
-    lengthRule
+    lengthRule,
+    tonePart,
   );
 }
