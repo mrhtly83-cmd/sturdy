@@ -173,9 +173,9 @@ export default function WelcomeScreen() {
     router.replace('/(tabs)');
   };
 
-  const handleGetStarted = () => {
+ const handleGetStarted = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push('/child-setup');
+    router.push('/auth/sign-up');
   };
 
   const handleTryWithout = async () => {

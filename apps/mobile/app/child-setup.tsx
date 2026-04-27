@@ -71,7 +71,7 @@ function Stars({ count = 30 }: { count?: number }) {
 // ─── Main ───
 export default function ChildSetupScreen() {
   const { session }        = useAuth();
-  const { setActiveChild } = useChildProfile();
+ const { setActiveChild, reloadChild } = useChildProfile();
   const [name, setName]    = useState('');
   const [age, setAge]      = useState(5);
   const [neurotypes, setNeurotypes] = useState<NeurotypeKey[]>([]);
@@ -79,7 +79,7 @@ export default function ChildSetupScreen() {
   const [saving, setSaving] = useState(false);
   const [nameFocused, setNameFocused] = useState(false);
 
-  const canContinue = age >= MIN_AGE && age <= MAX_AGE;
+ const canContinue = name.trim().length > 0 && age >= MIN_AGE && age <= MAX_AGE;
   const sliderProgress = (age / MAX_AGE) * 100;
 
   const adjustAge = (delta: number) => {
@@ -120,7 +120,8 @@ export default function ChildSetupScreen() {
         );
       }
       setActiveChild({ name: trimmed || '', childAge: age, neurotype: null });
-      router.replace('/(tabs)');
+await reloadChild();
+router.replace('/(tabs)');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save. Please try again.');
     } finally {
