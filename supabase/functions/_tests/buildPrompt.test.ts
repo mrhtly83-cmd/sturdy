@@ -277,3 +277,46 @@ Deno.test("buildPrompt — follow-up mode uses follow-up output schema, not 3-st
   assertStringIncludes(out, "what_to_do");
   assertEquals(out.includes("REGULATE — Stabilise the moment"), false);
 });
+
+// ─── tone injection ──────────────────────────────
+
+Deno.test("buildPrompt — tone 'soft' injects SOFT block in SOS", () => {
+  const out = buildPrompt({ childName: "Maya", childAge: 5, message: "She hit", tone: "soft" });
+  assertStringIncludes(out, "TONE: SOFT");
+});
+
+Deno.test("buildPrompt — tone 'direct' injects DIRECT block in SOS", () => {
+  const out = buildPrompt({ childName: "Maya", childAge: 5, message: "She hit", tone: "direct" });
+  assertStringIncludes(out, "TONE: DIRECT");
+});
+
+Deno.test("buildPrompt — tone 'gentle' injects nothing (default voice)", () => {
+  const out = buildPrompt({ childName: "Maya", childAge: 5, message: "She hit", tone: "gentle" });
+  assertEquals(out.includes("TONE: SOFT"), false);
+  assertEquals(out.includes("TONE: DIRECT"), false);
+});
+
+Deno.test("buildPrompt — tone missing injects nothing (back-compat)", () => {
+  const out = buildPrompt({ childName: "Maya", childAge: 5, message: "She hit" });
+  assertEquals(out.includes("TONE:"), false);
+});
+
+Deno.test("buildPrompt — tone applies to all 4 modes", () => {
+  for (const mode of ['sos', 'reconnect', 'understand', 'conversation'] as const) {
+    const out = buildPrompt({
+      childName: "Maya", childAge: 5, message: "x", mode, tone: 'soft',
+    });
+    assertStringIncludes(out, "TONE: SOFT", `mode ${mode} should inject tone block`);
+  }
+});
+
+Deno.test("buildPrompt — tone applies to follow-up mode too", () => {
+  const out = buildPrompt({
+    childName: "Maya", childAge: 5, message: "x",
+    tone: 'direct',
+    isFollowUp: true,
+    followUpType: "refused",
+    originalScript: { situation_summary: "x", regulate: "x", connect: "x", guide: "x" },
+  });
+  assertStringIncludes(out, "TONE: DIRECT");
+});

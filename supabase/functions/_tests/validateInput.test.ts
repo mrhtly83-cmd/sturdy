@@ -219,3 +219,24 @@ Deno.test("validateInput — userId + childProfileId default to null when missin
   assertEquals(r.userId,         null);
   assertEquals(r.childProfileId, null);
 });
+
+// ─── tone ───────────────────────────────────────
+
+Deno.test("validateInput — tone passes through for soft/gentle/direct", () => {
+  for (const t of ['soft', 'gentle', 'direct'] as const) {
+    const r = validateInput({ childName: "X", childAge: 5, message: "x", tone: t });
+    assertEquals(r.tone, t, `tone ${t} should pass through`);
+  }
+});
+
+Deno.test("validateInput — tone unknown / wrong type → null", () => {
+  const a = validateInput({ childName: "X", childAge: 5, message: "x", tone: 'sassy' as unknown });
+  assertEquals(a.tone, null);
+  const b = validateInput({ childName: "X", childAge: 5, message: "x", tone: 42 as unknown });
+  assertEquals(b.tone, null);
+});
+
+Deno.test("validateInput — tone missing → null (default 'gentle' is resolved downstream)", () => {
+  const r = validateInput({ childName: "X", childAge: 5, message: "x" });
+  assertEquals(r.tone, null);
+});

@@ -21,10 +21,13 @@ export type RequestBody = {
   childProfileId?: unknown;
   intensity?:      unknown;
   mode?:           unknown;
+  tone?:           unknown;
   isFollowUp?:     unknown;
   followUpType?:   unknown;
   originalScript?: unknown;
 };
+
+export type Tone = 'soft' | 'gentle' | 'direct';
 
 export type ValidatedInput = {
   childName:      string;
@@ -34,6 +37,7 @@ export type ValidatedInput = {
   childProfileId: string | null;
   intensity:      number | null;
   mode:           string | null;
+  tone:           Tone | null;
   isFollowUp:     boolean;
   followUpType:   string | null;
   originalScript: {
@@ -53,6 +57,9 @@ export function validateInput(body: RequestBody): ValidatedInput {
   const intensity      = typeof body.intensity === "number" && body.intensity >= 1 && body.intensity <= 5
                            ? Math.round(body.intensity) : null;
   const mode           = typeof body.mode === "string" ? body.mode : null;
+  const tone           = (body.tone === 'soft' || body.tone === 'gentle' || body.tone === 'direct')
+                           ? body.tone as Tone
+                           : null;
   const isFollowUp     = body.isFollowUp === true;
   const followUpType   = typeof body.followUpType === "string" ? body.followUpType : null;
   const originalScript = body.originalScript && typeof body.originalScript === "object"
@@ -70,7 +77,7 @@ export function validateInput(body: RequestBody): ValidatedInput {
 
   return {
     childName, childAge, message, userId, childProfileId,
-    intensity, mode, isFollowUp, followUpType, originalScript,
+    intensity, mode, tone, isFollowUp, followUpType, originalScript,
   };
 }
 

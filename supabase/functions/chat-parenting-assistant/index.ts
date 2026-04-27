@@ -282,6 +282,7 @@ serve(async (req) => {
       message:        input.message,
       intensity:      input.intensity,
       mode:           input.mode,
+      tone:           input.tone,
       isFollowUp:     input.isFollowUp,
       followUpType:   input.followUpType,
       originalScript: input.originalScript,
