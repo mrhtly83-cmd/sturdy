@@ -6,3 +6,7 @@
 .env.keys
 .env.local
 .env.*.local
+
+# Question-mode eval outputs (run npm run eval:question to regenerate;
+# accumulate fast and shouldn't be checked in).
+functions/_shared/prompts/__tests__/eval-outputs/
