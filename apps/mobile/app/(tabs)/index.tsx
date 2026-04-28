@@ -442,24 +442,37 @@ export default function HomeScreen() {
 
             {/* ─── 1 child: lite view shows quick link to their hub ─── */}
             {isSingleChild && onlyChild ? (
-              <Pressable
-                onPress={() => handleOpenChild(onlyChild.id)}
-                style={({ pressed }) => [
-                  s.singleChildCard,
-                  pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] },
-                ]}
-              >
-                <View style={[s.singleChildAvatar, { backgroundColor: CHILD_COLORS[0] }]}>
-                  <Text style={s.singleChildAvatarText}>
-                    {(onlyChild.name?.trim()?.[0] ?? '?').toUpperCase()}
-                  </Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.singleChildName}>Open {onlyChild.name}'s hub</Text>
-                  <Text style={s.singleChildSub}>Saved scripts, history, and SOS</Text>
-                </View>
-                <Text style={s.singleChildArrow}>→</Text>
-              </Pressable>
+              <>
+                <Pressable
+                  onPress={() => handleOpenChild(onlyChild.id)}
+                  style={({ pressed }) => [
+                    s.singleChildCard,
+                    pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] },
+                  ]}
+                >
+                  <View style={[s.singleChildAvatar, { backgroundColor: CHILD_COLORS[0] }]}>
+                    <Text style={s.singleChildAvatarText}>
+                      {(onlyChild.name?.trim()?.[0] ?? '?').toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.singleChildName}>Open {onlyChild.name}'s hub</Text>
+                    <Text style={s.singleChildSub}>Saved scripts, history, and SOS</Text>
+                  </View>
+                  <Text style={s.singleChildArrow}>→</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleAddChild}
+                  style={({ pressed }) => [
+                    s.addChildLink,
+                    pressed && { opacity: 0.7 },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add another child"
+                >
+                  <Text style={s.addChildLinkText}>+ Add another child</Text>
+                </Pressable>
+              </>
             ) : null}
 
             {/* ─── 2+ children: child selector ─── */}
@@ -651,6 +664,18 @@ const s = StyleSheet.create({
   },
   singleChildArrow: {
     fontFamily: F.bodySemi, fontSize: 20, color: C.rose,
+  },
+
+  // Add-another-child link (single-child view only)
+  addChildLink: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  addChildLinkText: {
+    fontFamily: F.bodyMedium,
+    fontSize: 13,
+    color: '#D4944A',
+    letterSpacing: 0.3,
   },
 
   // Multi-child selector
