@@ -65,3 +65,22 @@ mature.
 **Reasoning:** Mature ≠ severe. Calm meditation app aesthetic loses
 the warmth that makes Sturdy distinct. A few well-placed atmospheric
 images will preserve emotional warmth across the maturity refresh.
+
+### 2026-04-27 — Question mode prompt rewrite + eval harness
+
+**Context:** Question mode shipped with a strong voice guide but no
+example-driven calibration and no automated way to detect voice drift
+across prompt edits.
+
+**Decision:** Reordered prompt structure (context → classification →
+voice → format), added three paired pass/fail examples, tightened
+strategy/big_topic discrimination, loosened celebrating length to
+allow 1-2 paragraphs. Established `QUESTION_MODE_QUALITY_STANDARDS.md`
+as permanent quality bar with five reference Q&A pairs. Added manual
+eval harness at `__tests__/question.eval.ts`.
+
+**Reasoning:** Voice consistency is Sturdy's hardest-to-defend asset.
+A model update or a well-meaning prompt edit can erode it silently.
+The eval set + harness give us a reproducible way to detect drift
+before it ships. The reordering puts voice rules closest to the
+generation step, where prompt-instruction recency matters most.
