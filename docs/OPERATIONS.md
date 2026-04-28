@@ -84,3 +84,26 @@ A model update or a well-meaning prompt edit can erode it silently.
 The eval set + harness give us a reproducible way to detect drift
 before it ships. The reordering puts voice rules closest to the
 generation step, where prompt-instruction recency matters most.
+
+### 2026-04-27 — Question mode prompt v2 + eval input swap
+
+**Context:** v1 eval run revealed two issues. Voice drift on three
+specific patterns (endearments like "Oh honey," social-media phrases
+like "power move," pure-insight responses with no concrete action).
+And an eval design flaw: three of five eval inputs matched the
+in-prompt Phase 2d examples, causing the model to recite reference
+responses instead of generating fresh prose.
+
+**Decision:** Added three rules to the HARD RULES block in
+question.ts (no endearments, no social-media voice, require concrete
+action on reassurance/explain_why). Replaced all five eval inputs
+with non-overlapping scenarios across the same five classifications.
+Reference responses in QUESTION_MODE_QUALITY_STANDARDS.md temporarily
+replaced with TODO placeholders until human-written replacements are
+verified in long-walk register. Added --allow-run to eval npm script.
+
+**Reasoning:** Eval inputs and in-prompt examples must never overlap
+or the eval becomes a recitation test. The three voice rules address
+real drift observed in v1 outputs, not theoretical risks. Reference
+responses are deliberately blocked from being LLM-generated to keep
+the quality bar human-defined.
