@@ -1,51 +1,51 @@
 [
   {
-    "id": "q1_reassurance_2yo_saying_no",
+    "id": "q1_reassurance_3yo_separation_anxiety",
     "classification": "reassurance",
     "input": {
       "childName": null,
-      "childAge": 2,
-      "message": "my 2 year old has started saying no to literally everything. like even things she wants. is this normal??",
+      "childAge": 3,
+      "message": "my 3 year old has started crying every single morning at nursery drop off. she was fine for months and now suddenly it's a full meltdown every day. did i do something wrong??",
       "parentName": null
     }
   },
   {
-    "id": "q2_explain_why_7yo_after_school",
+    "id": "q2_explain_why_8yo_sudden_lying",
     "classification": "explain_why",
     "input": {
       "childName": null,
-      "childAge": 7,
-      "message": "why does my 7 year old come home from school in the worst mood?? she's fine all day apparently and the second she sees me it's like the worlds ending",
+      "childAge": 8,
+      "message": "my 8 year old has started lying about doing his homework. he'll say he did it and then i find out from the teacher he didn't. why is he doing this when he knows i'll find out?",
       "parentName": null
     }
   },
   {
-    "id": "q3_parent_self_yelling_shame",
+    "id": "q3_parent_self_too_strict",
     "classification": "parent_self",
     "input": {
       "childName": null,
       "childAge": null,
-      "message": "i lost it today. yelled at my kids over something stupid. i hate myself when i do this. how do i stop",
+      "message": "i think i'm too strict with my kids. my husband says i need to lighten up and i see other parents being so much more chill. but if i don't hold the line nothing gets done. am i actually being too strict or is that just what good parenting looks like?",
       "parentName": null
     }
   },
   {
-    "id": "q4_hard_conversation_grandfather_cancer",
+    "id": "q4_hard_conversation_divorce_ages_6_and_10",
     "classification": "hard_conversation",
     "input": {
       "childName": null,
-      "childAge": 9,
-      "message": "my dad just got diagnosed with stage 4 cancer. how do i tell my 9 year old. she's really close to him.",
+      "childAge": 10,
+      "message": "my husband and i are getting divorced. we have two kids, 6 and 10. we haven't told them yet. how do we tell them and should we tell them together or separately?",
       "parentName": null
     }
   },
   {
-    "id": "q5_celebrating_long_conversation_14yo",
+    "id": "q5_celebrating_5yo_kindness_at_school",
     "classification": "celebrating",
     "input": {
       "childName": null,
-      "childAge": 14,
-      "message": "my 14 year old daughter and i had the longest best conversation tonight. she just talked to me like an actual person for an hour. i don't even know what i did right but i don't want to forget how this felt.",
+      "childAge": 5,
+      "message": "my 5 year old's teacher pulled me aside today to tell me he sat with a new kid at lunch who was eating alone and made him laugh. i didn't even know he had it in him. i just want to remember this.",
       "parentName": null
     }
   }
