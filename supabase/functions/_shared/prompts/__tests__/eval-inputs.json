@@ -1,0 +1,52 @@
+[
+  {
+    "id": "q1_reassurance_2yo_saying_no",
+    "classification": "reassurance",
+    "input": {
+      "childName": null,
+      "childAge": 2,
+      "message": "my 2 year old has started saying no to literally everything. like even things she wants. is this normal??",
+      "parentName": null
+    }
+  },
+  {
+    "id": "q2_explain_why_7yo_after_school",
+    "classification": "explain_why",
+    "input": {
+      "childName": null,
+      "childAge": 7,
+      "message": "why does my 7 year old come home from school in the worst mood?? she's fine all day apparently and the second she sees me it's like the worlds ending",
+      "parentName": null
+    }
+  },
+  {
+    "id": "q3_parent_self_yelling_shame",
+    "classification": "parent_self",
+    "input": {
+      "childName": null,
+      "childAge": null,
+      "message": "i lost it today. yelled at my kids over something stupid. i hate myself when i do this. how do i stop",
+      "parentName": null
+    }
+  },
+  {
+    "id": "q4_hard_conversation_grandfather_cancer",
+    "classification": "hard_conversation",
+    "input": {
+      "childName": null,
+      "childAge": 9,
+      "message": "my dad just got diagnosed with stage 4 cancer. how do i tell my 9 year old. she's really close to him.",
+      "parentName": null
+    }
+  },
+  {
+    "id": "q5_celebrating_long_conversation_14yo",
+    "classification": "celebrating",
+    "input": {
+      "childName": null,
+      "childAge": 14,
+      "message": "my 14 year old daughter and i had the longest best conversation tonight. she just talked to me like an actual person for an hour. i don't even know what i did right but i don't want to forget how this felt.",
+      "parentName": null
+    }
+  }
+]
