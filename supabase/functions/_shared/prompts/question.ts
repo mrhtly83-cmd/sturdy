@@ -177,9 +177,7 @@ export function buildQuestionPrompt(input: QuestionPromptInput): string {
     ? `The parent's name is ${parentName}.`
     : '';
 
-  return `${STURDY_VOICE}
-
-== CONTEXT ==
+  return `== CONTEXT ==
 
 ${childContext}
 ${parentLine}
@@ -194,6 +192,8 @@ menu below — silently, do not output it. Then respond in flowing prose,
 in Sturdy's voice, at the length that classification calls for.
 
 ${CLASSIFICATION_MENU}
+
+${STURDY_VOICE}
 
 == RESPONSE FORMAT ==
 
