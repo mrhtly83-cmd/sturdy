@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "eval:question": "deno run --allow-net --allow-read --allow-write --allow-env supabase/functions/_shared/prompts/__tests__/question.eval.ts"
+  },
   "devDependencies": {
     "supabase": "^2.78.1"
   }
