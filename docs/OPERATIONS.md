@@ -107,3 +107,28 @@ or the eval becomes a recitation test. The three voice rules address
 real drift observed in v1 outputs, not theoretical risks. Reference
 responses are deliberately blocked from being LLM-generated to keep
 the quality bar human-defined.
+
+### 2026-04-27 — Question mode prompt v3 — voice values + length scaling
+
+**Context:** v2 eval against fresh inputs revealed three issues. Q3
+(parent_self, "am I too strict?") validated the parent by disparaging
+imagined "chill" parents — a values violation. Across multiple
+outputs, the actual answer was not in the first sentence, requiring
+scanning parents to read all four paragraphs to get the takeaway.
+Length scaled only by question type, not by parent state — a frantic
+short message could trigger a long response.
+
+**Decision:** Added three rules to the HARD RULES block. Never
+disparage other parents to validate the asking parent. The first
+sentence must stand alone as a complete answer across every
+classification. Length scales down when the parent's typing pattern
+indicates distress (short, lowercase, fragmented), regardless of what
+the classification ceiling allows.
+
+**Reasoning:** The voice was working but had three blind spots that
+fresh inputs exposed. Each is a real failure mode that would have
+shipped to parents and eroded trust over time. The first-sentence rule
+in particular makes the long-walk register more accessible to scanning
+parents without requiring shorter responses overall — preserving the
+breathing room that makes Sturdy feel like Sturdy while serving the
+cohort that wants the answer in seconds.
