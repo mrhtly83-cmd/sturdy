@@ -304,14 +304,15 @@ export function buildQuestionPrompt(input: QuestionPromptInput): string {
         ? `The child is age ${childAge}.`
         : `The parent didn't specify which child this is about.`;
 
+  // Skip the parentLine entirely when no name is provided — emitting a
+  // blank line into the prompt is wasted bytes the model has to parse.
   const parentLine = parentName
-    ? `The parent's name is ${parentName}.`
+    ? `\nThe parent's name is ${parentName}.`
     : '';
 
   return `== CONTEXT ==
 
-${childContext}
-${parentLine}
+${childContext}${parentLine}
 
 The parent wrote:
 "${message.trim()}"
@@ -327,6 +328,20 @@ ${CLASSIFICATION_MENU}
 ${STURDY_VOICE}
 
 ${VOICE_EXAMPLES}
+
+== HARD RULES ==
+
+Never include the words "reassurance," "strategy," "big_topic,"
+"hard_conversation," or "celebrating" in your output. The classification
+is silent infrastructure.
+
+Never open with "Here's my response," "Let me share," "I'd say," or any
+meta-commentary about what you're about to do. Begin with the actual
+answer.
+
+If a parent's name was provided, you may use it once if it lands
+naturally — never to open, never as a vocative ("Mary, you should...").
+Most responses won't use it at all.
 
 == RESPONSE FORMAT ==
 
