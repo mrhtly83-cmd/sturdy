@@ -41,18 +41,17 @@ const SAGE        = '#8DB89A';                       // checkmarks + savings bad
 const SAGE_BG     = 'rgba(141,184,154,0.12)';
 
 const FEATURES = [
-  { icon: '🧒', label: 'Child profile & insights', desc: 'See what triggers your child and what works' },
-  { icon: '💡', label: 'Weekly insight',           desc: 'Patterns Sturdy spots across your interactions' },
-  { icon: '🎯', label: 'Follow-up coaching',       desc: '"What if they refuse?" — a second script, tailored' },
-  { icon: '🎨', label: 'Tone selector',            desc: 'Soft, gentle, direct — match your parenting style' },
-  { icon: '📚', label: 'Full interaction history', desc: 'Every script, searchable and saved' },
-  { icon: '🔊', label: 'Voice on all modes',       desc: 'Listen to scripts hands-free, anytime' },
+  { icon: '🧒', label: 'A Sturdy that knows your child', desc: 'Patterns Sturdy notices about what sets them off — and what helps' },
+  { icon: '💡', label: 'Weekly reflection',              desc: 'What Sturdy noticed across your weeks together' },
+  { icon: '🎯', label: 'Follow-up scripts',              desc: 'A second script for when the first one didn\'t land — tailored to what happened' },
+  { icon: '📚', label: 'Everything you\'ve saved, kept', desc: 'Every script, every answer — searchable, yours' },
+  { icon: '🔊', label: 'Voice on every mode',            desc: 'Hear the response read aloud — for the moments your hands are full' },
 ];
 
 const FREE_FEATURES = [
   'Unlimited SOS scripts',
-  'Voice on SOS',
-  'Regulate → Connect → Guide',
+  'Question mode',
+  'Crisis support',
 ];
 
 
@@ -104,14 +103,14 @@ export default function UpgradeScreen() {
             <Text style={s.heroTitle}>Sturdy+</Text>
             <Text style={s.heroSub}>
               {childName
-                ? `Unlock the full picture of how ${childName} responds — and grow as a parent.`
-                : 'Unlock the full picture of how your child responds — and grow as a parent.'}
+                ? `The version that remembers. So Sturdy gets sharper about ${childName}, week by week.`
+                : 'The version that remembers. So Sturdy gets sharper about your child, week by week.'}
             </Text>
           </View>
 
           {/* ─── Features ─── */}
           <View style={s.featuresCard}>
-            <Text style={s.featuresTitle}>EVERYTHING IN STURDY+</Text>
+            <Text style={s.featuresTitle}>WHAT STURDY+ ADDS</Text>
             {FEATURES.map((f, i) => (
               <View key={i} style={s.featureRow}>
                 <Text style={s.featureIcon}>{f.icon}</Text>
@@ -144,11 +143,6 @@ export default function UpgradeScreen() {
               style={({ pressed }) => [pressed && { opacity: 0.92 }]}
             >
               <View style={[s.planCard, isYearly && s.planCardActive]}>
-                {isYearly ? (
-                  <View style={s.bestBadge}>
-                    <View style={s.bestBadgeInner}><Text style={s.bestBadgeText}>BEST VALUE</Text></View>
-                  </View>
-                ) : null}
                 <View style={s.planRow}>
                   <View style={[s.radio, isYearly && s.radioActive]}>
                     {isYearly ? <View style={s.radioDot} /> : null}
@@ -206,7 +200,7 @@ export default function UpgradeScreen() {
                 {purchasing ? 'Starting trial…' : `Start ${isYearly ? '7' : '3'}-day free trial`}
               </Text>
               <Text style={s.ctaSub}>
-                {isYearly ? 'Then $69.99/year' : 'Then $9.99/month'} · Cancel anytime
+                {isYearly ? 'Then $69.99/year — that\'s $5.83/month' : 'Then $9.99/month'} · Cancel anytime
               </Text>
             </LinearGradient>
           </Pressable>
@@ -304,11 +298,6 @@ const s = StyleSheet.create({
   },
   radioActive: { borderColor: AMBER },
   radioDot:    { width: 10, height: 10, borderRadius: 5, backgroundColor: AMBER },
-
-  // BEST VALUE badge (active yearly)
-  bestBadge:      { position: 'absolute', top: -10, right: 16, zIndex: 5 },
-  bestBadgeInner: { backgroundColor: AMBER, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8 },
-  bestBadgeText:  { fontFamily: F.label, fontSize: 9, letterSpacing: 0.8, color: '#0e0a10' },
 
   // Trial / savings badges
   trialBadge: {

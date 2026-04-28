@@ -132,3 +132,50 @@ in particular makes the long-walk register more accessible to scanning
 parents without requiring shorter responses overall — preserving the
 breathing room that makes Sturdy feel like Sturdy while serving the
 cohort that wants the answer in seconds.
+
+### 2026-04-28 — Upgrade screen copy rewrite + tone selector deferred
+
+**Context:** The upgrade screen feature list was a six-row inventory
+that read like a pricing-page checklist (Child profile & insights /
+Weekly insight / Follow-up coaching / Tone selector / Full interaction
+history / Voice on all modes). The hero ("Unlock the full picture") and
+the ALWAYS FREE row ("Voice on SOS / Regulate → Connect → Guide") were
+written for an audience that already knows what Sturdy is — feature
+names instead of what those features feel like. The BEST VALUE badge on
+yearly was selling the plan against itself rather than the product.
+Tone selector was listed as a paid feature but the voice quality bar
+that makes Soft and Direct safe to ship has not yet been validated
+against the same eval rigor as the gentle default.
+
+**Decision:** Rewrote the FEATURES list to five emotional descriptions
+("A Sturdy that knows your child" / "Weekly reflection" / "Follow-up
+scripts" / "Everything you've saved, kept" / "Voice on every mode"),
+each paired with a what-it-feels-like subhead instead of a what-it-is
+label. Removed the tone selector from the paid list entirely until its
+voice block has its own eval pass. Replaced the hero subhead with "The
+version that remembers. So Sturdy gets sharper about [child], week by
+week." — naming the felt promise (memory + sharpening) rather than the
+abstract claim (full picture). Replaced FREE_FEATURES with the three
+that actually matter to a free-tier parent ("Unlimited SOS scripts /
+Question mode / Crisis support") so the divide reads as "free covers
+the moment, paid covers the relationship." Renamed the section header
+from EVERYTHING IN STURDY+ to WHAT STURDY+ ADDS to remove the
+inventory-listing register. Removed the BEST VALUE badge and its three
+supporting styles — the savings-row "5 months free" badge already
+carries that signal. Tightened the annual CTA subtext to "Then
+$69.99/year — that's $5.83/month" so the per-month frame appears at
+the moment of commitment, not just on the plan card.
+
+**Reasoning:** The upgrade screen is the only paid surface Sturdy has
+until billing wires up — every word on it is doing the job of the
+entire pricing strategy. Feature names market features; emotional
+descriptions market outcomes, and outcomes are what parents are
+actually deciding between. Removing tone selector from the paid pitch
+trades one bullet point for the integrity of not selling something
+whose voice quality has not been verified to the same standard as the
+default — better to add it back later from a position of confidence
+than to defend a Soft tone that drifts in the wild. The hero rewrite
+("the version that remembers") gives the screen a single thesis to
+live or die by: paid Sturdy gets sharper about your child over time.
+Everything else on the page now supports that one promise instead of
+itemizing parallel claims.
