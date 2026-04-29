@@ -131,11 +131,34 @@ Billing is **not yet wired** — `useSubscription` is a mock (`isPremium: false`
 
 ## Database
 
-Schema lives entirely in `supabase/migrations/`. Core tables (RLS enabled on every one — verified in the April 2026 security pass): `profiles`, `child_profiles`, `conversations`, `messages`, `safety_events`, `usage_events`, plus `interaction_logs` and `parent_thoughts` written by the Edge Function. Notes:
+Schema lives across `supabase/migrations/` and historical SQL Editor changes. As of April 2026, the public schema contains 14 tables. RLS is enabled on every table with user-scoped data.
 
+**Core user-scoped tables** (FK to `auth.users(id)` with appropriate cascade behaviour after migration `20260428_004`):
+- `profiles` — authenticated parent accounts (`id` = `auth.users.id`, CASCADE)
+- `child_profiles` — child context (CASCADE on user delete)
+- `conversations` — hard moment threads (CASCADE)
+- `interaction_logs` — script generation logs (CASCADE)
+- `parent_thoughts` — Question mode entries (CASCADE)
+- `saved_scripts` — user-saved scripts (CASCADE)
+- `script_feedback` — outcome feedback (CASCADE)
+- `subscriptions` — billing records (CASCADE; currently dormant pending RevenueCat)
+- `usage_events` — usage tracking (CASCADE)
+- `user_preferences` — settings, tone, notifications (CASCADE)
+- `safety_events` — risk-flagged events (CASCADE today, will become SET NULL with the account-deletion migration to retain anonymized safety data per Principle 8)
+
+**Child-scoped tables** (FK to `child_profiles`, no direct FK to `auth.users`):
+- `messages` — conversation turns
+- `child_insights` — derived insights about children
+- `incident_events` — incident-level patterns
+
+**Anonymous tables** (no user FK):
+- `trial_usage` — anonymous device-level trial tracking
+
+Notes:
 - `child_profiles` historically used `age_band` (`'2-4' | '5-7' | '8-12'`); migration `20260327_002_add_child_age.sql` added an exact `child_age` integer (2–17) and backfilled. The product uses exact age — never reintroduce age bands in new code.
 - `conversations` has an `enforce_conversation_child_ownership` trigger ensuring `child_profile_id.user_id = conversations.user_id`. Preserve this when adding new tables that reference `child_profiles`.
 - `handle_new_user()` (auth trigger) auto-inserts a `profiles` row on signup.
+- When adding a new table with a `user_id` column, **always** include the FK constraint with explicit `ON DELETE` behaviour. Constraints added via SQL Editor without FKs broke the deletion cascade once already; this is now caught in PR review (see `20260428_004_add_user_id_foreign_keys.sql`).
 
 ## Conventions to follow
 
@@ -150,6 +173,7 @@ These rules come from the Operations log and are non-obvious:
 - **Coral is for SOS only.** `#E87461` and the rose aliases are reserved for crisis / safety affordances. CTAs use the amber gradient (`#C8883A → #E8A855`); upgrade accents use `#D4944A`.
 - **Operations log.** Material architecture or strategy decisions get a new entry appended to `docs/OPERATIONS.md` (newest at the bottom): context → decision → reasoning.
 - **Build process rules** (post-Phase 1 retro): verify state before edits, one change at a time tested before the next, JSX always multi-line, extract multi-line handlers to named functions, delete files and clean up references in the same commit, prefer real device logs over theorising for async/routing bugs, migrations always transactional with rollback documented.
+- **Schema FKs are mandatory.** Any table with a `user_id` column must have a FK constraint to `auth.users(id)` with explicit `ON DELETE` behaviour (typically `CASCADE`; `SET NULL` only for tables that retain anonymized data like `safety_events`). Tables created via the Supabase SQL Editor that omit the FK will break the deletion cascade — see migration `20260428_004` for the schema hygiene fix that retroactively added missing constraints.
 
 ## Active branch
 

@@ -240,6 +240,99 @@ three days ago. The bug fixes ride along because the failing flow
 involves these screens — fixing them in a separate PR would mean two
 device-test cycles instead of one.
 
+### 2026-04-29 — Schema hygiene: add missing user_id foreign keys
+
+**Context:** Database audit during PR 1 (account-deletion-flow) review
+revealed that the live database had no FK constraints from `user_id`
+columns to `auth.users(id)` across the public schema, despite the
+original MVP migration (`20260312_001_mvp_core.sql`) declaring some of
+them. The deletion flow assumed CASCADE behaviour that didn't actually
+exist; deleting an auth user would orphan rows in `child_profiles`,
+`conversations`, `interaction_logs`, `parent_thoughts`, `saved_scripts`,
+`script_feedback`, `subscriptions`, `usage_events`, `user_preferences`,
+and `safety_events`.
+
+CLAUDE.md was also significantly out of date — documented 8 tables
+when the schema actually contains 14. Tables created out-of-band via
+the Supabase SQL Editor (`saved_scripts`, `script_feedback`,
+`subscriptions`, `trial_usage`, `user_preferences`, `incident_events`,
+`child_insights`, plus the earlier `interaction_logs` and
+`parent_thoughts`) were missing from documentation entirely.
+
+Pre-migration audit confirmed the database had zero rows where
+`user_id` references a non-existent auth user (no cleanup needed
+before applying constraints).
+
+**Decision:** Created hygiene migration
+`20260428_004_add_user_id_foreign_keys.sql` that ensures every
+`user_id` column in the 10 user-scoped tables has a FK to
+`auth.users(id)` with `ON DELETE CASCADE`. The migration uses a
+defensive `DO`-block loop instead of literal `ALTER TABLE … ADD
+CONSTRAINT` statements: for each table it looks up any existing FK
+from `user_id` to `auth.users(id)` in `pg_constraint` (regardless of
+the constraint's name or current `ON DELETE` behaviour), drops it,
+and re-adds the canonical FK. This keeps the migration idempotent
+across environments where the original MVP-migration constraints
+*do* exist (fresh dev resets) versus environments where they were
+later dropped (the audited live state).
+
+`safety_events` is set to `CASCADE` in this migration as a temporary
+state. The follow-up account-deletion migration will flip it to
+`SET NULL` per Principle 8 (anonymized retention of safety logs after
+account deletion).
+
+Updated `CLAUDE.md` to document all 14 tables (split into user-scoped,
+child-scoped, and anonymous). Added a new convention to the
+"Conventions to follow" list requiring FK constraints on every future
+`user_id` column. Updated `docs/backend/DATABASE_SCHEMA.md` with stub
+sections for the seven previously-undocumented SQL-Editor tables plus
+full sections for `interaction_logs` and `parent_thoughts` derived
+from the Edge Function's insert shapes.
+
+PR 1 (account-deletion-flow) is paused while this hygiene PR merges
+and is smoke-tested. Once merged, PR 1's migration becomes much
+smaller — its CASCADE-related `DO` blocks can be deleted and its
+`safety_events` flip simplified to a single drop-and-re-add.
+
+**Reasoning:** Documentation drift led directly to PR 1 building on
+assumed behaviour that didn't exist in the live database. The fix is
+both structural (add the constraints, normalize state across
+environments) and documentary (fix the source-of-truth docs +
+introduce the convention so future SQL-Editor changes can't recreate
+the problem). Splitting the hygiene work out of PR 1 keeps both PRs
+tight and lets the schema cleanup land first, where it belongs.
+
+Pre-merge verification: the operator runs the migration against
+staging and executes the audit query in the PR description (lists
+every FK from `public.*.user_id` to `auth.users(id)` with its
+`delete_rule`). Expected: 10 rows, all `CASCADE`. Fewer than 10 rows
+means a constraint failed to apply — investigate which table and why
+before merging.
+
+### 2026-04-29 — Schema hygiene migration: replaced DO-block with explicit ALTER
+
+**Context:** The original DO-block implementation of migration
+`20260428_004` applied to the live database but only correctly set
+`ON DELETE CASCADE` on 5 of 10 target tables. Tables that had no
+prior FK to `auth.users` (`interaction_logs`, `saved_scripts`,
+`script_feedback`, `subscriptions`, `user_preferences`) ended up with
+`NO ACTION` despite the DO-block including `on delete cascade` in its
+`format()` call. Root cause not fully investigated — appears to be a
+Supabase dashboard SQL Editor quirk with multi-line `format()`
+statements inside DO-blocks.
+
+**Decision:** Replaced the DO-block in the migration file with
+explicit `ALTER TABLE ... ADD CONSTRAINT` statements for each of the
+10 target tables. The live database was corrected with the same
+pattern via the SQL Editor before this commit. Verified via
+`pg_constraint` query that all 11 FK constraints to `auth.users`
+(10 target tables + `profiles`) now have `delete_action = CASCADE`.
+
+**Reasoning:** The migration file is documentation of what to apply
+on a fresh environment. If it doesn't reliably produce the correct
+state, it's not safe to keep. Explicit ALTER statements are simpler,
+more readable, and apply reliably across environments.
+
 ### 2026-04-29 — Account deletion + pause + export flow (backend, PR 1 of 2)
 
 **Context:** Sturdy had no account deletion mechanism. Without one, the
@@ -298,3 +391,39 @@ Product Principle 8 and surfaced in the privacy policy text. Splitting
 into two PRs lets the destructive backend land first, get
 smoke-tested against a real database, and stabilize before the client
 surfaces it.
+
+### 2026-04-29 — PR 18 update: simplify migration after PR 19, add missing tables to export
+
+**Context:** PR 18's original migration was written before the schema
+hygiene audit revealed that the public schema contained 14 tables (not
+8) and that no FK constraints existed from `user_id` columns to
+`auth.users`. PR 19 fixed the schema state. PR 18 is updated to build
+on that foundation.
+
+The original migration's `DO`-blocks that defensively cascade-rebuilt
+FKs on `interaction_logs`, `parent_thoughts`, and `usage_events` are
+no longer needed — PR 19 established those FKs with `CASCADE`. The
+migration is now significantly shorter, focused on three specific
+changes: `paused_at` column, `safety_events` flip from `CASCADE` to
+`SET NULL`, and storage bucket setup.
+
+The `account-export` Edge Function originally exported only 7 of the
+14 tables. Most importantly, `saved_scripts` (the parent's
+explicitly-saved scripts) was missing. Updated to also include
+`saved_scripts`, `script_feedback`, `child_insights`, `incident_events`,
+and `user_preferences`. The `subscriptions` table is excluded (billing
+infrastructure, not user content). The `trial_usage` table is excluded
+(anonymous device tracking).
+
+**Decision:** Trimmed the migration. Updated the export. Updated the
+smoke test plan to verify cascade behaviour against the full 14-table
+schema. `account-delete` and `account-pause` functions unchanged —
+they were already correct given the cascade FKs PR 19 established.
+
+**Reasoning:** PR 19 raised the floor underneath PR 18. The simplified
+migration now reads as the actual intent of PR 18 (paused_at + flip
+safety_events + storage bucket) without the defensive re-assertions
+that were a workaround for the missing FKs PR 19 fixed at the source.
+The export update closes a real gap — exporting a parent's account
+without their saved scripts would not have honoured the "Export your
+data first" promise in the privacy policy.

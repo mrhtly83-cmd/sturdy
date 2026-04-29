@@ -104,10 +104,17 @@ type UserData = {
   parentThoughts:  unknown[];
   interactionLogs: unknown[];
   usageEvents:     unknown[];
+  savedScripts:    unknown[];
+  scriptFeedback:  unknown[];
+  userPreferences: unknown[];
+  childInsights:   unknown[];
+  incidentEvents:  unknown[];
 };
 
 async function collectUserData(admin: ReturnType<typeof adminClient>, userId: string): Promise<UserData> {
   // Each query is independent — run in parallel for a lower wall-clock time.
+  // safeSelect for tables that were created out-of-band via the SQL Editor:
+  // missing tables on a given environment return [] rather than crashing.
   const [
     profile,
     childProfiles,
@@ -115,6 +122,9 @@ async function collectUserData(admin: ReturnType<typeof adminClient>, userId: st
     parentThoughts,
     interactionLogs,
     usageEvents,
+    savedScripts,
+    scriptFeedback,
+    userPreferences,
   ] = await Promise.all([
     admin.from("profiles").select("*").eq("id", userId).maybeSingle().then(r => r.data),
     admin.from("child_profiles").select("*").eq("user_id", userId).then(r => r.data ?? []),
@@ -122,6 +132,9 @@ async function collectUserData(admin: ReturnType<typeof adminClient>, userId: st
     safeSelect(admin, "parent_thoughts", userId),
     safeSelect(admin, "interaction_logs", userId),
     admin.from("usage_events").select("*").eq("user_id", userId).then(r => r.data ?? []),
+    safeSelect(admin, "saved_scripts", userId),
+    safeSelect(admin, "script_feedback", userId),
+    safeSelect(admin, "user_preferences", userId),
   ]);
 
   // Messages live under conversations — fetch in a second pass.
@@ -136,6 +149,21 @@ async function collectUserData(admin: ReturnType<typeof adminClient>, userId: st
     messages = data ?? [];
   }
 
+  // child_insights and incident_events live under child_profiles — fetch in a
+  // second pass after childProfiles is known.
+  const childProfileIds = (childProfiles as Array<{ id: string }> | undefined)
+    ?.map(c => c.id) ?? [];
+  let childInsights:  unknown[] = [];
+  let incidentEvents: unknown[] = [];
+  if (childProfileIds.length > 0) {
+    const [insightsResult, incidentsResult] = await Promise.all([
+      safeSelectByChildren(admin, "child_insights",  childProfileIds),
+      safeSelectByChildren(admin, "incident_events", childProfileIds),
+    ]);
+    childInsights  = insightsResult;
+    incidentEvents = incidentsResult;
+  }
+
   return {
     profile,
     childProfiles,
@@ -144,14 +172,19 @@ async function collectUserData(admin: ReturnType<typeof adminClient>, userId: st
     parentThoughts,
     interactionLogs,
     usageEvents,
+    savedScripts,
+    scriptFeedback,
+    userPreferences,
+    childInsights,
+    incidentEvents,
   };
 }
 
 /**
  * Defensive select for tables that may not exist on every environment
- * (parent_thoughts and interaction_logs were created out-of-band via the
- * SQL Editor). If the table is missing, return an empty array rather than
- * blowing up the whole export.
+ * (most of these were created out-of-band via the SQL Editor). If the
+ * table is missing, return an empty array rather than blowing up the
+ * whole export.
  */
 async function safeSelect(
   admin: ReturnType<typeof adminClient>,
@@ -163,6 +196,27 @@ async function safeSelect(
       .from(table)
       .select("*")
       .eq("user_id", userId);
+    if (error) return [];
+    return data ?? [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Same as safeSelect but for child-scoped tables (child_insights,
+ * incident_events) that key on child_profile_id rather than user_id.
+ */
+async function safeSelectByChildren(
+  admin: ReturnType<typeof adminClient>,
+  table: string,
+  childProfileIds: string[],
+): Promise<unknown[]> {
+  try {
+    const { data, error } = await admin
+      .from(table)
+      .select("*")
+      .in("child_profile_id", childProfileIds);
     if (error) return [];
     return data ?? [];
   } catch {
@@ -198,11 +252,43 @@ function renderMarkdown(d: UserData & { exportedAt: string; email: string | null
   if (d.childProfiles.length === 0) lines.push("_None_");
   lines.push("");
 
-  lines.push(`## Your saved scripts (${d.conversations.length})`);
+  lines.push(`## Your saved scripts (${d.savedScripts.length})`);
+  lines.push("");
+  lines.push("Scripts you explicitly saved while using Sturdy.");
+  lines.push("");
+  for (const s of d.savedScripts as Array<Record<string, unknown>>) {
+    const title   = String(s.title         ?? "(untitled)");
+    const trigger = s.trigger_label ? String(s.trigger_label) : null;
+    const created = String(s.created_at    ?? "");
+    lines.push(`### ${title}`);
+    const meta: string[] = [];
+    if (trigger) meta.push(trigger);
+    if (created) meta.push(created);
+    if (meta.length > 0) lines.push(`_${meta.join(" · ")}_`);
+    lines.push("");
+    if (s.structured) {
+      lines.push("```json");
+      lines.push(JSON.stringify(s.structured, null, 2));
+      lines.push("```");
+      lines.push("");
+    }
+    if (s.notes) {
+      lines.push(`> ${String(s.notes)}`);
+      lines.push("");
+    }
+    lines.push("---");
+    lines.push("");
+  }
+  if (d.savedScripts.length === 0) {
+    lines.push("_None_");
+    lines.push("");
+  }
+
+  lines.push(`## Your conversations (${d.conversations.length})`);
   lines.push("");
   for (const c of d.conversations as Array<Record<string, unknown>>) {
     const created = String(c.created_at ?? "");
-    const title   = String(c.title   ?? "(untitled)");
+    const title   = String(c.title      ?? "(untitled)");
     lines.push(`### ${title}`);
     lines.push(`_${created}_`);
     lines.push("");
@@ -234,6 +320,52 @@ function renderMarkdown(d: UserData & { exportedAt: string; email: string | null
     lines.push("_None_");
     lines.push("");
   }
+
+  lines.push(`## Your script feedback (${d.scriptFeedback.length})`);
+  lines.push("");
+  if (d.scriptFeedback.length === 0) {
+    lines.push("_None_");
+  } else {
+    lines.push("```json");
+    lines.push(JSON.stringify(d.scriptFeedback, null, 2));
+    lines.push("```");
+  }
+  lines.push("");
+
+  lines.push(`## Your insights (${d.childInsights.length})`);
+  lines.push("");
+  lines.push("_Auto-generated by Sturdy from your interactions, scoped to each child._");
+  lines.push("");
+  if (d.childInsights.length === 0) {
+    lines.push("_None_");
+  } else {
+    lines.push("```json");
+    lines.push(JSON.stringify(d.childInsights, null, 2));
+    lines.push("```");
+  }
+  lines.push("");
+
+  lines.push(`## Your incidents (${d.incidentEvents.length})`);
+  lines.push("");
+  if (d.incidentEvents.length === 0) {
+    lines.push("_None_");
+  } else {
+    lines.push("```json");
+    lines.push(JSON.stringify(d.incidentEvents, null, 2));
+    lines.push("```");
+  }
+  lines.push("");
+
+  lines.push(`## Your preferences (${d.userPreferences.length})`);
+  lines.push("");
+  if (d.userPreferences.length === 0) {
+    lines.push("_None_");
+  } else {
+    lines.push("```json");
+    lines.push(JSON.stringify(d.userPreferences, null, 2));
+    lines.push("```");
+  }
+  lines.push("");
 
   lines.push("## Notes on this export");
   lines.push("");
