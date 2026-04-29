@@ -308,3 +308,27 @@ every FK from `public.*.user_id` to `auth.users(id)` with its
 `delete_rule`). Expected: 10 rows, all `CASCADE`. Fewer than 10 rows
 means a constraint failed to apply — investigate which table and why
 before merging.
+
+### 2026-04-29 — Schema hygiene migration: replaced DO-block with explicit ALTER
+
+**Context:** The original DO-block implementation of migration
+`20260428_004` applied to the live database but only correctly set
+`ON DELETE CASCADE` on 5 of 10 target tables. Tables that had no
+prior FK to `auth.users` (`interaction_logs`, `saved_scripts`,
+`script_feedback`, `subscriptions`, `user_preferences`) ended up with
+`NO ACTION` despite the DO-block including `on delete cascade` in its
+`format()` call. Root cause not fully investigated — appears to be a
+Supabase dashboard SQL Editor quirk with multi-line `format()`
+statements inside DO-blocks.
+
+**Decision:** Replaced the DO-block in the migration file with
+explicit `ALTER TABLE ... ADD CONSTRAINT` statements for each of the
+10 target tables. The live database was corrected with the same
+pattern via the SQL Editor before this commit. Verified via
+`pg_constraint` query that all 11 FK constraints to `auth.users`
+(10 target tables + `profiles`) now have `delete_action = CASCADE`.
+
+**Reasoning:** The migration file is documentation of what to apply
+on a fresh environment. If it doesn't reliably produce the correct
+state, it's not safe to keep. Explicit ALTER statements are simpler,
+more readable, and apply reliably across environments.
