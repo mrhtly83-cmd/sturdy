@@ -1,8 +1,7 @@
 // app/child/new.tsx
-// v7 — Add child profile
-// Arrow age picker + slider + contextual hint
-// Neurotype: illustrated cards with icons + colored accent bars
-// Logo palette throughout
+// v8 — Add child profile
+// Arrow age picker + slider + contextual hint + optional personality notes.
+// Per docs/PRODUCT_PRINCIPLES.md §1: no neurotype selection UI.
 
 import { useState } from 'react';
 import {
@@ -30,18 +29,6 @@ import { colors as C, fonts as F } from '../../src/theme/colors';
 const { width: W } = Dimensions.get('window');
 const MIN_AGE = 0;
 const MAX_AGE = 17;
-
-// ─── Neurotype data with icons + unique colors ───
-const NEUROTYPES = [
-  { key: 'ADHD',    icon: '⚡', label: 'ADHD',              desc: 'Moves fast, acts first, hard to wait',          color: C.coral,  bg: 'rgba(232,116,97,0.07)' },
-  { key: 'Autism',  icon: '🧩', label: 'Autistic',          desc: 'Loves routine, notices everything',              color: C.blue,   bg: 'rgba(87,120,163,0.07)' },
-  { key: 'Anxiety', icon: '🌧️', label: 'Anxiety',           desc: "Worries deeply, needs safety first",             color: C.peach,  bg: 'rgba(247,149,102,0.07)' },
-  { key: 'Sensory', icon: '🎧', label: 'Sensory',           desc: 'Overwhelmed by noise, texture, crowds',          color: C.amber,  bg: 'rgba(212,148,74,0.07)' },
-  { key: 'PDA',     icon: '🛡️', label: 'PDA',               desc: 'Fights any demand, needs autonomy',              color: C.sage,   bg: 'rgba(138,160,96,0.07)' },
-  { key: '2e',      icon: '🌟', label: 'Twice exceptional', desc: 'Brilliant mind, big emotions',                   color: C.blueLight, bg: 'rgba(107,141,184,0.07)' },
-] as const;
-
-type NeurotypeKey = typeof NEUROTYPES[number]['key'];
 
 // ─── Age hint ───
 function getAgeHint(age: number): string {
@@ -77,7 +64,6 @@ export default function NewChildScreen() {
   const { reloadChild }    = useChildProfile();
   const [name, setName]    = useState('');
   const [age, setAge]      = useState(5);
-  const [neurotypes, setNeurotypes] = useState<NeurotypeKey[]>([]);
   const [notes, setNotes]  = useState('');
   const [error, setError]  = useState('');
   const [saving, setSaving] = useState(false);
@@ -94,13 +80,6 @@ export default function NewChildScreen() {
     setAge(next);
   };
 
-  const toggleNeurotype = (key: NeurotypeKey) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setNeurotypes(prev =>
-      prev.includes(key) ? prev.filter(n => n !== key) : [...prev, key]
-    );
-  };
-
   const handleSave = async () => {
     if (!canSave || saving || !session) return;
     setSaving(true); setError('');
@@ -115,7 +94,6 @@ export default function NewChildScreen() {
           name: name.trim(),
           child_age: age,
           age_band: age <= 4 ? '2-4' : age <= 7 ? '5-7' : '8-12',
-          neurotype: neurotypes,
           preferences,
         });
       if (dbErr) throw dbErr;
@@ -242,65 +220,6 @@ export default function NewChildScreen() {
             </View>
           </LinearGradient>
 
-        {/* ── Neurotype Section ── */}
-          <View style={st.neuroSection}>
-            <Text style={st.neuroSectionTitle}>Does your child have any of these?</Text>
-            <Text style={st.neuroSectionSub}>Optional · swipe to browse, tap to select</Text>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={st.neuroCarousel}
-              decelerationRate="fast"
-              snapToInterval={W * 0.42 + 10}
-            >
-              {NEUROTYPES.map(n => {
-                const sel = neurotypes.includes(n.key);
-                return (
-                  <Pressable
-                    key={n.key}
-                    onPress={() => toggleNeurotype(n.key)}
-                    style={({ pressed }) => [
-                      st.neuroTile,
-                      sel && { borderColor: `${n.color}50`, backgroundColor: n.bg },
-                      pressed && { opacity: 0.8 },
-                    ]}
-                  >
-                    {/* Top icon */}
-                    <View style={[st.neuroTileIconWrap, { backgroundColor: sel ? `${n.color}20` : 'rgba(255,255,255,0.06)' }]}>
-                      <Text style={st.neuroTileIcon}>{n.icon}</Text>
-                    </View>
-
-                    {/* Label */}
-                    <Text style={[st.neuroTileLabel, sel && { color: n.color }]}>{n.label}</Text>
-
-                    {/* Description */}
-                    <Text style={[st.neuroTileDesc, sel && { color: 'rgba(255,255,255,0.50)' }]}>{n.desc}</Text>
-
-                    {/* Selected indicator */}
-                    {sel && (
-                      <View style={[st.neuroTileCheck, { backgroundColor: n.color }]}>
-                        <Text style={st.neuroTileCheckText}>✓</Text>
-                      </View>
-                    )}
-
-                    {/* Bottom color bar */}
-                    <View style={[st.neuroTileBar, { backgroundColor: sel ? n.color : 'rgba(255,255,255,0.06)' }]} />
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-
-            {neurotypes.length > 0 && (
-              <View style={st.neuroNote}>
-                <Text style={st.neuroNoteIcon}>🤫</Text>
-                <Text style={st.neuroNoteText}>
-                  Scripts will quietly adapt for {neurotypes.join(' + ')} — your child is never labelled.
-                </Text>
-              </View>
-            )}
-          </View>
-
           {/* ── Personality Notes ── */}
           <Pressable onPress={() => setShowNotes(v => !v)} style={st.notesToggle}>
             <Text style={st.notesToggleText}>
@@ -408,24 +327,6 @@ const st = StyleSheet.create({
   hintCard: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(138,160,96,0.08)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(138,160,96,0.15)', paddingHorizontal: 14, paddingVertical: 10 },
   hintIcon: { fontSize: 18 },
   hintText: { fontFamily: F.body, fontSize: 13, color: C.sage, flex: 1, lineHeight: 19 },
-
-  // ── Neurotype carousel (these 5 were missing) ──
-  neuroSection: { gap: 12 },
-  neuroSectionTitle: { fontFamily: F.bodyMedium, fontSize: 16, color: C.textBody },
-  neuroSectionSub: { fontFamily: F.body, fontSize: 13, color: C.textMuted, marginTop: -6 },
-  neuroNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: 'rgba(87,120,163,0.08)', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: 'rgba(87,120,163,0.15)' },
-  neuroNoteIcon: { fontSize: 18, marginTop: 1 },
-  neuroNoteText: { fontFamily: F.body, fontSize: 13, color: C.textSub, flex: 1, lineHeight: 20 },
-
-  neuroCarousel: { paddingHorizontal: 4, gap: 10 },
-  neuroTile: { width: W * 0.42, borderRadius: 20, padding: 16, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', gap: 10, alignItems: 'center', overflow: 'hidden' },
-  neuroTileIconWrap: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  neuroTileIcon: { fontSize: 24 },
-  neuroTileLabel: { fontFamily: F.bodySemi, fontSize: 14, color: C.textSub, textAlign: 'center' },
-  neuroTileDesc: { fontFamily: F.body, fontSize: 12, color: C.textMuted, textAlign: 'center', lineHeight: 17 },
-  neuroTileCheck: { position: 'absolute', top: 10, right: 10, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  neuroTileCheckText: { fontSize: 12, color: '#FFFFFF', fontWeight: '700' },
-  neuroTileBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
 
   notesToggle: { paddingVertical: 4 },
   notesToggleText: { fontFamily: F.bodyMedium, fontSize: 14, color: C.textMuted },

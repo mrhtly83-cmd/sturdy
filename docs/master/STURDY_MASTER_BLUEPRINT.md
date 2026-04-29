@@ -189,7 +189,14 @@ All AI/prompt/safety changes are deferred to a future phase after the UI rebuild
 Unchanged — 12 foundational parenting books. See PROMPT_SYSTEM.md.
 
 ### Neurotype Detection
-Unchanged — detects from message content. See PROMPT_SYSTEM.md.
+
+**Principle: Neurotype is invisible.** Sturdy detects neurotype silently from
+how parents describe their child. The detection adapts AI output but is never
+named, displayed, or set by the user. There is no UI for neurotype selection.
+There is no premium feature for neurotype labelling. The column exists in the
+database for AI use only.
+
+Detection logic unchanged — detects from message content. See PROMPT_SYSTEM.md.
 
 ---
 

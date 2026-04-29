@@ -43,7 +43,7 @@ const HORIZON_PHOTO = require('../../assets/images/welcome/welcome-horizon.jpg')
 // CONSTANTS
 // ═══════════════════════════════════════════════
 
-const GREETINGS = ['Hi', 'Hello', 'Hey', 'Welcome back', 'Good to see you'];
+const GREETINGS = ['Hi', 'Hello', 'Hey'];
 
 // Rotating color palette for child avatars
 const CHILD_COLORS = [
