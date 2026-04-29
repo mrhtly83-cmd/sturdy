@@ -134,14 +134,77 @@ and event_type = 'script_generated'
 
 ---
 
-## Future Tables (Not Yet Built)
+### `interaction_logs`
+Per-script log emitted by the Edge Function. Powers Your Child profile triggers + outcome dashboards. Created out-of-band via the Supabase SQL Editor; column list below reflects the shape the Edge Function writes (see `supabase/functions/chat-parenting-assistant/index.ts:72`).
 
+```sql
+id                 uuid primary key
+user_id            uuid references auth.users(id) on delete cascade  -- added by 20260428_004
+child_profile_id   uuid references child_profiles(id) nullable
+conversation_id    uuid nullable
+mode               text  -- 'sos' | 'reconnect' | 'understand' | 'conversation'
+trigger_category   text nullable
+intensity_inferred integer nullable
+is_followup        boolean
+followup_type      text nullable
+situation_summary  text
+message_length     integer
+created_at         timestamptz
 ```
-saved_scripts        -- parent-bookmarked scripts
-subscriptions        -- plan management, premium gating
-child_insights       -- pattern recognition from history
-daily_reflections    -- parent growth layer
+
+---
+
+### `parent_thoughts`
+Question-mode prompt + response pairs. Created out-of-band via the SQL Editor; column list below reflects the shape the Edge Function writes (`supabase/functions/chat-parenting-assistant/index.ts:104`).
+
+```sql
+id               uuid primary key
+user_id          uuid references auth.users(id) on delete cascade  -- added by 20260428_004
+child_profile_id uuid references child_profiles(id) nullable
+prompt_text      text
+response_text    text
+created_at       timestamptz
 ```
+
+---
+
+### `saved_scripts`
+Parent-bookmarked scripts. Created out-of-band via the SQL Editor — full column list pending an audit against production. Known: `user_id uuid references auth.users(id) on delete cascade` (added by `20260428_004`).
+
+---
+
+### `script_feedback`
+Outcome feedback on scripts (did it land, did it not, etc.). Created out-of-band via the SQL Editor — full column list pending an audit against production. Known: `user_id uuid references auth.users(id) on delete cascade` (added by `20260428_004`).
+
+---
+
+### `subscriptions`
+Billing records. Currently dormant — no rows until RevenueCat / StoreKit wires up. Created out-of-band via the SQL Editor — full column list pending an audit against production. Known: `user_id uuid references auth.users(id) on delete cascade` (added by `20260428_004`).
+
+---
+
+### `usage_events`
+Already documented above. Cascade FK re-asserted by `20260428_004`.
+
+---
+
+### `user_preferences`
+Per-user settings (tone selector, notification opt-ins, etc.). Created out-of-band via the SQL Editor — full column list pending an audit against production. Known: `user_id uuid references auth.users(id) on delete cascade` (added by `20260428_004`).
+
+---
+
+### `child_insights`
+Derived insights about a specific child (patterns, what's helped, etc.). Child-scoped — FK to `child_profiles`, no direct FK to `auth.users`. Created out-of-band via the SQL Editor — full column list pending an audit against production.
+
+---
+
+### `incident_events`
+Incident-level patterns extracted from interactions. Child-scoped — FK to `child_profiles`, no direct FK to `auth.users`. Created out-of-band via the SQL Editor — full column list pending an audit against production.
+
+---
+
+### `trial_usage`
+Anonymous device-level trial counters. **No `user_id`** — the table tracks device-scoped trial state, not user-scoped. No FK to `auth.users` and no constraint added by `20260428_004`. Created out-of-band via the SQL Editor — full column list pending an audit against production.
 
 ---
 
@@ -189,4 +252,7 @@ usage_events(created_at desc)
 | 20260312_001_mvp_core.sql | Full MVP schema |
 | (SQL Editor) | Added `child_age integer` to child_profiles |
 | (SQL Editor) | Added `neurotype text[]` to child_profiles |
+| (SQL Editor) | Added `interaction_logs`, `parent_thoughts`, `saved_scripts`, `script_feedback`, `subscriptions`, `user_preferences`, `child_insights`, `incident_events`, `trial_usage` |
+| 20260327_002_add_child_age.sql | Formalised `child_age` in migration history; backfilled |
+| 20260428_004_add_user_id_foreign_keys.sql | Added FK constraints from every `user_id` column to `auth.users(id)` with `ON DELETE CASCADE` across the 10 user-scoped tables. Idempotent — drops any pre-existing FK on the column before re-adding under the canonical name. `safety_events` will flip to `ON DELETE SET NULL` in the next migration per Principle 8. |
 
