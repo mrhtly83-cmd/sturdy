@@ -1,10 +1,10 @@
 // app/child-setup.tsx
-// v8 — Arrow age picker + slider + neurotype carousel
-// Logo palette: Blue #5778A3, Coral #E87461, Sage #8AA060, Amber #D4944A
+// v9 — First-time child setup: name + exact age. No neurotype UI.
+// Per docs/PRODUCT_PRINCIPLES.md §1: neurotype is invisible — detected silently
+// from how parents describe their child, never selected from a UI.
 
 import { useState } from 'react';
 import {
-  Dimensions,
   Image,
   Pressable,
   ScrollView,
@@ -24,21 +24,8 @@ import { useChildProfile } from '../src/context/ChildProfileContext';
 import { supabase }        from '../src/lib/supabase';
 import { colors as C, fonts as F } from '../src/theme/colors';
 
-const { width: W } = Dimensions.get('window');
 const MIN_AGE = 0;
 const MAX_AGE = 17;
-
-// ─── Neurotype data ───
-const NEUROTYPES = [
-  { key: 'ADHD',    icon: '⚡', label: 'ADHD',              desc: 'Moves fast, acts first, hard to wait',   color: C.coral,     bg: 'rgba(232,116,97,0.07)' },
-  { key: 'Autism',  icon: '🧩', label: 'Autistic',          desc: 'Loves routine, notices everything',       color: C.blue,      bg: 'rgba(87,120,163,0.07)' },
-  { key: 'Anxiety', icon: '🌧️', label: 'Anxiety',           desc: 'Worries deeply, needs safety first',      color: C.peach,     bg: 'rgba(247,149,102,0.07)' },
-  { key: 'Sensory', icon: '🎧', label: 'Sensory',           desc: 'Overwhelmed by noise, texture, crowds',   color: C.amber,     bg: 'rgba(212,148,74,0.07)' },
-  { key: 'PDA',     icon: '🛡️', label: 'PDA',               desc: 'Fights any demand, needs autonomy',       color: C.sage,      bg: 'rgba(138,160,96,0.07)' },
-  { key: '2e',      icon: '🌟', label: 'Twice exceptional', desc: 'Brilliant mind, big emotions',            color: C.blueLight, bg: 'rgba(107,141,184,0.07)' },
-] as const;
-
-type NeurotypeKey = typeof NEUROTYPES[number]['key'];
 
 // ─── Age hint ───
 function getAgeHint(age: number): string {
@@ -74,7 +61,6 @@ export default function ChildSetupScreen() {
  const { setActiveChild, reloadChild } = useChildProfile();
   const [name, setName]    = useState('');
   const [age, setAge]      = useState(5);
-  const [neurotypes, setNeurotypes] = useState<NeurotypeKey[]>([]);
   const [error, setError]  = useState('');
   const [saving, setSaving] = useState(false);
   const [nameFocused, setNameFocused] = useState(false);
@@ -87,13 +73,6 @@ export default function ChildSetupScreen() {
     if (next < MIN_AGE || next > MAX_AGE) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setAge(next);
-  };
-
-  const toggleNeurotype = (key: NeurotypeKey) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setNeurotypes(prev =>
-      prev.includes(key) ? prev.filter(n => n !== key) : [...prev, key]
-    );
   };
 
   const handleContinue = async () => {
@@ -110,13 +89,12 @@ export default function ChildSetupScreen() {
             name: trimmed || 'My child',
             child_age: age,
             age_band: age <= 4 ? '2-4' : age <= 7 ? '5-7' : '8-12',
-            neurotype: neurotypes,
           });
         if (dbErr) throw dbErr;
       } else {
         await AsyncStorage.setItem(
           'sturdy_guest_child',
-          JSON.stringify({ name: trimmed, childAge: age, neurotype: neurotypes }),
+          JSON.stringify({ name: trimmed, childAge: age }),
         );
       }
       setActiveChild({ name: trimmed || '', childAge: age, neurotype: null });
@@ -244,56 +222,6 @@ router.replace('/(tabs)');
           {error ? <Text style={s.error}>{error}</Text> : null}
         </LinearGradient>
 
-        {/* ── Neurotype Carousel ── */}
-        <View style={s.neuroSection}>
-          <Text style={s.neuroSectionTitle}>Does your child have any of these?</Text>
-          <Text style={s.neuroSectionSub}>Optional · swipe to browse, tap to select</Text>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={s.neuroCarousel}
-            decelerationRate="fast"
-            snapToInterval={W * 0.42 + 10}
-          >
-            {NEUROTYPES.map(n => {
-              const sel = neurotypes.includes(n.key);
-              return (
-                <Pressable
-                  key={n.key}
-                  onPress={() => toggleNeurotype(n.key)}
-                  style={({ pressed }) => [
-                    s.neuroTile,
-                    sel && { borderColor: `${n.color}50`, backgroundColor: n.bg },
-                    pressed && { opacity: 0.8 },
-                  ]}
-                >
-                  <View style={[s.neuroTileIconWrap, { backgroundColor: sel ? `${n.color}20` : 'rgba(255,255,255,0.06)' }]}>
-                    <Text style={s.neuroTileIcon}>{n.icon}</Text>
-                  </View>
-                  <Text style={[s.neuroTileLabel, sel && { color: n.color }]}>{n.label}</Text>
-                  <Text style={[s.neuroTileDesc, sel && { color: 'rgba(255,255,255,0.50)' }]}>{n.desc}</Text>
-                  {sel && (
-                    <View style={[s.neuroTileCheck, { backgroundColor: n.color }]}>
-                      <Text style={s.neuroTileCheckText}>✓</Text>
-                    </View>
-                  )}
-                  <View style={[s.neuroTileBar, { backgroundColor: sel ? n.color : 'rgba(255,255,255,0.06)' }]} />
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
-          {neurotypes.length > 0 && (
-            <View style={s.neuroNote}>
-              <Text style={s.neuroNoteIcon}>🤫</Text>
-              <Text style={s.neuroNoteText}>
-                Scripts will quietly adapt for {neurotypes.join(' + ')} — your child is never labelled.
-              </Text>
-            </View>
-          )}
-        </View>
-
         {/* ── CTA ── */}
         <Pressable
           onPress={handleContinue}
@@ -312,6 +240,10 @@ router.replace('/(tabs)');
             </Text>
           </LinearGradient>
         </Pressable>
+
+        {!canContinue && name.trim().length === 0 ? (
+          <Text style={s.ctaHint}>Add your child's name to continue</Text>
+        ) : null}
 
         {/* Skip */}
         <Pressable onPress={handleSkip} style={s.skipBtn}>
@@ -367,29 +299,9 @@ const s = StyleSheet.create({
 
   error: { fontFamily: F.body, fontSize: 14, color: C.coral },
 
-  // Neurotype carousel
-  neuroSection: { gap: 12 },
-  neuroSectionTitle: { fontFamily: F.bodyMedium, fontSize: 16, color: C.textBody },
-  neuroSectionSub: { fontFamily: F.body, fontSize: 13, color: C.textMuted, marginTop: -6 },
-  neuroCarousel: { paddingHorizontal: 4, gap: 10 },
-  neuroTile: {
-    width: W * 0.42, borderRadius: 20, padding: 16,
-    backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
-    gap: 10, alignItems: 'center', overflow: 'hidden',
-  },
-  neuroTileIconWrap: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  neuroTileIcon: { fontSize: 24 },
-  neuroTileLabel: { fontFamily: F.bodySemi, fontSize: 14, color: C.textSub, textAlign: 'center' },
-  neuroTileDesc: { fontFamily: F.body, fontSize: 12, color: C.textMuted, textAlign: 'center', lineHeight: 17 },
-  neuroTileCheck: { position: 'absolute', top: 10, right: 10, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  neuroTileCheckText: { fontSize: 12, color: '#FFFFFF', fontWeight: '700' },
-  neuroTileBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
-  neuroNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: 'rgba(87,120,163,0.08)', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: 'rgba(87,120,163,0.15)' },
-  neuroNoteIcon: { fontSize: 18, marginTop: 1 },
-  neuroNoteText: { fontFamily: F.body, fontSize: 13, color: C.textSub, flex: 1, lineHeight: 20 },
-
   ctaBtn: { borderRadius: 18, minHeight: 56, alignItems: 'center', justifyContent: 'center' },
   ctaText: { fontFamily: F.subheading, fontSize: 17, color: '#FFFFFF', letterSpacing: 0.3 },
+  ctaHint: { fontFamily: F.body, fontSize: 13, color: C.textMuted, textAlign: 'center', marginTop: -12 },
 
   skipBtn: { alignItems: 'center', paddingVertical: 4 },
   skipText: { fontFamily: F.body, fontSize: 14, color: C.textMuted },

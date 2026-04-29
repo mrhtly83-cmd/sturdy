@@ -179,3 +179,63 @@ than to defend a Soft tone that drifts in the wild. The hero rewrite
 live or die by: paid Sturdy gets sharper about your child over time.
 Everything else on the page now supports that one promise instead of
 itemizing parallel claims.
+
+### 2026-04-29 — Neurotype invisibility reconciliation + child profile rebuild
+
+**Context:** Doc audit revealed the neurotype-invisibility principle was
+documented in CLAUDE.md and PROMPT_SYSTEM.md but contradicted by
+DATABASE_SCHEMA.md, which described an "optional parent-set premium" path
+that no other doc supported. The child profile setup screen was built
+consistent with the schema doc — exposing ADHD/Autistic/Anxiety/Sensory/
+PDA/2e selection cards — and the per-child profile screen displayed the
+stored neurotype back to the parent as a labeled row. Both violated the
+locked principle stated in CLAUDE.md and PROMPT_SYSTEM.md. The Master
+Blueprint deferred to PROMPT_SYSTEM.md without restating the principle
+in its own canonical text. Three flow bugs surfaced in the same path:
+the welcome "Get started" button pushed `/auth/sign-up` (a route that
+no longer exists since auth was unified to `/auth?mode=signup`), the
+guest skip path could land on Home with greeting "Welcome back, there",
+and the "Continue" button on child setup was invisibly disabled when
+the name field was empty with no hint to the parent.
+
+**Decision:** Reconciled all docs to the strict-invisibility principle.
+Removed the "set by parent (premium)" line from DATABASE_SCHEMA.md and
+replaced the column comment with "AI auto-detection only — never user-
+set, never displayed." Restated the principle directly in
+STURDY_MASTER_BLUEPRINT.md so the canonical product spec carries it,
+not just CLAUDE.md and PROMPT_SYSTEM.md. Created new canonical
+docs/PRODUCT_PRINCIPLES.md as the single source of truth for product
+principles, with a violation checklist for each of the seven principles
+and an explicit usage protocol for future briefs. Rebuilt the child
+profile setup screen to remove neurotype selection cards entirely; the
+screen is now name + exact-age slider + Continue + Skip. Stripped the
+"Neurotype" row from the per-child profile screen. Fixed the three
+flow bugs in the same PR: welcome's "Get started" now pushes
+`/auth?mode=signup`; both guest skip handlers now also call
+`markOnboardingComplete()` so the AuthGate routes returning guests to
+`/auth?mode=signin` instead of looping back to `/welcome`; the Home
+greeting rotation no longer includes "Welcome back" or "Good to see
+you" (so guests with no name get "Hi, there." rather than "Welcome
+back, there."); child setup now shows a visible "Add your child's
+name to continue" hint under the disabled Continue button when the
+name field is empty.
+
+Notes / "What makes them them?" field deferred to a follow-up brief
+that ships notes UI + detection wiring together. A notes field that
+doesn't feed detection would break the "shaped to your child" promise
+the welcome flow makes — better to ship the experience whole than the
+input alone.
+
+**Reasoning:** The principle is the most defensible product position
+Sturdy has — parents do not need to diagnose their child to get help,
+because Sturdy reads it from how they describe behaviour. Doc
+inconsistency is what caused the original child-setup screen to ship
+with the carousel in the first place; if the schema doc and the master
+blueprint had agreed with CLAUDE.md, that drift would not have
+happened. Adding PRODUCT_PRINCIPLES.md as a canonical reference
+prevents the same drift class from recurring — every future brief
+references it. The screen rebuild aligns the UI with the welcome
+flow's "shaped to your child, not a category" promise that shipped
+three days ago. The bug fixes ride along because the failing flow
+involves these screens — fixing them in a separate PR would mean two
+device-test cycles instead of one.

@@ -8,7 +8,7 @@
 //   3. What works — saved scripts for this child (proxy for "what helped")
 //   4. Emerging patterns — placeholder + lock (table not built yet)
 //   5. Weekly insight — locked teaser + Coming-soon pill
-//   6. Profile basics — read-only name / age / neurotype (editing TBD)
+//   6. Profile basics — read-only name / age (editing TBD)
 //
 // Empty states are load-bearing: they tell the parent the profile gets
 // smarter the more they use Sturdy. That IS the conversion hook.
@@ -108,9 +108,6 @@ export default function ChildProfileScreen() {
   const totalInteractions = insights?.totalInteractions ?? 0;
   const topTriggers = insights?.topTriggers ?? [];
   const isNewProfile = totalInteractions < 3 && !isLoading;
-  const neurotypeText = Array.isArray(child?.neurotype) && child.neurotype.length > 0
-    ? child.neurotype.join(', ')
-    : null;
 
   return (
     <View style={s.root}>
@@ -265,15 +262,6 @@ export default function ChildProfileScreen() {
                 <Text style={s.basicLabel}>Age</Text>
                 <Text style={s.basicValue}>{child.childAge}</Text>
               </View>
-              {neurotypeText ? (
-                <>
-                  <View style={s.divider} />
-                  <View style={s.basicRow}>
-                    <Text style={s.basicLabel}>Neurotype</Text>
-                    <Text style={s.basicValue}>{neurotypeText}</Text>
-                  </View>
-                </>
-              ) : null}
               <Text style={s.basicHint}>Editing coming soon.</Text>
             </View>
           </View>

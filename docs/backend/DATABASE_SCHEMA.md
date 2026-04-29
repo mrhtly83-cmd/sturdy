@@ -31,7 +31,7 @@ user_id     uuid references auth.users(id)
 name        text nullable
 child_age   integer check (child_age between 2 and 17)  -- exact age, required
 age_band    text check (age_band in ('2-4', '5-7', '8-12'))  -- legacy, kept for compat
-neurotype   text[] default '{}'  -- detected or set: ADHD, Autism, Anxiety, Sensory, PDA, 2e
+neurotype   text[] default '{}'  -- AI auto-detection only — never user-set, never displayed
 preferences jsonb default '{}'
 created_at  timestamptz
 updated_at  timestamptz
@@ -40,7 +40,10 @@ updated_at  timestamptz
 **Key design decisions:**
 - `child_age` is exact integer — not a band. A 4-year-old and 2-year-old are completely different.
 - `neurotype` is an array — future support for multiple. Currently uses first element.
-- Neurotype is set by auto-detection from message or optionally by parent (premium).
+- Neurotype is set ONLY by silent auto-detection from parent messages (see PROMPT_SYSTEM.md).
+- The column is invisible AI infrastructure. It is never exposed in UI, never set by parent,
+  and never named in output. Any future code that exposes this field to the user is a
+  product principle violation — see PRODUCT_PRINCIPLES.md.
 
 ---
 

@@ -37,6 +37,7 @@ import { BlurView }        from 'expo-blur';
 import * as Haptics        from 'expo-haptics';
 import AsyncStorage        from '@react-native-async-storage/async-storage';
 import { useAuth }         from '../../src/context/AuthContext';
+import { markOnboardingComplete } from '../../src/utils/onboarding';
 import { colors as C, fonts as F } from '../../src/theme/colors';
 
 const { width: W, height: H } = Dimensions.get('window');
@@ -170,17 +171,19 @@ export default function WelcomeScreen() {
   const handleSkip = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await AsyncStorage.setItem(GUEST_SEEN_KEY, 'true');
+    await markOnboardingComplete();
     router.replace('/(tabs)');
   };
 
- const handleGetStarted = () => {
+  const handleGetStarted = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push('/auth/sign-up');
+    router.push('/auth?mode=signup');
   };
 
   const handleTryWithout = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await AsyncStorage.setItem(GUEST_SEEN_KEY, 'true');
+    await markOnboardingComplete();
     router.replace('/(tabs)');
   };
 
