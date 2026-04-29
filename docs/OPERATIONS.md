@@ -239,3 +239,62 @@ flow's "shaped to your child, not a category" promise that shipped
 three days ago. The bug fixes ride along because the failing flow
 involves these screens — fixing them in a separate PR would mean two
 device-test cycles instead of one.
+
+### 2026-04-29 — Account deletion + pause + export flow (backend, PR 1 of 2)
+
+**Context:** Sturdy had no account deletion mechanism. Without one, the
+privacy policy could not honestly promise data deletion, and Sturdy
+could not satisfy data-subject rights under PIPEDA, PIPA BC, GDPR, or
+CCPA. The decision was to build the lifecycle backend before the UI so
+the migration and Edge Functions could ship and be smoke-tested in
+production before any client surface depends on them.
+
+**Decision:** Split the work into two PRs. PR 1 (this entry) lands the
+backend: a migration that adds `profiles.paused_at`, switches
+`safety_events.user_id` from `ON DELETE CASCADE` to `ON DELETE SET NULL`,
+defensively re-asserts `ON DELETE CASCADE` on the out-of-band tables
+(`interaction_logs`, `parent_thoughts`, `usage_events`), and creates a
+private `account-exports` Storage bucket with per-user RLS. Plus four
+Edge Functions:
+
+- `account-export` — JSON + Markdown zipped via `npm:fflate@0.8.2`,
+  uploaded to the private bucket, returned as a 24-hour signed URL.
+  Markdown was chosen over PDF deliberately: it opens on every device,
+  in every text app, with no library dependency that would balloon the
+  function bundle. The privacy policy reflects this.
+- `account-pause` — sets `paused_at = now()` and revokes refresh tokens
+  globally. The user is signed out as a side effect.
+- `account-delete` — deletes the auth user via the admin API. Because
+  every public.* table that references `auth.users` is `ON DELETE
+  CASCADE` (via the migration), and `safety_events.user_id` is
+  `ON DELETE SET NULL`, that single call atomically removes user-owned
+  rows and anonymizes safety logs. Two callers are accepted: the user
+  themselves with `confirmationText = "DELETE"`, or the cron with
+  `confirmationText = "PAUSE_EXPIRED"` and a system-caller credential.
+- `scheduled-pause-cleanup` — daily cron. Queries `paused_at < (now() -
+  30 days)` and calls `account-delete` for each. Daily granularity is
+  intentional — the 30-day window is "approximately 30 days" so a missed
+  run is recovered the next day.
+
+Subscription check is a documented stub: `useSubscription` on the client
+always returns `isPremium: false` until RevenueCat lands, so the server
+mirrors that with a `hasActiveSubscription()` helper that returns false.
+The 409 path on the Edge Function is wired but unreachable today — when
+billing arrives, swapping the helper's body is the only change needed.
+
+PR 2 will add the mobile UI (Settings → Account section, pause and
+delete screens, paused-account detection in `auth/index.tsx`, the
+`requestExport` / `pauseAccount` / `deleteAccount` methods in `api.ts`,
+plus the privacy policy text).
+
+**Reasoning:** Sturdy's positioning rests on respecting parents. A
+clean deletion flow that honours the user's choice is part of that. The
+pause option is humane (deletion in a moment of frustration is
+reversible for 30 days). The export-first path is GDPR/CCPA compliant.
+The "type DELETE" friction (PR 2) matches industry standard for
+irreversible operations. Anonymized `safety_events` retention is the
+only exception to "deletion means deletion" — it's documented in
+Product Principle 8 and surfaced in the privacy policy text. Splitting
+into two PRs lets the destructive backend land first, get
+smoke-tested against a real database, and stabilize before the client
+surfaces it.

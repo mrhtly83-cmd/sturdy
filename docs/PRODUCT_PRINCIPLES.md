@@ -118,6 +118,32 @@ inserted to make cancellation harder than subscription.
 
 ---
 
+## 8. Account deletion means deletion
+
+When a user deletes their Sturdy account, their data is gone. We do not
+preserve deleted accounts for re-engagement campaigns. We do not
+anonymize-and-retain for analytics. We do not maintain shadow profiles.
+We offer a 30-day pause for users who might regret a hasty decision, and
+we offer a data export before any deletion. Once a user chooses to delete,
+we honour it fully.
+
+The one exception is `safety_events` — when a safety filter triggers, the
+resulting log row has its `user_id` stripped on account deletion but the
+content is retained anonymously. This is disclosed in the privacy policy.
+The retention serves the safety filter's improvement for all future users,
+including those whose own accounts are later deleted.
+
+**This looks like a violation when:**
+- "Recover deleted account" flows that revive data after the deletion period
+- Analytics or marketing systems retain deleted-user data linked to the user
+- Soft-delete patterns that flag accounts as deleted but keep the rows linked
+- "We may retain certain information for legitimate business purposes"
+  clauses that quietly preserve deleted user data
+- Any path where a user's deletion is reversible by the company (only the
+  user can reverse a pause; only within the 30-day window)
+
+---
+
 ## How to use this file
 
 Every Claude Code brief that touches product UI, AI prompts, or copy must
