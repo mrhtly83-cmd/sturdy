@@ -41,13 +41,15 @@ export default function ExportAccountScreen() {
       return;
     }
 
-    // Hand off to the system browser — it will start the download.
-    Linking.openURL(result.url).catch(() => {
-      // If the system can't open the URL, surface that as an error.
+    // Hand off to the system browser — it will start the download. Await
+    // so a failure flips to the error branch instead of racing with the
+    // synchronous success state.
+    try {
+      await Linking.openURL(result.url);
+      setSuccess(true);
+    } catch {
       setError("Couldn't open the download link. Please try again.");
-      return;
-    });
-    setSuccess(true);
+    }
   };
 
   return (
