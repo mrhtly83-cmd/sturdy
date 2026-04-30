@@ -190,8 +190,8 @@ export default function SettingsScreen() {
           <SettingRow label="Contact us" onPress={() => {}} />
         </SettingGroup>
 
-        {/* ACCOUNT MANAGEMENT */}
-        <SectionLabel label="ACCOUNT" />
+        {/* MANAGE ACCOUNT */}
+        <SectionLabel label="MANAGE ACCOUNT" />
         <SettingGroup>
           <SettingRow label="Export my data" onPress={() => router.push('/account/export')} />
           <Divider />
