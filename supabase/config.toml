@@ -368,6 +368,59 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Account-lifecycle Edge Functions
+# ─────────────────────────────────────────────────────────────────────────────
+# These three handle user-initiated account flows. Each one validates the
+# caller's JWT inside the function (see supabase/functions/_shared/accountAuth.ts),
+# so the runtime's verify_jwt default is fine — leave it on.
+
+[functions.account-export]
+[functions.account-pause]
+[functions.account-delete]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Scheduled cleanup
+# ─────────────────────────────────────────────────────────────────────────────
+# Runs daily at 03:00 UTC (low-traffic window). Queries `profiles` for
+# accounts where `paused_at` is older than 30 days and calls account-delete
+# for each, with confirmationText = "PAUSE_EXPIRED".
+#
+# Why daily: the 30-day pause window is intentionally approximate. A daily
+# tick gives the function a chance to recover from a missed run on the next
+# pass, and a 24-hour granularity is plenty given the size of the window.
+#
+# Why not handled by the user-facing functions: a paused user is signed out
+# by definition. Without a scheduled tick, there's no way to deterministically
+# delete an abandoned paused account.
+#
+# This function is destructive — it must NOT be invokable from anonymous
+# clients. `verify_jwt = false` lets the cron infrastructure call it without
+# a user JWT; the function itself enforces system-caller auth via either the
+# service role key or a CRON_SHARED_SECRET header (see _shared/accountAuth.ts).
+#
+# Schedule wiring is environment-specific (Supabase pg_cron, an external
+# scheduler, or the dashboard's "Schedule" tab). The recommended setup is
+# pg_cron in the production database:
+#
+#   select cron.schedule(
+#     'scheduled-pause-cleanup',
+#     '0 3 * * *',
+#     $$
+#     select net.http_post(
+#       url     := '<project-url>/functions/v1/scheduled-pause-cleanup',
+#       headers := jsonb_build_object(
+#         'Authorization', 'Bearer ' || current_setting('app.service_role_key'),
+#         'Content-Type',  'application/json'
+#       ),
+#       body    := '{}'::jsonb
+#     );
+#     $$
+#   );
+
+[functions.scheduled-pause-cleanup]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
