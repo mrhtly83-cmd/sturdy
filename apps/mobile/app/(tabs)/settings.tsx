@@ -190,14 +190,22 @@ export default function SettingsScreen() {
           <SettingRow label="Contact us" onPress={() => {}} />
         </SettingGroup>
 
-        {/* ACCOUNT ACTIONS */}
+        {/* ACCOUNT MANAGEMENT */}
+        <SectionLabel label="ACCOUNT" />
+        <SettingGroup>
+          <SettingRow label="Export my data" onPress={() => router.push('/account/export')} />
+          <Divider />
+          <SettingRow label="Pause account"  onPress={() => router.push('/account/pause')} />
+          <Divider />
+          <SettingRow label="Delete account" danger onPress={() => router.push('/account/delete')} />
+        </SettingGroup>
+
+        {/* SIGN OUT */}
         <SettingGroup>
           <SettingRow
             label={signingOut ? 'Signing out…' : 'Sign out'}
             onPress={handleSignOut}
           />
-          <Divider />
-          <SettingRow label="Delete account" danger onPress={() => {}} />
         </SettingGroup>
 
         <Text style={s.version}>Sturdy v6.0 · Made with ♥</Text>
