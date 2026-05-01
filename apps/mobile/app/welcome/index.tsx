@@ -1,13 +1,13 @@
 // app/welcome/index.tsx
-// v12 — Native photo identity welcome flow
+// v13 — Deep Warm v5.2 welcome carousel
 //
-// 5 screens: splash → 3 feature slides → final CTA
+// 5 pages: splash → 3 feature slides → final CTA
 // Native patterns:
 //   - Paged horizontal ScrollView (real swipe)
-//   - BlurView glass cards anchored to bottom edge
-//   - LinearGradient photo dim overlays
-//   - Spring card entrance animation (Animated API)
-//   - Page dots (not progress bar)
+//   - Dark glass cards (Deep Warm tokens) anchored to bottom edge
+//   - C-2 fast-fade gradient base (shared across all pages)
+//   - Spring card entrance animation
+//   - Page dots
 //   - Haptics on every interaction
 //
 // Auth wiring:
@@ -19,27 +19,21 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { router }          from 'expo-router';
-import { StatusBar }       from 'expo-status-bar';
+import { router }            from 'expo-router';
+import { StatusBar }         from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient }  from 'expo-linear-gradient';
-import { BlurView }        from 'expo-blur';
-import * as Haptics        from 'expo-haptics';
-import { useAuth }         from '../../src/context/AuthContext';
+import { LinearGradient }    from 'expo-linear-gradient';
+import * as Haptics          from 'expo-haptics';
+import { useAuth }           from '../../src/context/AuthContext';
 import { colors as C, fonts as F } from '../../src/theme/colors';
 
 const { width: W, height: H } = Dimensions.get('window');
-
-// Static requires — resolved at build time, images must exist before running
-const FAMILY_PHOTO  = require('../../assets/images/welcome/welcome-family.jpg');
-const HORIZON_PHOTO = require('../../assets/images/welcome/welcome-horizon.jpg');
 
 // ─── Feature slide data ───────────────────────────────────────────────────────
 
@@ -77,11 +71,11 @@ const FEATURES = [
   {
     badge:       'Always specific',
     badgeBg:     'rgba(212,148,74,0.24)',
-    badgeColor:  '#E8A855',
+    badgeColor:  C.amberMid,
     titlePre:    'Built around',
     titleAccent: '',
     titlePost:   '\nyour child.',
-    accentColor: '#E8A855',
+    accentColor: C.amberMid,
     desc:        "Every script, every answer shaped by their exact age and what you actually described. Never generic.",
     items: [
       { icon: '👶', text: 'Exact age, every time' },
@@ -90,6 +84,7 @@ const FEATURES = [
     ],
   },
 ];
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function WelcomeScreen() {
@@ -113,14 +108,12 @@ export default function WelcomeScreen() {
       return;
     }
 
-    // Fade in splash branding
     Animated.timing(splashOpacity, {
       toValue:         1,
       duration:        700,
       useNativeDriver: true,
     }).start();
 
-    // Auto-advance to first feature slide after 3s
     const timer = setTimeout(() => {
       goToPage(1);
     }, 3000);
@@ -128,7 +121,6 @@ export default function WelcomeScreen() {
     return () => clearTimeout(timer);
   }, [session]);
 
-  // Animate card in whenever page changes to a non-splash screen
   useEffect(() => {
     if (page === 0) return;
     cardY.setValue(40);
@@ -157,9 +149,7 @@ export default function WelcomeScreen() {
 
   const onMomentumScrollEnd = (e: any) => {
     const newPage = Math.round(e.nativeEvent.contentOffset.x / W);
-    if (newPage !== page) {
-      setPage(newPage);
-    }
+    if (newPage !== page) setPage(newPage);
   };
 
   const handleGetStarted = () => {
@@ -185,6 +175,21 @@ export default function WelcomeScreen() {
     <View style={s.root}>
       <StatusBar style="light" />
 
+      {/* C-2 fast-fade gradient — shared base for every page so the swipe
+          feels like one continuous canvas. */}
+      <LinearGradient
+        colors={[
+          C.gradientTop,
+          C.gradientMid1,
+          C.gradientMid2,
+          C.gradientMid3,
+          C.gradientMid4,
+          C.gradientBottom,
+        ]}
+        locations={[0, 0.14, 0.28, 0.42, 0.58, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -194,28 +199,9 @@ export default function WelcomeScreen() {
         onMomentumScrollEnd={onMomentumScrollEnd}
       >
         {/* ══════════════════════════════════════════
-            PAGE 0 — SPLASH
-            Logo at top, family photo full-bleed
-            Family figures visible in lower portion
+            PAGE 0 — SPLASH (logo + wordmark + tagline)
             ══════════════════════════════════════════ */}
         <View style={s.page}>
-          <Image
-            source={FAMILY_PHOTO}
-            style={s.photoBg}
-            resizeMode="cover"
-          />
-          <LinearGradient
-            colors={[
-              'rgba(15,10,18,0.52)',
-              'rgba(15,10,18,0.18)',
-              'rgba(15,10,18,0.04)',
-              'rgba(15,10,18,0.22)',
-            ]}
-            locations={[0, 0.28, 0.60, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-
-          {/* Branding anchored to top */}
           <Animated.View
             style={[
               s.splashContent,
@@ -233,43 +219,21 @@ export default function WelcomeScreen() {
             </LinearGradient>
 
             <Text style={s.splashName}>Sturdy</Text>
-            <Text style={s.splashTagline}>
-  The bridge between chaos and calm.
-</Text>
+            <Text style={s.splashTagline}>The bridge between chaos and calm.</Text>
           </Animated.View>
         </View>
 
         {/* ══════════════════════════════════════════
             PAGES 1-3 — FEATURE SLIDES
-            Horizon photo background
-            BlurView glass card anchored to bottom
             ══════════════════════════════════════════ */}
         {FEATURES.map((feat, i) => {
           const slideIndex = i + 1;
           return (
             <View key={i} style={s.page}>
-              <Image
-                source={HORIZON_PHOTO}
-                style={s.photoBg}
-                resizeMode="cover"
-              />
-              <LinearGradient
-                colors={[
-                  'rgba(15,10,18,0.25)',
-                  'rgba(15,10,18,0.20)',
-                  'rgba(15,10,18,0.62)',
-                ]}
-                locations={[0, 0.40, 1]}
-                style={StyleSheet.absoluteFill}
-              />
-
               {/* Page dots */}
               <View style={[s.dotsRow, { top: insets.top + 20 }]}>
                 {FEATURES.map((_, di) => (
-                  <View
-                    key={di}
-                    style={[s.dot, di === i && s.dotActive]}
-                  />
+                  <View key={di} style={[s.dot, di === i && s.dotActive]} />
                 ))}
               </View>
 
@@ -281,11 +245,7 @@ export default function WelcomeScreen() {
                   page === slideIndex ? cardAnimStyle : null,
                 ]}
               >
-                <BlurView
-                  intensity={50}
-                  tint="dark"
-                  style={s.card}
-                >
+                <View style={s.card}>
                   {/* Badge */}
                   <View style={[s.badge, { backgroundColor: feat.badgeBg }]}>
                     <Text style={[s.badgeText, { color: feat.badgeColor }]}>
@@ -314,7 +274,7 @@ export default function WelcomeScreen() {
                       </View>
                     ))}
                   </View>
-                </BlurView>
+                </View>
               </Animated.View>
             </View>
           );
@@ -322,26 +282,8 @@ export default function WelcomeScreen() {
 
         {/* ══════════════════════════════════════════
             PAGE 4 — FINAL CTA
-            Family photo returns (bookend)
-            BlurView card with buttons
             ══════════════════════════════════════════ */}
         <View style={s.page}>
-          <Image
-            source={FAMILY_PHOTO}
-            style={s.photoBg}
-            resizeMode="cover"
-          />
-          <LinearGradient
-            colors={[
-              'rgba(15,10,18,0.22)',
-              'rgba(15,10,18,0.30)',
-              'rgba(15,10,18,0.72)',
-            ]}
-            locations={[0, 0.30, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-
-          {/* Glass CTA card — bottom anchored */}
           <Animated.View
             style={[
               s.cardWrap,
@@ -349,12 +291,7 @@ export default function WelcomeScreen() {
               page === 4 ? cardAnimStyle : null,
             ]}
           >
-            <BlurView
-              intensity={50}
-              tint="dark"
-              style={[s.card, s.finalCard]}
-            >
-              {/* Logo */}
+            <View style={[s.card, s.finalCard]}>
               <LinearGradient
                 colors={['#D4944A', '#E87461']}
                 start={{ x: 0, y: 0 }}
@@ -364,22 +301,20 @@ export default function WelcomeScreen() {
                 <Text style={s.finalLogoLetter}>S</Text>
               </LinearGradient>
 
-              {/* Headline */}
               <Text style={s.finalTitle}>
-  {'From chaos.\n'}
-  <Text style={s.finalAccent}>To calm.</Text>
-</Text>
+                {'From chaos.\n'}
+                <Text style={s.finalAccent}>To calm.</Text>
+              </Text>
 
-<Text style={s.finalSub}>
-  The two things every parent needs — exactly when you need them.
-</Text>
+              <Text style={s.finalSub}>
+                The two things every parent needs — exactly when you need them.
+              </Text>
 
-              {/* Feature list */}
               <View style={s.finalFeats}>
                 {[
-                 { icon: '⚡', title: 'Hard moment scripts',   sub: 'Free · Always' },
-{ icon: '💭', title: 'Ask Sturdy anything',   sub: 'Free · Always' },
-{ icon: '👶', title: 'Adapts to your child',  sub: 'Free · Always' },
+                  { icon: '⚡', title: 'Hard moment scripts',  sub: 'Free · Always' },
+                  { icon: '💭', title: 'Ask Sturdy anything',  sub: 'Free · Always' },
+                  { icon: '👶', title: 'Adapts to your child', sub: 'Free · Always' },
                 ].map((f, i) => (
                   <View key={i} style={s.finalFeat}>
                     <Text style={s.finalFeatIcon}>{f.icon}</Text>
@@ -398,7 +333,7 @@ export default function WelcomeScreen() {
                 style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1, width: '100%' }]}
               >
                 <LinearGradient
-                  colors={['#C8883A', '#E8A855']}
+                  colors={[C.amber, C.amberMid]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={s.btnPrimary}
@@ -414,7 +349,7 @@ export default function WelcomeScreen() {
                   <Text style={s.signInLink}>Sign in</Text>
                 </Pressable>
               </View>
-            </BlurView>
+            </View>
           </Animated.View>
         </View>
       </ScrollView>
@@ -427,32 +362,24 @@ export default function WelcomeScreen() {
 const s = StyleSheet.create({
   root: {
     flex:            1,
-    backgroundColor: '#0E0A12',
+    backgroundColor: C.background,
   },
 
-page: {
+  page: {
     width:          W,
     height:         H,
     justifyContent: 'center',
     alignItems:     'stretch',
   },
 
-  photoBg: {
-    position: 'absolute',
-    top:      0,
-    left:     0,
-    width:    W,
-    height:   H,
-  },
-
   // ── Splash ──────────────────────────────────────────────────────────────────
 
   splashContent: {
-    position:        'absolute',
-    top:             0,
-    left:            0,
-    right:           0,
-    alignItems:      'center',
+    position:          'absolute',
+    top:               0,
+    left:              0,
+    right:             0,
+    alignItems:        'center',
     paddingHorizontal: 32,
   },
 
@@ -463,11 +390,11 @@ page: {
     alignItems:     'center',
     justifyContent: 'center',
     marginBottom:   12,
-    shadowColor:    '#D4944A',
-    shadowOffset:   { width: 0, height: 8 },
-    shadowOpacity:  0.55,
+    shadowColor:    '#000000',
+    shadowOffset:   { width: 0, height: 6 },
+    shadowOpacity:  0.35,
     shadowRadius:   20,
-    elevation:      12,
+    elevation:      4,
   },
 
   logoLetter: {
@@ -478,25 +405,19 @@ page: {
   },
 
   splashName: {
-    fontFamily:       F.heading,
-    fontSize:         32,
-    color:            '#FFFFFF',
-    letterSpacing:    0.5,
-    marginBottom:     8,
-    textShadowColor:  'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 12,
+    fontFamily:    F.heading,
+    fontSize:      32,
+    color:         C.text,
+    letterSpacing: 0.5,
+    marginBottom:  8,
   },
 
   splashTagline: {
-    fontFamily:       F.body,
-    fontSize:         14,
-    color:            'rgba(255,255,255,0.88)',
-    letterSpacing:    0.3,
-    textAlign:        'center',
-    textShadowColor:  'rgba(0,0,0,0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 8,
+    fontFamily:    F.body,
+    fontSize:      14,
+    color:         C.textSecondary,
+    letterSpacing: 0.3,
+    textAlign:     'center',
   },
 
   // ── Page dots ───────────────────────────────────────────────────────────────
@@ -516,37 +437,46 @@ page: {
     width:           6,
     height:          6,
     borderRadius:    3,
-    backgroundColor: 'rgba(255,255,255,0.30)',
+    backgroundColor: C.textMuted,
   },
 
   dotActive: {
     width:           18,
-    backgroundColor: '#E8A855',
+    backgroundColor: C.amber,
   },
 
   // ── Card wrapper (bottom-anchored) ──────────────────────────────────────────
-cardWrap: {
+
+  cardWrap: {
     alignSelf:         'stretch',
     paddingHorizontal: 20,
     paddingVertical:   20,
+    marginTop:         'auto',
   },
 
   card: {
-    borderRadius:  24,
-    overflow:      'hidden',
-    padding:       22,
-    borderWidth:   1,
-    borderColor:   'rgba(255,255,255,0.14)',
+    backgroundColor:  C.surface,
+    borderRadius:     24,
+    overflow:         'hidden',
+    padding:          22,
+    borderWidth:      1,
+    borderColor:      C.border,
+    borderTopColor:   C.borderHi,
+    shadowColor:      '#000000',
+    shadowOffset:     { width: 0, height: 6 },
+    shadowOpacity:    0.35,
+    shadowRadius:     20,
+    elevation:        4,
   },
 
   // ── Feature slide card content ───────────────────────────────────────────────
 
   badge: {
-    alignSelf:       'flex-start',
+    alignSelf:         'flex-start',
     paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius:    20,
-    marginBottom:    12,
+    paddingVertical:   5,
+    borderRadius:      20,
+    marginBottom:      12,
   },
 
   badgeText: {
@@ -556,15 +486,12 @@ cardWrap: {
   },
 
   featTitle: {
-    fontFamily:       F.heading,
-    fontSize:         26,
-    color:            '#FFFFFF',
-    lineHeight:       32,
-    letterSpacing:    -0.4,
-    marginBottom:     10,
-    textShadowColor:  'rgba(0,0,0,0.4)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 8,
+    fontFamily:    F.heading,
+    fontSize:      26,
+    color:         C.text,
+    lineHeight:    32,
+    letterSpacing: -0.4,
+    marginBottom:  10,
   },
 
   featAccent: {
@@ -574,47 +501,40 @@ cardWrap: {
   },
 
   featDesc: {
-    fontFamily:    F.body,
-    fontSize:      14,
-    color:         'rgba(255,255,255,0.78)',
-    lineHeight:    21,
-    marginBottom:  12,
+    fontFamily:   F.body,
+    fontSize:     14,
+    color:        C.textSecondary,
+    lineHeight:   21,
+    marginBottom: 12,
   },
 
-  itemList: {
-    gap: 7,
-  },
+  itemList: { gap: 7 },
 
   item: {
-    flexDirection:   'row',
-    alignItems:      'center',
-    gap:             11,
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               11,
     paddingHorizontal: 13,
-    paddingVertical: 9,
-    borderRadius:    11,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth:     1,
-    borderColor:     'rgba(255,255,255,0.08)',
+    paddingVertical:   9,
+    borderRadius:      11,
+    backgroundColor:   C.chipBg,
+    borderWidth:       1,
+    borderColor:       C.chipBorder,
   },
 
-  itemIcon: {
-    fontSize:   14,
-    lineHeight: 18,
-  },
+  itemIcon: { fontSize: 14, lineHeight: 18 },
 
   itemText: {
     fontFamily: F.bodyMedium,
     fontSize:   13,
-    color:      'rgba(255,255,255,0.92)',
+    color:      C.text,
     lineHeight: 18,
     flex:       1,
   },
 
   // ── Final CTA card ──────────────────────────────────────────────────────────
 
-  finalCard: {
-    alignItems: 'center',
-  },
+  finalCard: { alignItems: 'center' },
 
   finalLogoBox: {
     width:          52,
@@ -623,11 +543,11 @@ cardWrap: {
     alignItems:     'center',
     justifyContent: 'center',
     marginBottom:   10,
-    shadowColor:    '#D4944A',
+    shadowColor:    '#000000',
     shadowOffset:   { width: 0, height: 6 },
-    shadowOpacity:  0.50,
-    shadowRadius:   16,
-    elevation:      10,
+    shadowOpacity:  0.35,
+    shadowRadius:   20,
+    elevation:      4,
   },
 
   finalLogoLetter: {
@@ -638,74 +558,64 @@ cardWrap: {
   },
 
   finalTitle: {
-    fontFamily:       F.heading,
-    fontSize:         22,
-    color:            '#FFFFFF',
-    textAlign:        'center',
-    lineHeight:       28,
-    letterSpacing:    -0.3,
-    marginBottom:     6,
-    textShadowColor:  'rgba(0,0,0,0.4)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 8,
+    fontFamily:    F.heading,
+    fontSize:      22,
+    color:         C.text,
+    textAlign:     'center',
+    lineHeight:    28,
+    letterSpacing: -0.3,
+    marginBottom:  6,
   },
 
-  finalAccent: {
-    color: '#E8A855',
-  },
+  finalAccent: { color: C.amberLight },
 
   finalSub: {
-    fontFamily:    F.body,
-    fontSize:      13,
-    color:         'rgba(255,255,255,0.72)',
-    textAlign:     'center',
-    lineHeight:    19,
-    marginBottom:  12,
+    fontFamily:   F.body,
+    fontSize:     13,
+    color:        C.textSecondary,
+    textAlign:    'center',
+    lineHeight:   19,
+    marginBottom: 12,
   },
 
   finalFeats: {
-    width:         '100%',
-    gap:           6,
-    marginBottom:  14,
+    width:        '100%',
+    gap:          6,
+    marginBottom: 14,
   },
 
   finalFeat: {
-    flexDirection:   'row',
-    alignItems:      'center',
-    gap:             10,
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               10,
     paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius:    11,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth:     1,
-    borderColor:     'rgba(255,255,255,0.08)',
+    paddingVertical:   9,
+    borderRadius:      11,
+    backgroundColor:   C.chipBg,
+    borderWidth:       1,
+    borderColor:       C.chipBorder,
   },
 
-  finalFeatIcon: {
-    fontSize:   16,
-    lineHeight: 20,
-  },
+  finalFeatIcon: { fontSize: 16, lineHeight: 20 },
 
-  finalFeatInfo: {
-    flex: 1,
-  },
+  finalFeatInfo: { flex: 1 },
 
   finalFeatTitle: {
     fontFamily: F.bodySemi,
     fontSize:   13,
-    color:      '#FFFFFF',
+    color:      C.text,
   },
 
   finalFeatSub: {
     fontFamily: F.body,
     fontSize:   11,
-    color:      'rgba(255,255,255,0.50)',
+    color:      C.textMuted,
     marginTop:  1,
   },
 
   check: {
     fontSize:   13,
-    color:      '#A0C880',
+    color:      C.sage,
     fontWeight: '700',
   },
 
@@ -717,11 +627,11 @@ cardWrap: {
     borderRadius:    14,
     alignItems:      'center',
     marginBottom:    10,
-    shadowColor:     '#D4944A',
-    shadowOffset:    { width: 0, height: 8 },
-    shadowOpacity:   0.55,
+    shadowColor:     C.amber,
+    shadowOffset:    { width: 0, height: 6 },
+    shadowOpacity:   0.35,
     shadowRadius:    20,
-    elevation:       12,
+    elevation:       4,
   },
 
   btnPrimaryText: {
@@ -740,14 +650,14 @@ cardWrap: {
   signInGrey: {
     fontFamily: F.body,
     fontSize:   12,
-    color:      'rgba(255,255,255,0.50)',
+    color:      C.textSecondary,
   },
 
   signInLink: {
     fontFamily:          F.bodySemi,
     fontSize:            12,
-    color:               '#E8A855',
+    color:               C.amberLight,
     textDecorationLine:  'underline',
-    textDecorationColor: '#E8A855',
+    textDecorationColor: C.amberLight,
   },
 });
