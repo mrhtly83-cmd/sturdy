@@ -54,7 +54,10 @@ export default function PauseAccountScreen() {
     await clearAuthStorage();
     // Fire-and-forget; the session may already be invalid server-side.
     supabase.auth.signOut().catch(() => {});
-    router.replace('/welcome');
+    // Paused user is "returning" — sign-in screen is the right destination.
+    // Routing through /welcome would race AuthGate (onboarding-complete=true
+    // would bounce them to sign-in anyway, leaving welcome in the back stack).
+    router.replace('/auth?mode=signin');
   };
 
   const onConfirm = () => {

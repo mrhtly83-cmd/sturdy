@@ -98,7 +98,7 @@ export default function SettingsScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     try {
       await signOut();
-      router.replace('/welcome');
+      router.replace('/auth?mode=signin');
     } catch {
       setSigningOut(false);
     }
