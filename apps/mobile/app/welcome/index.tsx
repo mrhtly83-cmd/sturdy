@@ -8,15 +8,12 @@
 //   - LinearGradient photo dim overlays
 //   - Spring card entrance animation (Animated API)
 //   - Page dots (not progress bar)
-//   - Plain text Skip (not pill button)
 //   - Haptics on every interaction
 //
-// Auth wiring preserved from v11:
+// Auth wiring:
 //   - Session check → redirect to tabs
-//   - GUEST_SEEN_KEY in AsyncStorage
-//   - Get started → /child-setup
-//   - Try without account → guest flag → tabs
-//   - Sign in → /auth?mode=signin
+//   - Get started → /auth?mode=signup
+//   - Sign in     → /auth?mode=signin
 
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -35,13 +32,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient }  from 'expo-linear-gradient';
 import { BlurView }        from 'expo-blur';
 import * as Haptics        from 'expo-haptics';
-import AsyncStorage        from '@react-native-async-storage/async-storage';
 import { useAuth }         from '../../src/context/AuthContext';
-import { markOnboardingComplete } from '../../src/utils/onboarding';
 import { colors as C, fonts as F } from '../../src/theme/colors';
 
 const { width: W, height: H } = Dimensions.get('window');
-const GUEST_SEEN_KEY = 'sturdy_guest_seen_v1';
 
 // Static requires — resolved at build time, images must exist before running
 const FAMILY_PHOTO  = require('../../assets/images/welcome/welcome-family.jpg');
@@ -168,23 +162,9 @@ export default function WelcomeScreen() {
     }
   };
 
-  const handleSkip = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await AsyncStorage.setItem(GUEST_SEEN_KEY, 'true');
-    await markOnboardingComplete();
-    router.replace('/(tabs)');
-  };
-
   const handleGetStarted = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push('/auth?mode=signup');
-  };
-
-  const handleTryWithout = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await AsyncStorage.setItem(GUEST_SEEN_KEY, 'true');
-    await markOnboardingComplete();
-    router.replace('/(tabs)');
   };
 
   const handleSignIn = () => {
@@ -204,17 +184,6 @@ export default function WelcomeScreen() {
   return (
     <View style={s.root}>
       <StatusBar style="light" />
-
-      {/* Skip — plain text, top-right, only on feature slides */}
-      {page >= 1 && page <= 3 && (
-        <Pressable
-          style={[s.skipBtn, { top: insets.top + 16 }]}
-          onPress={handleSkip}
-          hitSlop={12}
-        >
-          <Text style={s.skipText}>Skip</Text>
-        </Pressable>
-      )}
 
       <ScrollView
         ref={scrollRef}
@@ -438,14 +407,6 @@ export default function WelcomeScreen() {
                 </LinearGradient>
               </Pressable>
 
-              {/* Try without account */}
-              <Pressable
-                style={({ pressed }) => [s.btnSecondary, { opacity: pressed ? 0.7 : 1 }]}
-                onPress={handleTryWithout}
-              >
-                <Text style={s.btnSecondaryText}>Try it without an account</Text>
-              </Pressable>
-
               {/* Sign in */}
               <View style={s.signInRow}>
                 <Text style={s.signInGrey}>Already with us? </Text>
@@ -482,22 +443,6 @@ page: {
     left:     0,
     width:    W,
     height:   H,
-  },
-
-  // ── Skip ────────────────────────────────────────────────────────────────────
-
-  skipBtn: {
-    position: 'absolute',
-    right:    24,
-    zIndex:   50,
-    padding:  8,
-  },
-
-  skipText: {
-    fontFamily: F.body,
-    fontSize:   14,
-    color:      'rgba(255,255,255,0.75)',
-    letterSpacing: 0.5,
   },
 
   // ── Splash ──────────────────────────────────────────────────────────────────
@@ -784,23 +729,6 @@ cardWrap: {
     fontSize:      15,
     color:         '#FFFFFF',
     letterSpacing: 0.3,
-  },
-
-  btnSecondary: {
-    width:           '100%',
-    paddingVertical: 13,
-    borderRadius:    12,
-    borderWidth:     1,
-    borderColor:     'rgba(255,255,255,0.22)',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    alignItems:      'center',
-    marginBottom:    10,
-  },
-
-  btnSecondaryText: {
-    fontFamily: F.body,
-    fontSize:   13,
-    color:      'rgba(255,255,255,0.88)',
   },
 
   signInRow: {
