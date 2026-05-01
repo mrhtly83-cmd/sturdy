@@ -188,7 +188,6 @@ export default function ChildHubScreen() {
     if (!session) return;
     timeoutRef.current = setTimeout(async () => {
       await signOut();
-      router.replace('/welcome');
     }, TIMEOUT_MS);
   }, [session, signOut]);
 
