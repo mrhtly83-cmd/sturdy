@@ -27,6 +27,7 @@ import { StatusBar }      from 'expo-status-bar';
 import { SafeAreaView }   from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase }       from '../../src/lib/supabase';
+import { markOnboardingComplete } from '../../src/utils/onboarding';
 import { useAuth }        from '../../src/context/AuthContext';
 import { fonts as F }     from '../../src/theme/colors';
 
@@ -106,10 +107,12 @@ export default function AuthScreen() {
           }
         } catch { /* non-blocking */ }
 
+        await markOnboardingComplete();
         // No router.replace here — AuthGate in _layout.tsx handles
         // post-signup routing once the session lands.
       } else {
         await signInWithEmail(e, password);
+        await markOnboardingComplete();
         // signInWithEmail throws on failure; on success AuthGate in
         // _layout.tsx handles routing.
       }
