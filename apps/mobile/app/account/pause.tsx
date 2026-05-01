@@ -52,12 +52,11 @@ export default function PauseAccountScreen() {
 
     // Clear local tokens immediately (don't wait for server-side teardown).
     await clearAuthStorage();
-    // Fire-and-forget; the session may already be invalid server-side.
-    supabase.auth.signOut().catch(() => {});
-    // Paused user is "returning" — sign-in screen is the right destination.
-    // Routing through /welcome would race AuthGate (onboarding-complete=true
-    // would bounce them to sign-in anyway, leaving welcome in the back stack).
-    router.replace('/auth?mode=signin');
+    // signOut emits the auth event AuthGate listens for. AuthGate then sees
+    // session=null + onboarding-complete=true and routes to /auth?mode=signin,
+    // which is the right destination for a paused user (they can sign back in
+    // within 30 days to restore). No explicit router.replace needed.
+    await supabase.auth.signOut().catch(() => {});
   };
 
   const onConfirm = () => {

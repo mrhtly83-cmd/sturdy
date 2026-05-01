@@ -1,7 +1,7 @@
 // app/_layout.tsx
 // v5 — Logo-derived premium dark theme; Fraunces (serif) + DM Sans (sans).
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Platform, Text, TextInput } from 'react-native';
 import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -50,12 +50,24 @@ if (Platform.OS !== 'web') {
 function AuthGate() {
   const { session, isLoading } = useAuth();
   const [routed, setRouted] = useState(false);
+  const prevSessionRef = useRef(session);
 
   useEffect(() => {
     if (!isLoading) {
       SplashScreen.hideAsync();
     }
   }, [isLoading]);
+
+  // Reset the routed flag when the session drops (sign-out, pause, delete,
+  // session timeout). Without this, AuthGate would never re-evaluate after
+  // the initial route — sign-out flows could leak the welcome stack frame
+  // because no AuthGate redirect ever fires.
+  useEffect(() => {
+    if (prevSessionRef.current && !session) {
+      setRouted(false);
+    }
+    prevSessionRef.current = session;
+  }, [session]);
 
   useEffect(() => {
     if (isLoading || routed) return;

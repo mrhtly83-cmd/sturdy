@@ -15,12 +15,18 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function normalizeAuthError(message: string) {
-  if (message.toLowerCase().includes('invalid login credentials')) {
+  const lower = message.toLowerCase();
+
+  if (lower.includes('invalid login credentials')) {
     return 'That email or password did not match. Please try again.';
   }
 
-  if (message.toLowerCase().includes('email not confirmed')) {
+  if (lower.includes('email not confirmed')) {
     return 'Check your email to confirm your account, then sign in.';
+  }
+
+  if (lower.includes('user already registered')) {
+    return 'An account with this email already exists. Try signing in instead.';
   }
 
   return message;

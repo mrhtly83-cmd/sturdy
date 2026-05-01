@@ -1,9 +1,9 @@
 // apps/mobile/src/lib/sessionTimeout.ts
 // Global 20-minute inactivity timeout.
 // Import resetSessionTimeout() in any screen and call on user interaction.
-// When timer fires, calls signOut and routes to /welcome.
+// When timer fires, calls signOut. AuthGate in app/_layout.tsx handles the
+// post-signout redirect (returning user → /auth?mode=signin).
 
-import { router } from 'expo-router';
 import { supabase } from './supabase';
 
 const TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
@@ -32,6 +32,6 @@ export function resetSessionTimeout() {
     try {
       await supabase.auth.signOut();
     } catch { /* non-fatal */ }
-    router.replace('/welcome');
+    // AuthGate handles the redirect once the session drops.
   }, TIMEOUT_MS);
 }
