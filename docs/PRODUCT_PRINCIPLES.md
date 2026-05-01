@@ -12,6 +12,14 @@ or "what every other parenting app does" — the principles win.
 
 ---
 
+## What Sturdy is
+
+Sturdy. The bridge from chaos to connection.
+
+This sentence is the product. Every feature, screen, prompt, and design 
+decision is in service of building that bridge — in the moment, and over 
+years. When a feature doesn't serve the bridge, it doesn't ship.
+
 ## 1. Neurotype invisibility
 
 Sturdy detects neurotype (ADHD, Autism, Anxiety, Sensory, PDA, 2e) silently
