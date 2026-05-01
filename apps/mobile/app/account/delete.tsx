@@ -15,6 +15,9 @@ import * as Haptics from 'expo-haptics';
 import { fonts as F } from '../../src/theme';
 import { supabase } from '../../src/lib/supabase';
 import { deleteAccount } from '../../src/lib/accountApi';
+import { resetOnboarding } from '../../src/utils/onboarding';
+
+const GUEST_SEEN_KEY = 'sturdy_guest_seen_v1';
 
 const BG         = '#0e0a10';
 const TEXT       = 'rgba(255,255,255,0.92)';
@@ -55,8 +58,12 @@ export default function DeleteAccountScreen() {
       return;
     }
 
-    // Clear local tokens immediately. The server-side session is gone with
-    // the user, so signOut is fire-and-forget.
+    // Deleted account → device should feel like a fresh install. Clear
+    // the onboarding-complete flag and the guest-seen flag so AuthGate
+    // routes to /welcome and keeps them there. Then clear Supabase tokens
+    // and fire-and-forget signOut (server-side session is already gone).
+    await resetOnboarding();
+    await AsyncStorage.removeItem(GUEST_SEEN_KEY).catch(() => {});
     await clearAuthStorage();
     supabase.auth.signOut().catch(() => {});
     router.replace('/welcome');
