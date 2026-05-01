@@ -205,7 +205,6 @@ export default function WelcomeScreen() {
           <Animated.View
             style={[
               s.splashContent,
-              { paddingTop: insets.top + 70 },
               { opacity: splashOpacity },
             ]}
           >
@@ -219,7 +218,7 @@ export default function WelcomeScreen() {
             </LinearGradient>
 
             <Text style={s.splashName}>Sturdy</Text>
-            <Text style={s.splashTagline}>The bridge between chaos and calm.</Text>
+            <Text style={s.splashTagline}>The bridge from chaos to connection.</Text>
           </Animated.View>
         </View>
 
@@ -303,7 +302,7 @@ export default function WelcomeScreen() {
 
               <Text style={s.finalTitle}>
                 {'From chaos.\n'}
-                <Text style={s.finalAccent}>To calm.</Text>
+                <Text style={s.finalAccent}>To connection.</Text>
               </Text>
 
               <Text style={s.finalSub}>
@@ -375,10 +374,8 @@ const s = StyleSheet.create({
   // ── Splash ──────────────────────────────────────────────────────────────────
 
   splashContent: {
-    position:          'absolute',
-    top:               0,
-    left:              0,
-    right:             0,
+    flex:              1,
+    justifyContent:    'center',
     alignItems:        'center',
     paddingHorizontal: 32,
   },
@@ -455,18 +452,19 @@ const s = StyleSheet.create({
   },
 
   card: {
-    backgroundColor:  C.surface,
+    backgroundColor:  'rgba(26,24,22,0.45)',
     borderRadius:     24,
     overflow:         'hidden',
     padding:          22,
     borderWidth:      1,
     borderColor:      C.border,
-    borderTopColor:   C.borderHi,
+    borderTopWidth:   1,
+    borderTopColor:   'rgba(255,255,255,0.20)',
     shadowColor:      '#000000',
-    shadowOffset:     { width: 0, height: 6 },
-    shadowOpacity:    0.35,
-    shadowRadius:     20,
-    elevation:        4,
+    shadowOffset:     { width: 0, height: 12 },
+    shadowOpacity:    0.50,
+    shadowRadius:     32,
+    elevation:        8,
   },
 
   // ── Feature slide card content ───────────────────────────────────────────────
@@ -505,7 +503,7 @@ const s = StyleSheet.create({
     fontSize:     14,
     color:        C.textSecondary,
     lineHeight:   21,
-    marginBottom: 12,
+    marginBottom: 16,
   },
 
   itemList: { gap: 7 },
