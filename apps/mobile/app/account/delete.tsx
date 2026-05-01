@@ -58,15 +58,16 @@ export default function DeleteAccountScreen() {
       return;
     }
 
-    // Deleted account → device should feel like a fresh install. Clear
-    // the onboarding-complete flag and the guest-seen flag so AuthGate
-    // routes to /welcome and keeps them there. Then clear Supabase tokens
-    // and fire-and-forget signOut (server-side session is already gone).
+    // Deleted account → device should feel like a fresh install. Reset the
+    // onboarding-complete flag and the guest-seen flag so when AuthGate
+    // re-evaluates after the session drops, it sees done=false and routes
+    // to /welcome (instead of /auth?mode=signin). Then clear Supabase
+    // tokens and fire signOut to trigger AuthGate. No explicit router
+    // call — AuthGate is the single source of truth for auth-based routing.
     await resetOnboarding();
     await AsyncStorage.removeItem(GUEST_SEEN_KEY).catch(() => {});
     await clearAuthStorage();
-    supabase.auth.signOut().catch(() => {});
-    router.replace('/welcome');
+    await supabase.auth.signOut().catch(() => {});
   };
 
   return (

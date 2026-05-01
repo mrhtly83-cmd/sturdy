@@ -98,7 +98,9 @@ export default function SettingsScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     try {
       await signOut();
-      router.replace('/auth?mode=signin');
+      // AuthGate in _layout.tsx handles post-signout routing (returning users
+      // → /auth?mode=signin). Do NOT router.replace here — bypassing AuthGate
+      // leaves /welcome in the back stack and creates the guest re-entry loop.
     } catch {
       setSigningOut(false);
     }
