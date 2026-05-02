@@ -298,7 +298,7 @@ const s = StyleSheet.create({
   // Top bar
   topBar:   { flexDirection: 'row', alignItems: 'center', paddingTop: 4, paddingBottom: 4 },
   backBtn:  { paddingVertical: 6, paddingHorizontal: 4 },
-  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textDarkSecondary },
+  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textSecondary },
 
   // Identity header (warm zone)
   identity: { alignItems: 'center', gap: 6, paddingTop: 4 },
@@ -320,14 +320,14 @@ const s = StyleSheet.create({
     fontFamily: F.heading, fontSize: 32, color: '#FFFFFF', letterSpacing: -0.4,
   },
   childName: {
-    fontFamily: F.heading, fontSize: 24, color: C.textDark,
+    fontFamily: F.heading, fontSize: 24, color: C.text,
     letterSpacing: -0.3, textAlign: 'center',
   },
   childAge: {
-    fontFamily: F.body, fontSize: 14, color: C.textDarkSecondary,
+    fontFamily: F.body, fontSize: 14, color: C.textSecondary,
   },
   interactionMeta: {
-    fontFamily: F.body, fontSize: 12, color: C.textDarkMuted, marginTop: 4,
+    fontFamily: F.body, fontSize: 12, color: C.textMuted, marginTop: 4,
   },
 
   // Sections

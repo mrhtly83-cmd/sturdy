@@ -271,14 +271,14 @@ const st = StyleSheet.create({
   scroll: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 24, gap: 20 },
 
   back:     { alignSelf: 'flex-start', paddingVertical: 6 },
-  backText: { fontFamily: F.bodyMedium, fontSize: 16, color: C.textDarkSecondary },
+  backText: { fontFamily: F.bodyMedium, fontSize: 16, color: C.textSecondary },
 
   logoWrap: { alignItems: 'center' },
   logo:     { width: 44, height: 44 },
 
   header:   { alignItems: 'center', gap: 6 },
-  title:    { fontFamily: F.heading, fontSize: 26, color: C.textDark, textAlign: 'center', letterSpacing: -0.3 },
-  subtitle: { fontFamily: F.body, fontSize: 14, color: C.textDarkSecondary, textAlign: 'center' },
+  title:    { fontFamily: F.heading, fontSize: 26, color: C.text, textAlign: 'center', letterSpacing: -0.3 },
+  subtitle: { fontFamily: F.body, fontSize: 14, color: C.textSecondary, textAlign: 'center' },
 
   formCard: {
     backgroundColor: C.surface,

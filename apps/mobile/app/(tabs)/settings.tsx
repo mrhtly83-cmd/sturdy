@@ -227,7 +227,7 @@ const s = StyleSheet.create({
   title: {
     fontFamily:    F.heading,
     fontSize:      28,
-    color:         C.textDark,
+    color:         C.text,
     letterSpacing: -0.3,
     marginBottom:  8,
   },

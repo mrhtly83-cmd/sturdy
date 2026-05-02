@@ -214,16 +214,13 @@ export default function ThoughtScreen() {
 
   return (
     <View style={s.root}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
 
       <LinearGradient
         colors={[C.gradientResultTop, C.gradientResultMid1, C.gradientResultMid2, C.gradientResultMid3, C.gradientMid4, C.gradientBottom]}
-        
+        locations={[0, 0.10, 0.25, 0.42, 0.58, 1]}
         style={StyleSheet.absoluteFill}
       />
-
-      <View style={[s.blob, s.blob1]} />
-      <View style={[s.blob, s.blob2]} />
 
       <SafeAreaView style={s.safe} edges={['top']}>
         <ScrollView
@@ -345,17 +342,6 @@ const s = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 24, paddingBottom: 20, gap: 22 },
 
-  // Blobs
-  blob: { position: 'absolute', borderRadius: 999 },
-  blob1: {
-    top: -80, right: -60, width: 280, height: 280,
-    backgroundColor: 'rgba(253, 221, 230, 0.55)',
-  },
-  blob2: {
-    bottom: -60, left: -80, width: 240, height: 240,
-    backgroundColor: 'rgba(212, 232, 209, 0.50)',
-  },
-
   // Top bar
   topBar: {
     flexDirection: 'row', alignItems: 'center',
@@ -363,7 +349,7 @@ const s = StyleSheet.create({
   },
   backBtn: { paddingVertical: 6 },
   backText: {
-    fontFamily: F.bodyMedium, fontSize: 15, color: C.textMuted,
+    fontFamily: F.bodyMedium, fontSize: 15, color: C.textSecondary,
   },
 
   // Prompt
@@ -373,7 +359,7 @@ const s = StyleSheet.create({
     letterSpacing: 0.5, textTransform: 'uppercase',
   },
   promptText: {
-      fontFamily: F.scriptItalic, fontSize: 15, color: C.textSecondary,
+      fontFamily: F.scriptItalic, fontSize: 15, color: C.text,
       lineHeight: 22,
     },
     savedTo: {
@@ -388,7 +374,13 @@ const s = StyleSheet.create({
     borderRadius: 22,
     backgroundColor: C.surface,
     borderWidth: 1, borderColor: C.border,
+    borderTopWidth: 1, borderTopColor: C.borderHi,
     minHeight: 200,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 4,
   },
   responseText: {
     fontFamily: F.body, fontSize: 17, color: C.text,
@@ -425,13 +417,14 @@ const s = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: C.surface,
     borderWidth: 1, borderColor: C.border,
+    borderTopWidth: 1, borderTopColor: C.borderHi,
   },
   actionBtnActive: {
-    backgroundColor: 'rgba(201,123,99,0.10)',
-    borderColor: 'rgba(201,123,99,0.30)',
+    backgroundColor: C.sosLight,
+    borderColor: 'rgba(232,116,97,0.30)',
   },
   actionIcon: { fontSize: 20 },
   actionLabel: {
-    fontFamily: F.bodyMedium, fontSize: 12, color: C.textSecondary,
+    fontFamily: F.bodyMedium, fontSize: 12, color: C.text,
   },
 });

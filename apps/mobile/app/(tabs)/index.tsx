@@ -574,14 +574,14 @@ const s = StyleSheet.create({
   greeting: {
     fontFamily:    F.heading,
     fontSize:      32,
-    color:         C.textDark,
+    color:         C.text,
     letterSpacing: -0.5,
     lineHeight:    38,
   },
   subGreeting: {
     fontFamily: F.body,
     fontSize:   16,
-    color:      C.sosSubtle,
+    color:      'rgba(232,116,97,0.90)',
     lineHeight: 22,
   },
 
@@ -736,10 +736,10 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyTitle: {
-    fontFamily: F.heading, fontSize: 26, color: C.textDark, letterSpacing: -0.3,
+    fontFamily: F.heading, fontSize: 26, color: C.text, letterSpacing: -0.3,
   },
   emptyBody: {
-    fontFamily: F.body, fontSize: 15, color: C.textDarkSecondary, lineHeight: 22,
+    fontFamily: F.body, fontSize: 15, color: C.textSecondary, lineHeight: 22,
     marginBottom: 8,
   },
   primaryBtn: {

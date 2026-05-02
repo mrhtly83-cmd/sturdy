@@ -412,7 +412,7 @@ const s = StyleSheet.create({
 
   backRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   back: { alignSelf: 'flex-start', paddingVertical: 6 },
-  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textDarkSecondary },
+  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textSecondary },
   homeBtn: { paddingVertical: 6, paddingHorizontal: 10 },
   homeBtnText: { fontSize: 20 },
 
@@ -420,11 +420,11 @@ const s = StyleSheet.create({
   fallbackTitle: { fontFamily: F.bodySemi, fontSize: 14, color: C.sage },
   fallbackBody: { fontFamily: F.body, fontSize: 13, color: C.textSecondary },
 
-  summary: { fontFamily: F.scriptItalic, fontSize: 21, color: C.textDark, lineHeight: 30, marginBottom: 8 },
+  summary: { fontFamily: F.scriptItalic, fontSize: 21, color: C.text, lineHeight: 30, marginBottom: 8 },
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   ava: { width: 22, height: 22, borderRadius: 11, backgroundColor: C.sage, alignItems: 'center', justifyContent: 'center' },
   avaText: { fontFamily: F.bodySemi, fontSize: 10, color: '#FFFFFF' },
-  tagText: { fontFamily: F.body, fontSize: 12, color: C.textDarkSecondary },
+  tagText: { fontFamily: F.body, fontSize: 12, color: C.textSecondary },
 
   safetyLink: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 2 },
   safetyIcon: { color: C.sos, fontSize: 16 },
