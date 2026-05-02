@@ -16,7 +16,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -34,7 +33,6 @@ import { loadSavedScripts, type SavedScriptRow } from '../../src/lib/loadSavedSc
 import { loadChildInsights, type ChildInsights } from '../../src/lib/loadChildInsights';
 import { colors as C, fonts as F } from '../../src/theme';
 
-const HORIZON_PHOTO = require('../../assets/images/welcome/welcome-horizon.jpg');
 
 // ═══════════════════════════════════════════════
 // SCREEN
@@ -92,13 +90,20 @@ export default function ChildProfileScreen() {
     return (
       <View style={s.root}>
         <StatusBar style="light" />
-        <Image source={HORIZON_PHOTO} style={StyleSheet.absoluteFill} resizeMode="cover" />
         <LinearGradient
-          colors={['rgba(15,10,18,0.45)', 'rgba(15,10,18,0.65)', 'rgba(15,10,18,0.82)']}
+          colors={[
+            C.gradientTop,
+            C.gradientMid1,
+            C.gradientMid2,
+            C.gradientMid3,
+            C.gradientMid4,
+            C.gradientBottom,
+          ]}
+          locations={[0, 0.14, 0.28, 0.42, 0.58, 1]}
           style={StyleSheet.absoluteFill}
         />
         <SafeAreaView style={s.centerGate}>
-          <ActivityIndicator color={'#E8A855'} />
+          <ActivityIndicator color={C.amberMid} />
         </SafeAreaView>
       </View>
     );
@@ -112,9 +117,16 @@ export default function ChildProfileScreen() {
   return (
     <View style={s.root}>
       <StatusBar style="light" />
-      <Image source={HORIZON_PHOTO} style={StyleSheet.absoluteFill} resizeMode="cover" />
       <LinearGradient
-        colors={['rgba(15,10,18,0.45)', 'rgba(15,10,18,0.65)', 'rgba(15,10,18,0.82)']}
+        colors={[
+          C.gradientTop,
+          C.gradientMid1,
+          C.gradientMid2,
+          C.gradientMid3,
+          C.gradientMid4,
+          C.gradientBottom,
+        ]}
+        locations={[0, 0.14, 0.28, 0.42, 0.58, 1]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -278,38 +290,44 @@ export default function ChildProfileScreen() {
 // ═══════════════════════════════════════════════
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.base },
+  root: { flex: 1, backgroundColor: C.background },
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 32, gap: 22 },
   centerGate: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   // Top bar
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingTop: 4, paddingBottom: 4 },
-  backBtn: { paddingVertical: 6, paddingHorizontal: 4 },
-  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.text },
+  topBar:   { flexDirection: 'row', alignItems: 'center', paddingTop: 4, paddingBottom: 4 },
+  backBtn:  { paddingVertical: 6, paddingHorizontal: 4 },
+  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textDarkSecondary },
 
-  // Identity header
+  // Identity header (warm zone)
   identity: { alignItems: 'center', gap: 6, paddingTop: 4 },
   avatar: {
-    width: 80, height: 80, borderRadius: 40,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: C.sage,
-    shadowColor: C.sage, shadowOpacity: 0.30, shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 }, elevation: 4,
-    marginBottom: 8,
+    width:          80,
+    height:         80,
+    borderRadius:   40,
+    alignItems:     'center',
+    justifyContent: 'center',
+    backgroundColor: C.amber,
+    shadowColor:    C.amber,
+    shadowOpacity:  0.35,
+    shadowRadius:   20,
+    shadowOffset:   { width: 0, height: 6 },
+    elevation:      4,
+    marginBottom:   8,
   },
   avatarText: {
     fontFamily: F.heading, fontSize: 32, color: '#FFFFFF', letterSpacing: -0.4,
   },
   childName: {
-    fontFamily: F.heading, fontSize: 24, color: C.text,
+    fontFamily: F.heading, fontSize: 24, color: C.textDark,
     letterSpacing: -0.3, textAlign: 'center',
   },
   childAge: {
-    fontFamily: F.body, fontSize: 14, color: C.textSub,
+    fontFamily: F.body, fontSize: 14, color: C.textDarkSecondary,
   },
   interactionMeta: {
-    fontFamily: F.body, fontSize: 12, color: C.textMuted, marginTop: 4,
+    fontFamily: F.body, fontSize: 12, color: C.textDarkMuted, marginTop: 4,
   },
 
   // Sections
@@ -320,14 +338,14 @@ const s = StyleSheet.create({
 
   // Generic card
   card: {
-    backgroundColor: C.cardGlass,
+    backgroundColor: C.surface,
     borderColor: C.border, borderWidth: 1,
     borderRadius: 18, padding: 16, gap: 14,
   },
 
   // Empty state card (warm, not punitive)
   emptyCard: {
-    backgroundColor: C.cardGlass,
+    backgroundColor: C.surface,
     borderColor: C.border, borderWidth: 1,
     borderRadius: 18, padding: 18, gap: 8,
     alignItems: 'flex-start',
@@ -337,14 +355,14 @@ const s = StyleSheet.create({
     fontFamily: F.subheading, fontSize: 15, color: C.text, letterSpacing: -0.1,
   },
   emptyBody: {
-    fontFamily: F.body, fontSize: 14, color: C.textSub, lineHeight: 21,
+    fontFamily: F.body, fontSize: 14, color: C.textSecondary, lineHeight: 21,
   },
 
   // Triggers
   triggerRow: { gap: 6 },
   triggerHeader: { flexDirection: 'row', justifyContent: 'space-between' },
   triggerLabel: { fontFamily: F.bodyMedium, fontSize: 14, color: C.text },
-  triggerCount: { fontFamily: F.body, fontSize: 13, color: C.textSub },
+  triggerCount: { fontFamily: F.body, fontSize: 13, color: C.textSecondary },
   triggerBarBg: {
     height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.06)',
     overflow: 'hidden',
@@ -360,13 +378,13 @@ const s = StyleSheet.create({
     backgroundColor: C.sage,
   },
   workTitle: { fontFamily: F.bodySemi, fontSize: 14, color: C.text },
-  workQuote: { fontFamily: F.body, fontSize: 13, color: C.textSub, lineHeight: 19, marginTop: 2 },
+  workQuote: { fontFamily: F.body, fontSize: 13, color: C.textSecondary, lineHeight: 19, marginTop: 2 },
   workSeeAll: { paddingTop: 4 },
   workSeeAllText: { fontFamily: F.bodyMedium, fontSize: 13, color: C.amber },
 
   // Locked / coming-soon card
   lockedCard: {
-    backgroundColor: C.cardGlass,
+    backgroundColor: C.surface,
     borderColor: C.border, borderWidth: 1,
     borderRadius: 18, padding: 16, gap: 8,
   },
@@ -374,12 +392,12 @@ const s = StyleSheet.create({
   lockedIcon: { fontSize: 16 },
   lockedPill: {
     fontFamily: F.label, fontSize: 9, letterSpacing: 0.8,
-    color: C.amber, backgroundColor: 'rgba(247,149,102,0.12)',
+    color: C.amber, backgroundColor: C.amberBadge,
     paddingHorizontal: 8, paddingVertical: 3,
     borderRadius: 999, overflow: 'hidden',
   },
   lockedBody: {
-    fontFamily: F.body, fontSize: 13, color: C.textSub, lineHeight: 19,
+    fontFamily: F.body, fontSize: 13, color: C.textSecondary, lineHeight: 19,
   },
 
   // Profile basics (read-only)

@@ -434,11 +434,11 @@ const s = StyleSheet.create({
     width:           6,
     height:          6,
     borderRadius:    3,
-    backgroundColor: C.textMuted,
+    backgroundColor: 'rgba(255,255,255,0.35)',
   },
 
   dotActive: {
-    width:           18,
+    width:           24,
     backgroundColor: C.amber,
   },
 
@@ -447,8 +447,8 @@ const s = StyleSheet.create({
   cardWrap: {
     alignSelf:         'stretch',
     paddingHorizontal: 20,
-    paddingVertical:   20,
-    marginTop:         'auto',
+    paddingTop:        H * 0.32,
+    paddingBottom:     20,
   },
 
   card: {

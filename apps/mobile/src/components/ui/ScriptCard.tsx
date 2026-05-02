@@ -1,5 +1,6 @@
 // src/components/ui/ScriptCard.tsx
-// v5 — Journal identity: frosted glass cards, dark text, Manrope
+// v6 — Deep Warm v5.2: dark glass cards differentiated by colored
+// left-border stripe + badge pill. Numbered dot + label, expandable.
 
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -12,6 +13,7 @@ import {
   UIManager,
   View,
 } from 'react-native';
+import { colors as C, fonts as F } from '../../theme/colors';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -31,27 +33,40 @@ type Props = {
 };
 
 const STEP_CONFIG: Record<Step, {
-  num: string;
-  dotColor: string;
-  numBg: string;
-  cardBg: string;
-  cardBorder: string;
-  tintBg: string;
+  num:          string;
+  dotColor:     string;
+  numBg:        string;
+  cardBg:       string;
+  cardBorder:   string;
+  tintBg:       string;
+  accentBorder: string;
 }> = {
   Regulate: {
-    num: '1', dotColor: '#C97B63', numBg: '#C97B63',
-    cardBg: 'rgba(201,123,99,0.06)', cardBorder: 'rgba(201,123,99,0.15)',
-    tintBg: 'rgba(201,123,99,0.04)',
+    num: '1',
+    dotColor:     C.amber,
+    numBg:        C.amber,
+    cardBg:       C.surface,
+    cardBorder:   C.border,
+    tintBg:       C.amberBadge,
+    accentBorder: C.amberBorder,
   },
   Connect: {
-    num: '2', dotColor: '#5778A3', numBg: '#5778A3',
-    cardBg: 'rgba(87,120,163,0.06)', cardBorder: 'rgba(87,120,163,0.15)',
-    tintBg: 'rgba(87,120,163,0.04)',
+    num: '2',
+    dotColor:     C.sage,
+    numBg:        C.sage,
+    cardBg:       C.surface,
+    cardBorder:   C.border,
+    tintBg:       C.sageBadge,
+    accentBorder: C.sageBorder,
   },
   Guide: {
-    num: '3', dotColor: '#81B29A', numBg: '#81B29A',
-    cardBg: 'rgba(129,178,154,0.06)', cardBorder: 'rgba(129,178,154,0.15)',
-    tintBg: 'rgba(129,178,154,0.04)',
+    num: '3',
+    dotColor:     C.steel,
+    numBg:        C.steel,
+    cardBg:       C.surface,
+    cardBorder:   C.border,
+    tintBg:       C.steelBadge,
+    accentBorder: C.steelBorder,
   },
 };
 
@@ -82,8 +97,10 @@ export function ScriptCard({ step, parent_action, script, coaching, strategies, 
     <Animated.View style={[
       st.card,
       {
-        backgroundColor: expanded ? c.cardBg : 'rgba(255,255,255,0.5)',
-        borderColor: expanded ? c.cardBorder : 'rgba(0,0,0,0.06)',
+        backgroundColor:  c.cardBg,
+        borderColor:      c.cardBorder,
+        borderLeftWidth:  3,
+        borderLeftColor:  c.accentBorder,
       },
       { opacity, transform: [{ translateY }] },
     ]}>
@@ -93,7 +110,7 @@ export function ScriptCard({ step, parent_action, script, coaching, strategies, 
           <View style={[st.stepNum, { backgroundColor: c.numBg }]}>
             <Text style={st.stepNumText}>{c.num}</Text>
           </View>
-          <View style={st.badge}>
+          <View style={[st.badge, { backgroundColor: c.tintBg }]}>
             <View style={[st.badgeDot, { backgroundColor: c.dotColor }]} />
             <Text style={st.badgeText}>{step.toUpperCase()}</Text>
           </View>
@@ -108,7 +125,7 @@ export function ScriptCard({ step, parent_action, script, coaching, strategies, 
       {expanded ? (
         <View style={st.body}>
           <View style={st.actionWrap}>
-            <View style={[st.actionBar, { backgroundColor: `${c.dotColor}30` }]} />
+            <View style={[st.actionBar, { backgroundColor: c.dotColor, opacity: 0.4 }]} />
             <Text style={st.action}>👋 {parent_action}</Text>
           </View>
           <Text style={st.sayLabel}>SAY THIS</Text>
@@ -117,7 +134,7 @@ export function ScriptCard({ step, parent_action, script, coaching, strategies, 
           {hasCoaching ? (
             <>
               <Pressable onPress={handleCoachToggle} style={({ pressed }) => [st.coachToggle, pressed && { opacity: 0.7 }]}>
-                <View style={[st.coachIcon, { backgroundColor: `${c.dotColor}15` }]}>
+                <View style={[st.coachIcon, { backgroundColor: c.tintBg }]}>
                   <Text style={{ fontSize: 12 }}>💡</Text>
                 </View>
                 <Text style={st.coachToggleText}>Why this works</Text>
@@ -148,7 +165,16 @@ export function ScriptCard({ step, parent_action, script, coaching, strategies, 
 
 const st = StyleSheet.create({
   card: {
-    borderRadius: 20, overflow: 'hidden',
+    borderRadius:    18,
+    overflow:        'hidden',
+    borderWidth:     1,
+    borderTopColor:  C.borderHi,
+    borderTopWidth:  1,
+    shadowColor:     '#000000',
+    shadowOffset:    { width: 0, height: 6 },
+    shadowOpacity:   0.35,
+    shadowRadius:    20,
+    elevation:       4,
   },
 
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, paddingHorizontal: 18 },
@@ -157,47 +183,40 @@ const st = StyleSheet.create({
 
   stepNum: {
     width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 6, elevation: 3,
   },
-  stepNumText: { fontFamily: 'Manrope-Bold', fontSize: 13, color: '#FFFFFF' },
+  stepNumText: { fontFamily: F.bold, fontSize: 13, color: '#FFFFFF' },
 
   badge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingVertical: 5, paddingHorizontal: 12, borderRadius: 10,
-    backgroundColor: 'rgba(0,0,0,0.03)', borderWidth: 1, borderColor: 'rgba(0,0,0,0.04)',
   },
-  badgeDot: {
-    width: 8, height: 8, borderRadius: 4,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.10, shadowRadius: 2, elevation: 1,
-  },
-  badgeText: { fontFamily: 'Manrope-SemiBold', fontSize: 10, letterSpacing: 0.8, color: 'rgba(42,37,32,0.45)' },
+  badgeDot: { width: 8, height: 8, borderRadius: 4 },
+  badgeText: { fontFamily: F.label, fontSize: 10, letterSpacing: 0.8, color: C.text },
 
-  preview: { fontFamily: 'Manrope-Medium', fontSize: 13, color: 'rgba(42,37,32,0.35)', maxWidth: 140 },
-  chevron: { fontSize: 10, color: 'rgba(42,37,32,0.20)' },
+  preview: { fontFamily: F.bodyMedium, fontSize: 13, color: C.textMuted, maxWidth: 140 },
+  chevron: { fontSize: 10, color: C.textFaint },
 
   body: { paddingHorizontal: 18, paddingBottom: 18, gap: 10 },
 
   actionWrap: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   actionBar: { width: 2, alignSelf: 'stretch', borderRadius: 1, marginTop: 2, marginBottom: 2 },
-  action: { fontFamily: 'Manrope-Medium', fontSize: 13, color: 'rgba(42,37,32,0.55)', lineHeight: 20, flex: 1 },
+  action: { fontFamily: F.body, fontSize: 13, color: C.textSecondary, lineHeight: 20, flex: 1, fontStyle: 'italic' },
 
-  sayLabel: { fontFamily: 'Manrope-SemiBold', fontSize: 9, letterSpacing: 0.8, color: 'rgba(42,37,32,0.25)', marginTop: 4 },
-  script: { fontFamily: 'Manrope-Medium', fontSize: 18, color: '#2A2520', lineHeight: 28 },
+  sayLabel: { fontFamily: F.label, fontSize: 9, letterSpacing: 0.8, color: C.textMuted, marginTop: 4 },
+  script: { fontFamily: F.script, fontSize: 18, color: C.text, lineHeight: 28 },
 
   coachToggle: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    paddingTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.04)', marginTop: 4,
+    paddingTop: 14, borderTopWidth: 1, borderTopColor: C.divider, marginTop: 4,
   },
   coachIcon: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  coachToggleText: { fontFamily: 'Manrope-Medium', fontSize: 12, color: 'rgba(42,37,32,0.40)', flex: 1 },
-  coachChev: { fontSize: 8, color: 'rgba(42,37,32,0.20)' },
+  coachToggleText: { fontFamily: F.bodyMedium, fontSize: 12, color: C.textMuted, flex: 1 },
+  coachChev: { fontSize: 8, color: C.textFaint },
 
   coachBody: { gap: 8, marginTop: 4 },
-  coachText: { fontFamily: 'Manrope-Medium', fontSize: 14, color: 'rgba(42,37,32,0.60)', lineHeight: 22 },
+  coachText: { fontFamily: F.body, fontSize: 14, color: C.textSecondary, lineHeight: 22 },
   strats: { gap: 5 },
   stratRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  stratDot: { width: 5, height: 5, borderRadius: 3, marginTop: 7, opacity: 0.6 },
-  stratText: { fontFamily: 'Manrope-Medium', fontSize: 13, color: 'rgba(42,37,32,0.45)', lineHeight: 20, flex: 1 },
+  stratDot: { width: 5, height: 5, borderRadius: 3, marginTop: 7, opacity: 0.7 },
+  stratText: { fontFamily: F.body, fontSize: 13, color: C.textSecondary, lineHeight: 20, flex: 1 },
 });
-
-

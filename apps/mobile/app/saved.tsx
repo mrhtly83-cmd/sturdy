@@ -198,7 +198,7 @@ export default function SavedScriptsScreen() {
 
      {/* Pastel gradient background */}
      <LinearGradient
-       colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]}
+       colors={[C.gradientResultTop, C.gradientResultMid1, C.gradientResultMid2, C.gradientResultMid3, C.gradientMid4, C.gradientBottom]}
        start={{ x: 0, y: 0 }}
        end={{ x: 1, y: 1 }}
        style={StyleSheet.absoluteFill}
@@ -233,7 +233,7 @@ export default function SavedScriptsScreen() {
        {/* ─── Content ─── */}
        {loading ? (
          <View style={s.center}>
-           <ActivityIndicator color={C.rose} size="large" />
+           <ActivityIndicator color={C.amber} size="large" />
          </View>
        ) : error ? (
          <View style={s.center}>
@@ -252,7 +252,7 @@ export default function SavedScriptsScreen() {
              <RefreshControl
                refreshing={refreshing}
                onRefresh={handleRefresh}
-               tintColor={C.rose}
+               tintColor={C.amber}
              />
            }
          >
@@ -365,7 +365,7 @@ router.push('/(tabs)');       }}
 
 
 const s = StyleSheet.create({
- root: { flex: 1, backgroundColor: C.base },
+ root: { flex: 1, backgroundColor: C.background },
  safe: { flex: 1 },
 
 
@@ -407,7 +407,7 @@ const s = StyleSheet.create({
  subtitle: {
    fontFamily: F.body,
    fontSize: 14,
-   color: C.textSub,
+   color: C.textSecondary,
  },
 
 
@@ -422,13 +422,13 @@ const s = StyleSheet.create({
  errorText: {
    fontFamily: F.body,
    fontSize: 14,
-   color: C.rose,
+   color: C.sos,
    textAlign: 'center',
  },
  retryText: {
    fontFamily: F.bodySemi,
    fontSize: 14,
-   color: C.rose,
+   color: C.sos,
    textDecorationLine: 'underline',
  },
 
@@ -452,7 +452,7 @@ const s = StyleSheet.create({
  groupName: {
    fontFamily: F.bodySemi,
    fontSize: 15,
-   color: C.rose,
+   color: C.sos,
    letterSpacing: 0.2,
  },
  groupCount: {
@@ -467,7 +467,7 @@ const s = StyleSheet.create({
  card: {
    borderRadius: 18,
    padding: 16,
-   backgroundColor: C.cardGlass,
+   backgroundColor: C.surface,
    borderWidth: 1,
    borderColor: C.border,
    gap: 8,
@@ -492,7 +492,7 @@ const s = StyleSheet.create({
  cardPreview: {
    fontFamily: F.scriptItalic,
    fontSize: 14,
-   color: C.textBody,
+   color: C.textSecondary,
    lineHeight: 21,
  },
  cardFooter: {
@@ -518,7 +518,7 @@ const s = StyleSheet.create({
  deleteText: {
    fontFamily: F.bodyMedium,
    fontSize: 12,
-   color: C.rose,
+   color: C.sos,
  },
 
 
@@ -542,7 +542,7 @@ const s = StyleSheet.create({
  },
  emptyCard: {
    width: '100%',
-   backgroundColor: C.cardGlass,
+   backgroundColor: C.surface,
    borderRadius: 24,
    borderWidth: 1,
    borderColor: C.border,
@@ -554,7 +554,7 @@ const s = StyleSheet.create({
    width: 56,
    height: 56,
    borderRadius: 28,
-   backgroundColor: C.roseMuted,
+   backgroundColor: C.sosLight,
    alignItems: 'center',
    justifyContent: 'center',
    marginBottom: 4,
@@ -570,16 +570,16 @@ const s = StyleSheet.create({
    fontFamily: F.body,
    fontSize: 14,
    lineHeight: 21,
-   color: C.textBody,
+   color: C.textSecondary,
    textAlign: 'center',
    maxWidth: 260,
  },
  emptyCta: {
-   backgroundColor: C.rose,
+   backgroundColor: C.sos,
    paddingHorizontal: 28,
    paddingVertical: 14,
    borderRadius: 14,
-   shadowColor: C.rose,
+   shadowColor: C.sos,
    shadowOpacity: 0.22,
    shadowRadius: 16,
    shadowOffset: { width: 0, height: 4 },

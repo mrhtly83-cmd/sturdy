@@ -79,7 +79,7 @@ const s = StyleSheet.create({
     letterSpacing: -0.3,
   },
   body:  {
-    fontFamily: F.body, fontSize: 14, color: C.textSub, lineHeight: 21,
+    fontFamily: F.body, fontSize: 14, color: C.textSecondary, lineHeight: 21,
   },
   cta: {
     backgroundColor: C.amber,

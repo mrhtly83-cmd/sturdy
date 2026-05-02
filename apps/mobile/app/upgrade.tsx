@@ -21,7 +21,7 @@ import { SafeAreaView }  from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics      from 'expo-haptics';
 import { useChildProfile } from '../src/context/ChildProfileContext';
-import { fonts as F } from '../src/theme';
+import { colors as C, fonts as F } from '../src/theme';
 
 // ═══════════════════════════════════════════════
 // V3 DARK IDENTITY TOKENS (hardcoded per spec)
@@ -87,8 +87,21 @@ export default function UpgradeScreen() {
   const isYearly = selectedPlan === 'yearly';
 
   return (
-    <SafeAreaView style={s.root} edges={['top', 'bottom']}>
+    <View style={s.root}>
       <StatusBar style="light" />
+      <LinearGradient
+        colors={[
+          C.gradientResultTop,
+          C.gradientResultMid1,
+          C.gradientResultMid2,
+          C.gradientResultMid3,
+          C.gradientMid4,
+          C.gradientBottom,
+        ]}
+        locations={[0, 0.10, 0.25, 0.42, 0.58, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         <Pressable onPress={() => router.back()} style={s.closeBtn} hitSlop={16}>
@@ -229,13 +242,14 @@ export default function UpgradeScreen() {
           <View style={{ height: 30 }} />
         </Animated.View>
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 
 const s = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: BG },
+  root:   { flex: 1, backgroundColor: C.background },
   scroll: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 60 },
 
   // Close button

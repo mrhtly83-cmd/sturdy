@@ -41,22 +41,6 @@ function getAgeHint(age: number): string {
   return 'Sturdy will use near-adult tone with warmth and respect';
 }
 
-// ─── Stars ───
-function Stars({ count = 25 }: { count?: number }) {
-  const [stars] = useState(() =>
-    Array.from({ length: count }, () => ({
-      top: Math.random() * 40, left: Math.random() * 100,
-      size: Math.random() * 1.8 + 0.4, opacity: Math.random() * 0.2 + 0.04,
-    }))
-  );
-  return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '40%', zIndex: 1 }} pointerEvents="none">
-      {stars.map((s, i) => (
-        <View key={i} style={{ position: 'absolute', top: `${s.top}%` as any, left: `${s.left}%` as any, width: s.size, height: s.size, opacity: s.opacity, borderRadius: 10, backgroundColor: '#FFF' }} />
-      ))}
-    </View>
-  );
-}
 
 // ─── Main ───
 export default function NewChildScreen() {
@@ -108,18 +92,18 @@ export default function NewChildScreen() {
     <SafeAreaView style={st.root} edges={['top', 'bottom']}>
       <StatusBar style="light" />
 
-      {/* Background */}
+      {/* Background — C-2 fast-fade gradient */}
       <LinearGradient
-        colors={['#0e0a10', '#14101a', '#1a1622', '#1e1a28', '#201c2a', '#1e1a24', '#1a1620', '#18141e', '#14101a']}
-        locations={[0, 0.10, 0.22, 0.35, 0.48, 0.60, 0.72, 0.85, 1]}
+        colors={[
+          C.gradientTop,
+          C.gradientMid1,
+          C.gradientMid2,
+          C.gradientMid3,
+          C.gradientMid4,
+          C.gradientBottom,
+        ]}
+        locations={[0, 0.14, 0.28, 0.42, 0.58, 1]}
         style={StyleSheet.absoluteFill}
-      />
-      <Stars />
-      <LinearGradient
-        colors={['transparent', 'rgba(212,148,74,0.03)', 'rgba(212,148,74,0.06)']}
-        locations={[0, 0.5, 1]}
-        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', zIndex: 1 }}
-        pointerEvents="none"
       />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
@@ -144,12 +128,7 @@ export default function NewChildScreen() {
           </View>
 
           {/* ── Name + Age Card ── */}
-          <LinearGradient
-            colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.02)', 'rgba(0,0,0,0.12)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0.8, y: 1 }}
-            style={st.formCard}
-          >
+          <View style={st.formCard}>
             {/* Name */}
             <View style={st.field}>
               <Text style={st.fieldLabel}>Child's name</Text>
@@ -159,7 +138,7 @@ export default function NewChildScreen() {
                   autoCapitalize="words"
                   autoCorrect={false}
                   placeholder="e.g. Emma"
-                  placeholderTextColor="rgba(255,255,255,0.18)"
+                  placeholderTextColor={C.inputPlaceholder}
                   value={name}
                   onChangeText={v => { setName(v); if (error) setError(''); }}
                   onFocus={() => setNameFocused(true)}
@@ -201,7 +180,7 @@ export default function NewChildScreen() {
               <View style={st.sliderWrap}>
                 <View style={st.sliderTrack}>
                   <LinearGradient
-                    colors={[C.amber, C.peach]}
+                    colors={[C.amber, C.amberMid]}
                     start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                     style={[st.sliderFill, { width: `${sliderProgress}%` as any }]}
                   />
@@ -218,7 +197,7 @@ export default function NewChildScreen() {
                 <Text style={st.hintText}>{getAgeHint(age)}</Text>
               </View>
             </View>
-          </LinearGradient>
+          </View>
 
           {/* ── Personality Notes ── */}
           <Pressable onPress={() => setShowNotes(v => !v)} style={st.notesToggle}>
@@ -229,24 +208,20 @@ export default function NewChildScreen() {
           </Pressable>
 
           {showNotes && (
-            <LinearGradient
-              colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.02)', 'rgba(0,0,0,0.10)']}
-              start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 1 }}
-              style={st.notesCard}
-            >
+            <View style={st.notesCard}>
               <Text style={st.notesLabel}>PERSONALITY & WHAT HELPS</Text>
               <TextInput
                 multiline
                 numberOfLines={4}
                 placeholder="e.g. Very sensitive to tone of voice. Needs 5 min warning before transitions."
-                placeholderTextColor="rgba(255,255,255,0.18)"
+                placeholderTextColor={C.inputPlaceholder}
                 value={notes}
                 onChangeText={setNotes}
                 style={st.notesInput}
                 textAlignVertical="top"
               />
               <Text style={st.notesHint}>This helps Claude write scripts that feel personal.</Text>
-            </LinearGradient>
+            </View>
           )}
 
           {error ? <Text style={st.error}>{error}</Text> : null}
@@ -264,13 +239,21 @@ export default function NewChildScreen() {
               (!canSave || saving) && { opacity: 0.35 },
             ]}
           >
-            <LinearGradient
-              colors={canSave ? ['#C8883A', '#E8A855'] : ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.04)']}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              style={st.saveBtn}
-            >
-              <Text style={st.saveBtnText}>{saving ? 'Saving…' : 'Add child'}</Text>
-            </LinearGradient>
+            {canSave ? (
+              <LinearGradient
+                colors={[C.amber, C.amberMid]}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                style={st.saveBtn}
+              >
+                <Text style={st.saveBtnText}>{saving ? 'Saving…' : 'Add child'}</Text>
+              </LinearGradient>
+            ) : (
+              <View style={[st.saveBtn, st.saveBtnDisabled]}>
+                <Text style={[st.saveBtnText, { color: C.disabledText }]}>
+                  {saving ? 'Saving…' : 'Add child'}
+                </Text>
+              </View>
+            )}
           </Pressable>
 
           <Pressable onPress={() => router.replace('/(tabs)')} style={st.skipBtn}>
@@ -284,64 +267,121 @@ export default function NewChildScreen() {
 
 // ─── Styles ───
 const st = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0e0a10' },
+  root: { flex: 1, backgroundColor: C.background },
   scroll: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 24, gap: 20 },
 
-  back: { alignSelf: 'flex-start', paddingVertical: 6 },
-  backText: { fontFamily: F.bodyMedium, fontSize: 16, color: 'rgba(255,255,255,0.30)' },
+  back:     { alignSelf: 'flex-start', paddingVertical: 6 },
+  backText: { fontFamily: F.bodyMedium, fontSize: 16, color: C.textDarkSecondary },
 
   logoWrap: { alignItems: 'center' },
-  logo: { width: 44, height: 44 },
+  logo:     { width: 44, height: 44 },
 
-  header: { alignItems: 'center', gap: 6 },
-  title: { fontFamily: F.heading, fontSize: 26, color: C.text, textAlign: 'center', letterSpacing: -0.3 },
-  subtitle: { fontFamily: F.body, fontSize: 14, color: C.textSub, textAlign: 'center' },
+  header:   { alignItems: 'center', gap: 6 },
+  title:    { fontFamily: F.heading, fontSize: 26, color: C.textDark, textAlign: 'center', letterSpacing: -0.3 },
+  subtitle: { fontFamily: F.body, fontSize: 14, color: C.textDarkSecondary, textAlign: 'center' },
 
   formCard: {
-    borderRadius: 24, padding: 22, gap: 24, borderWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.18)', borderLeftColor: 'rgba(255,255,255,0.08)',
-    borderRightColor: 'rgba(0,0,0,0.08)', borderBottomColor: 'rgba(0,0,0,0.12)',
+    backgroundColor: C.surface,
+    borderRadius:    24,
+    padding:         22,
+    gap:             24,
+    borderWidth:     1,
+    borderColor:     C.border,
+    borderTopWidth:  1,
+    borderTopColor:  C.borderHi,
+    shadowColor:     '#000000',
+    shadowOffset:    { width: 0, height: 6 },
+    shadowOpacity:   0.35,
+    shadowRadius:    20,
+    elevation:       4,
   },
-  field: { gap: 10 },
-  fieldLabel: { fontFamily: F.bodyMedium, fontSize: 14, color: C.textBody },
+  field:      { gap: 10 },
+  fieldLabel: { fontFamily: F.bodyMedium, fontSize: 14, color: C.textSecondary },
 
-  inputWrap: { borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-  inputFocused: { borderColor: 'rgba(87,120,163,0.35)' },
-  nameInput: { fontFamily: F.body, fontSize: 16, color: C.text, paddingHorizontal: 16, paddingVertical: 13 },
+  inputWrap: {
+    borderRadius:    14,
+    backgroundColor: C.inputBg,
+    borderWidth:     1,
+    borderColor:     C.inputBorder,
+    borderTopWidth:  1,
+    borderTopColor:  C.inputHighlight,
+  },
+  inputFocused: { borderColor: C.borderFocus },
+  nameInput:    { fontFamily: F.body, fontSize: 16, color: C.text, paddingHorizontal: 16, paddingVertical: 13 },
 
   agePickerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20 },
-  ageArrowBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', alignItems: 'center', justifyContent: 'center' },
-  ageArrowDisabled: { opacity: 0.3 },
-  ageArrowText: { fontFamily: F.heading, fontSize: 22, color: C.textBody, marginTop: -2 },
+  ageArrowBtn: {
+    width:           44,
+    height:          44,
+    borderRadius:    22,
+    backgroundColor: C.chipBg,
+    borderWidth:     1,
+    borderColor:     C.chipBorder,
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
+  ageArrowDisabled:     { opacity: 0.3 },
+  ageArrowText:         { fontFamily: F.heading, fontSize: 22, color: C.text, marginTop: -2 },
   ageArrowTextDisabled: { color: C.textMuted },
-  ageDisplay: { alignItems: 'center', minWidth: 60 },
-  ageNumber: { fontFamily: F.heading, fontSize: 42, color: C.amber, lineHeight: 48 },
-  ageUnit: { fontFamily: F.body, fontSize: 13, color: C.textMuted, marginTop: -2 },
+  ageDisplay:           { alignItems: 'center', minWidth: 60 },
+  ageNumber:            { fontFamily: F.heading, fontSize: 42, color: C.amber, lineHeight: 48 },
+  ageUnit:              { fontFamily: F.body, fontSize: 13, color: C.textMuted, marginTop: -2 },
 
-  sliderWrap: { gap: 4 },
-  sliderTrack: { height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.08)', overflow: 'hidden' },
-  sliderFill: { height: 4, borderRadius: 2 },
+  sliderWrap:   { gap: 4 },
+  sliderTrack:  { height: 4, borderRadius: 2, backgroundColor: C.divider, overflow: 'hidden' },
+  sliderFill:   { height: 4, borderRadius: 2 },
   sliderLabels: { flexDirection: 'row', justifyContent: 'space-between' },
-  sliderLabel: { fontFamily: F.body, fontSize: 11, color: C.textMuted },
+  sliderLabel:  { fontFamily: F.body, fontSize: 11, color: C.textMuted },
 
-  hintCard: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(138,160,96,0.08)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(138,160,96,0.15)', paddingHorizontal: 14, paddingVertical: 10 },
+  hintCard: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               8,
+    backgroundColor:   'rgba(200,136,58,0.08)',
+    borderRadius:      12,
+    borderWidth:       1,
+    borderColor:       C.amberBorder,
+    paddingHorizontal: 14,
+    paddingVertical:   10,
+  },
   hintIcon: { fontSize: 18 },
-  hintText: { fontFamily: F.body, fontSize: 13, color: C.sage, flex: 1, lineHeight: 19 },
+  hintText: { fontFamily: F.body, fontSize: 13, color: C.amberLight, flex: 1, lineHeight: 19 },
 
-  notesToggle: { paddingVertical: 4 },
-  notesToggleText: { fontFamily: F.bodyMedium, fontSize: 14, color: C.textMuted },
-  notesToggleSub: { fontFamily: F.body, fontSize: 13, color: C.textGhost },
+  notesToggle:     { paddingVertical: 4 },
+  notesToggleText: { fontFamily: F.bodyMedium, fontSize: 14, color: C.textSecondary },
+  notesToggleSub:  { fontFamily: F.body, fontSize: 13, color: C.textMuted },
 
-  notesCard: { borderRadius: 24, padding: 22, gap: 12, borderWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', borderLeftColor: 'rgba(255,255,255,0.06)', borderRightColor: 'rgba(0,0,0,0.06)', borderBottomColor: 'rgba(0,0,0,0.10)' },
+  notesCard: {
+    backgroundColor: C.surface,
+    borderRadius:    24,
+    padding:         22,
+    gap:             12,
+    borderWidth:     1,
+    borderColor:     C.border,
+    borderTopWidth:  1,
+    borderTopColor:  C.borderHi,
+  },
   notesLabel: { fontFamily: F.label, fontSize: 10, letterSpacing: 0.8, color: C.textMuted },
   notesInput: { fontFamily: F.body, fontSize: 15, color: C.text, lineHeight: 24, minHeight: 100 },
-  notesHint: { fontFamily: F.body, fontSize: 12, color: C.textMuted, fontStyle: 'italic' },
+  notesHint:  { fontFamily: F.body, fontSize: 12, color: C.textMuted, fontStyle: 'italic' },
 
-  error: { fontFamily: F.body, fontSize: 13, color: C.coral },
+  error: { fontFamily: F.body, fontSize: 13, color: C.sos },
 
   footer: { paddingHorizontal: 24, paddingVertical: 14, paddingBottom: 28, gap: 10, alignItems: 'center' },
-  saveBtn: { width: W - 48, minHeight: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  saveBtnText: { fontFamily: F.subheading, fontSize: 16, color: '#FFFFFF', letterSpacing: 0.3 },
-  skipBtn: { paddingVertical: 8 },
-  skipText: { fontFamily: F.body, fontSize: 14, color: C.textMuted },
+  saveBtn: {
+    width:          W - 48,
+    minHeight:      56,
+    borderRadius:   18,
+    alignItems:     'center',
+    justifyContent: 'center',
+    shadowColor:    C.amber,
+    shadowOffset:   { width: 0, height: 6 },
+    shadowOpacity:  0.35,
+    shadowRadius:   20,
+    elevation:      4,
+  },
+  saveBtnDisabled: { backgroundColor: C.disabled, shadowOpacity: 0, elevation: 0 },
+  saveBtnText:     { fontFamily: F.subheading, fontSize: 16, color: '#FFFFFF', letterSpacing: 0.3 },
+  skipBtn:         { paddingVertical: 8 },
+  skipText:        { fontFamily: F.body, fontSize: 14, color: C.textMuted },
 });

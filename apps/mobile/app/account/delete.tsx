@@ -12,18 +12,13 @@ import { router }   from 'expo-router';
 import { StatusBar }   from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { fonts as F } from '../../src/theme';
+import { colors as C, fonts as F } from '../../src/theme';
 import { supabase } from '../../src/lib/supabase';
 import { deleteAccount } from '../../src/lib/accountApi';
 import { resetOnboarding } from '../../src/utils/onboarding';
 
 const GUEST_SEEN_KEY = 'sturdy_guest_seen_v1';
 
-const BG         = '#0e0a10';
-const TEXT       = 'rgba(255,255,255,0.92)';
-const TEXT_SEC   = 'rgba(255,255,255,0.52)';
-const TEXT_MUTED = 'rgba(255,255,255,0.28)';
-const CORAL      = '#E87461';
 
 const CONFIRMATION = 'DELETE';
 
@@ -96,7 +91,7 @@ export default function DeleteAccountScreen() {
             textContentType="none"
             importantForAutofill="no"
             placeholder="DELETE"
-            placeholderTextColor={TEXT_MUTED}
+            placeholderTextColor={C.textMuted}
             style={[
               s.input,
               { borderColor: confirmText ? 'rgba(232,116,97,0.40)' : 'rgba(255,255,255,0.07)' },
@@ -131,24 +126,24 @@ export default function DeleteAccountScreen() {
 }
 
 const s = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: BG },
+  root:   { flex: 1, backgroundColor: C.background },
   scroll: { padding: 24, paddingBottom: 40, gap: 24 },
 
   closeBtn:  { alignSelf: 'flex-start', paddingVertical: 8 },
-  closeText: { fontFamily: F.bodyMedium, fontSize: 15, color: TEXT_MUTED },
+  closeText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textMuted },
 
   body:        { gap: 14, paddingTop: 12 },
-  heading:     { fontFamily: F.heading, fontSize: 28, color: TEXT, letterSpacing: -0.4, lineHeight: 34 },
-  bodyText:    { fontFamily: F.body, fontSize: 16, color: TEXT_SEC, lineHeight: 24 },
-  subText:     { fontFamily: F.body, fontSize: 14, color: TEXT_SEC, lineHeight: 20, marginTop: 4 },
-  subTextBold: { fontFamily: F.bodySemi, color: TEXT },
+  heading:     { fontFamily: F.heading, fontSize: 28, color: C.text, letterSpacing: -0.4, lineHeight: 34 },
+  bodyText:    { fontFamily: F.body, fontSize: 16, color: C.textSecondary, lineHeight: 24 },
+  subText:     { fontFamily: F.body, fontSize: 14, color: C.textSecondary, lineHeight: 20, marginTop: 4 },
+  subTextBold: { fontFamily: F.bodySemi, color: C.text },
 
   input: {
     backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
     borderRadius: 12,
     padding: 14,
-    color: TEXT,
+    color: C.text,
     fontFamily: F.bodySemi,
     fontSize: 16,
     letterSpacing: 1.2,
@@ -158,7 +153,7 @@ const s = StyleSheet.create({
   actions: { gap: 12, marginTop: 12 },
 
   cta: {
-    backgroundColor: CORAL,
+    backgroundColor: C.sos,
     borderRadius: 18,
     paddingVertical: 16,
     alignItems: 'center',
@@ -169,8 +164,8 @@ const s = StyleSheet.create({
   ctaText:         { fontFamily: F.subheading, fontSize: 16, color: '#FFFFFF', letterSpacing: 0.3 },
   ctaTextDisabled: { color: 'rgba(255,255,255,0.20)' },
 
-  errorText: { fontFamily: F.body, fontSize: 14, color: CORAL, textAlign: 'center' },
+  errorText: { fontFamily: F.body, fontSize: 14, color: C.sos, textAlign: 'center' },
 
   secondaryBtn:  { paddingVertical: 14, alignItems: 'center' },
-  secondaryText: { fontFamily: F.bodyMedium, fontSize: 14, color: TEXT_MUTED },
+  secondaryText: { fontFamily: F.bodyMedium, fontSize: 14, color: C.textMuted },
 });

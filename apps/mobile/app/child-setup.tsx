@@ -232,7 +232,7 @@ router.replace('/(tabs)');
         >
           <LinearGradient
             colors={canContinue ? ['#C8883A', '#E8A855'] : ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.04)']}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            
             style={s.ctaBtn}
           >
             <Text style={[s.ctaText, !canContinue && { color: 'rgba(255,255,255,0.20)' }]}>
@@ -263,7 +263,7 @@ const s = StyleSheet.create({
 
   header: { alignItems: 'center', gap: 6 },
   title: { fontFamily: F.heading, fontSize: 26, color: C.text, textAlign: 'center', letterSpacing: -0.3, lineHeight: 34 },
-  subtitle: { fontFamily: F.body, fontSize: 14, color: C.textSub, textAlign: 'center' },
+  subtitle: { fontFamily: F.body, fontSize: 14, color: C.textSecondary, textAlign: 'center' },
 
   formCard: {
     borderRadius: 24, padding: 22, gap: 24, borderWidth: 1,
@@ -272,7 +272,7 @@ const s = StyleSheet.create({
   },
 
   field: { gap: 10 },
-  fieldLabel: { fontFamily: F.bodyMedium, fontSize: 14, color: C.textBody },
+  fieldLabel: { fontFamily: F.bodyMedium, fontSize: 14, color: C.textSecondary },
 
   inputWrap: { borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
   inputFocused: { borderColor: 'rgba(87,120,163,0.35)' },
@@ -281,7 +281,7 @@ const s = StyleSheet.create({
   agePickerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20 },
   ageArrowBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', alignItems: 'center', justifyContent: 'center' },
   ageArrowDisabled: { opacity: 0.3 },
-  ageArrowText: { fontFamily: F.heading, fontSize: 22, color: C.textBody, marginTop: -2 },
+  ageArrowText: { fontFamily: F.heading, fontSize: 22, color: C.textSecondary, marginTop: -2 },
   ageArrowTextDisabled: { color: C.textMuted },
   ageDisplay: { alignItems: 'center', minWidth: 60 },
   ageNumber: { fontFamily: F.heading, fontSize: 42, color: C.amber, lineHeight: 48 },
@@ -297,7 +297,7 @@ const s = StyleSheet.create({
   hintIcon: { fontSize: 18 },
   hintText: { fontFamily: F.body, fontSize: 13, color: C.sage, flex: 1, lineHeight: 19 },
 
-  error: { fontFamily: F.body, fontSize: 14, color: C.coral },
+  error: { fontFamily: F.body, fontSize: 14, color: C.sos },
 
   ctaBtn: { borderRadius: 18, minHeight: 56, alignItems: 'center', justifyContent: 'center' },
   ctaText: { fontFamily: F.subheading, fontSize: 17, color: '#FFFFFF', letterSpacing: 0.3 },

@@ -141,7 +141,7 @@ export default function HistoryScreen() {
       {/* Loading */}
       {loading ? (
         <View style={st.center}>
-          <ActivityIndicator color={colors.coral} size="large" />
+          <ActivityIndicator color={colors.sos} size="large" />
         </View>
       ) : error ? (
         <View style={st.center}>
@@ -216,7 +216,7 @@ const st = StyleSheet.create({
   back: { alignSelf: 'flex-start', paddingVertical: 4 },
   backText: { fontFamily: F.bodyMedium, fontSize: 15, color: colors.textMuted },
   title: { fontFamily: F.heading, fontSize: 26, color: colors.text },
-  subtitle: { fontFamily: F.body, fontSize: 14, color: colors.textSub },
+  subtitle: { fontFamily: F.body, fontSize: 14, color: colors.textSecondary },
 
   center: {
     flex: 1,
@@ -225,17 +225,17 @@ const st = StyleSheet.create({
     gap: 12,
     paddingVertical: 60,
   },
-  errorText: { fontFamily: F.body, fontSize: 14, color: colors.danger },
-  retryText: { fontFamily: F.bodySemi, fontSize: 14, color: colors.coral },
+  errorText: { fontFamily: F.body, fontSize: 14, color: colors.sos },
+  retryText: { fontFamily: F.bodySemi, fontSize: 14, color: colors.sos },
 
   emptyIcon: { fontSize: 40, marginBottom: 8 },
   emptyTitle: { fontFamily: F.bodySemi, fontSize: 18, color: colors.text },
   emptyBody: {
-    fontFamily: F.body, fontSize: 14, color: colors.textSub,
+    fontFamily: F.body, fontSize: 14, color: colors.textSecondary,
     textAlign: 'center', lineHeight: 20, maxWidth: 260,
   },
   emptyBtn: {
-    backgroundColor: colors.coral,
+    backgroundColor: colors.sos,
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 24,
@@ -250,10 +250,10 @@ const st = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  itemMode: { fontFamily: F.bodySemi, fontSize: 13, color: colors.textBody },
+  itemMode: { fontFamily: F.bodySemi, fontSize: 13, color: colors.textSecondary },
   itemDate: { fontFamily: F.body, fontSize: 12, color: colors.textMuted },
   itemSummary: {
-    fontFamily: F.body, fontSize: 15, color: colors.textBody,
+    fontFamily: F.body, fontSize: 15, color: colors.textSecondary,
     lineHeight: 22, marginTop: 4,
   },
   itemMeta: {
@@ -263,12 +263,12 @@ const st = StyleSheet.create({
   },
   itemChild: {
     fontFamily: F.bodyMedium, fontSize: 12, color: colors.textMuted,
-    backgroundColor: colors.subtle,
+    backgroundColor: colors.divider,
     paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8,
   },
   itemTrigger: {
     fontFamily: F.bodyMedium, fontSize: 12, color: colors.textMuted,
-    backgroundColor: colors.subtle,
+    backgroundColor: colors.divider,
     paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8,
   },
 });

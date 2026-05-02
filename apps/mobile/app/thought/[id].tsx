@@ -217,8 +217,8 @@ export default function ThoughtScreen() {
       <StatusBar style="dark" />
 
       <LinearGradient
-        colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]}
-        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        colors={[C.gradientResultTop, C.gradientResultMid1, C.gradientResultMid2, C.gradientResultMid3, C.gradientMid4, C.gradientBottom]}
+        
         style={StyleSheet.absoluteFill}
       />
 
@@ -293,10 +293,10 @@ export default function ThoughtScreen() {
                       pressed && { opacity: 0.85 },
                     ]}
                   >
-                    <Text style={[s.actionIcon, isPinned && { color: C.rose }]}>
+                    <Text style={[s.actionIcon, isPinned && { color: C.sos }]}>
                       {isPinned ? '📌' : '📍'}
                     </Text>
-                    <Text style={[s.actionLabel, isPinned && { color: C.rose }]}>
+                    <Text style={[s.actionLabel, isPinned && { color: C.sos }]}>
                       {isPinned ? 'Pinned' : 'Pin'}
                     </Text>
                   </Pressable>
@@ -341,7 +341,7 @@ export default function ThoughtScreen() {
 // ═══════════════════════════════════════════════
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.base },
+  root: { flex: 1, backgroundColor: C.background },
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 24, paddingBottom: 20, gap: 22 },
 
@@ -373,7 +373,7 @@ const s = StyleSheet.create({
     letterSpacing: 0.5, textTransform: 'uppercase',
   },
   promptText: {
-      fontFamily: F.scriptItalic, fontSize: 15, color: C.textSub,
+      fontFamily: F.scriptItalic, fontSize: 15, color: C.textSecondary,
       lineHeight: 22,
     },
     savedTo: {
@@ -386,7 +386,7 @@ const s = StyleSheet.create({
   responseCard: {
     padding: 24, gap: 14,
     borderRadius: 22,
-    backgroundColor: C.cardGlass,
+    backgroundColor: C.surface,
     borderWidth: 1, borderColor: C.border,
     minHeight: 200,
   },
@@ -404,14 +404,14 @@ const s = StyleSheet.create({
 
   // Error
   errorText: {
-    fontFamily: F.body, fontSize: 15, color: C.rose,
+    fontFamily: F.body, fontSize: 15, color: C.sos,
     textAlign: 'center', lineHeight: 22,
   },
   errorBackBtn: {
     alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 18, marginTop: 8,
   },
   errorBackText: {
-    fontFamily: F.bodyMedium, fontSize: 14, color: C.textSub,
+    fontFamily: F.bodyMedium, fontSize: 14, color: C.textSecondary,
   },
 
   // Action row
@@ -423,7 +423,7 @@ const s = StyleSheet.create({
     paddingVertical: 14, paddingHorizontal: 8,
     alignItems: 'center', justifyContent: 'center',
     borderRadius: 14,
-    backgroundColor: C.cardGlass,
+    backgroundColor: C.surface,
     borderWidth: 1, borderColor: C.border,
   },
   actionBtnActive: {
@@ -432,6 +432,6 @@ const s = StyleSheet.create({
   },
   actionIcon: { fontSize: 20 },
   actionLabel: {
-    fontFamily: F.bodyMedium, fontSize: 12, color: C.textSub,
+    fontFamily: F.bodyMedium, fontSize: 12, color: C.textSecondary,
   },
 });

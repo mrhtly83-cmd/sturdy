@@ -12,17 +12,10 @@ import { StatusBar }   from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import { fonts as F } from '../../src/theme';
+import { colors as C, fonts as F } from '../../src/theme';
 import { supabase } from '../../src/lib/supabase';
 import { pauseAccount } from '../../src/lib/accountApi';
 
-const BG          = '#0e0a10';
-const TEXT        = 'rgba(255,255,255,0.92)';
-const TEXT_SEC    = 'rgba(255,255,255,0.52)';
-const TEXT_MUTED  = 'rgba(255,255,255,0.28)';
-const CORAL       = '#E87461';
-const AMBER_DEEP  = '#C8883A';
-const AMBER_LIGHT = '#E8A855';
 
 async function clearAuthStorage() {
   try {
@@ -94,7 +87,7 @@ export default function PauseAccountScreen() {
             style={({ pressed }) => [pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] }]}
           >
             <LinearGradient
-              colors={[AMBER_DEEP, AMBER_LIGHT]}
+              colors={[C.amber, C.amberMid]}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
               style={s.cta}
             >
@@ -116,23 +109,23 @@ export default function PauseAccountScreen() {
 }
 
 const s = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: BG },
+  root:   { flex: 1, backgroundColor: C.background },
   scroll: { padding: 24, paddingBottom: 40, gap: 24 },
 
   closeBtn:  { alignSelf: 'flex-start', paddingVertical: 8 },
-  closeText: { fontFamily: F.bodyMedium, fontSize: 15, color: TEXT_MUTED },
+  closeText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textMuted },
 
   body:     { gap: 14, paddingTop: 12 },
-  heading:  { fontFamily: F.heading, fontSize: 28, color: TEXT, letterSpacing: -0.4, lineHeight: 34 },
-  bodyText: { fontFamily: F.body, fontSize: 16, color: TEXT_SEC, lineHeight: 24 },
+  heading:  { fontFamily: F.heading, fontSize: 28, color: C.text, letterSpacing: -0.4, lineHeight: 34 },
+  bodyText: { fontFamily: F.body, fontSize: 16, color: C.textSecondary, lineHeight: 24 },
 
   actions: { gap: 12, marginTop: 12 },
 
   cta:     { borderRadius: 18, paddingVertical: 16, alignItems: 'center' },
   ctaText: { fontFamily: F.subheading, fontSize: 16, color: '#FFFFFF', letterSpacing: 0.3 },
 
-  errorText: { fontFamily: F.body, fontSize: 14, color: CORAL, textAlign: 'center' },
+  errorText: { fontFamily: F.body, fontSize: 14, color: C.sos, textAlign: 'center' },
 
   secondaryBtn:  { paddingVertical: 14, alignItems: 'center' },
-  secondaryText: { fontFamily: F.bodyMedium, fontSize: 14, color: TEXT_MUTED },
+  secondaryText: { fontFamily: F.bodyMedium, fontSize: 14, color: C.textMuted },
 });
