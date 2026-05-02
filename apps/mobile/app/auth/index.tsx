@@ -264,11 +264,11 @@ const s = StyleSheet.create({
   content: { paddingHorizontal: 28, paddingTop: 12, paddingBottom: 110, gap: 20 },
 
   back:     { alignSelf: 'flex-start', paddingVertical: 6 },
-  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textDarkSecondary },
+  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textSecondary },
 
   hlArea:      { alignItems: 'center', gap: 8, paddingVertical: 16 },
-  headline:    { fontFamily: F.heading, fontSize: 26, color: C.textDark, textAlign: 'center', letterSpacing: -0.3 },
-  headlineSub: { fontFamily: F.body, fontSize: 14, color: C.textDarkSecondary, textAlign: 'center', lineHeight: 20 },
+  headline:    { fontFamily: F.heading, fontSize: 26, color: C.text, textAlign: 'center', letterSpacing: -0.3 },
+  headlineSub: { fontFamily: F.body, fontSize: 14, color: C.textSecondary, textAlign: 'center', lineHeight: 20 },
 
   formCard: {
     borderRadius:    20,

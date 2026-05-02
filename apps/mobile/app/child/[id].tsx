@@ -645,7 +645,7 @@ const s = StyleSheet.create({
   // Top bar
   topBar:   { flexDirection: 'row', alignItems: 'center', paddingTop: 4, paddingBottom: 4 },
   backBtn:  { paddingVertical: 6 },
-  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textDarkSecondary },
+  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textSecondary },
 
   // Identity (sits on warm parchment top zone)
   identityWrap: { alignItems: 'center', gap: 10, marginTop: 8 },
@@ -663,8 +663,8 @@ const s = StyleSheet.create({
     elevation:      4,
   },
   avatarText: { fontFamily: F.heading, fontSize: 36, color: '#FFFFFF', letterSpacing: -0.5 },
-  childName:  { fontFamily: F.heading, fontSize: 28, color: C.textDark, letterSpacing: -0.3, marginTop: 4 },
-  childAge:   { fontFamily: F.body, fontSize: 14, color: C.textDarkSecondary },
+  childName:  { fontFamily: F.heading, fontSize: 28, color: C.text, letterSpacing: -0.3, marginTop: 4 },
+  childAge:   { fontFamily: F.body, fontSize: 14, color: C.textSecondary },
 
   // Textarea
   textareaCard: {
@@ -780,7 +780,7 @@ const s = StyleSheet.create({
   // Tone selector
   toneSection: { gap: 8 },
   toneHeader:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  toneLabel:   { fontFamily: F.bodyMedium, fontSize: 13, color: C.textMuted, letterSpacing: 0.3 },
+  toneLabel:   { fontFamily: F.bodyMedium, fontSize: 13, color: C.text, letterSpacing: 0.3 },
   tonePremiumPill: {
     fontFamily:        F.label,
     fontSize:          9,

@@ -206,7 +206,7 @@ const s = StyleSheet.create({
   scroll: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 60, gap: 16 },
 
   backBtn:  { alignSelf: 'flex-start', paddingVertical: 6 },
-  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textDarkSecondary },
+  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textSecondary },
 
   groundingCard: {
     ...card,
@@ -218,8 +218,8 @@ const s = StyleSheet.create({
   groundingText: { fontFamily: F.bodyMedium, fontSize: 16, color: C.text, lineHeight: 24, textAlign: 'center' },
 
   header:  { gap: 12, marginTop: 4 },
-  title:   { fontFamily: F.heading, fontSize: 28, color: C.textDark, letterSpacing: -0.3 },
-  message: { fontFamily: F.body, fontSize: 16, color: C.textDark, lineHeight: 25 },
+  title:   { fontFamily: F.heading, fontSize: 28, color: C.text, letterSpacing: -0.3 },
+  message: { fontFamily: F.body, fontSize: 16, color: C.text, lineHeight: 25 },
 
   resources: { gap: 12 },
   resourceCard: {
