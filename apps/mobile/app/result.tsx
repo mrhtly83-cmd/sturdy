@@ -103,7 +103,7 @@ function PulsingDot() {
     Animated.timing(anim, { toValue: 1, duration: 600, useNativeDriver: true }),
     Animated.timing(anim, { toValue: 0.4, duration: 600, useNativeDriver: true }),
   ])).start(); }, [anim]);
-  return <Animated.View style={[{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.rose }, { opacity: anim }]} />;
+  return <Animated.View style={[{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.sos }, { opacity: anim }]} />;
 }
 
 // ═══════════════════════════════════════════════
@@ -227,9 +227,21 @@ const handleRetry = () => {
   const showEscalationHelp = feedbackGiven && feedbackHelpful === 'no';
 
   return (
-    <SafeAreaView style={s.root} edges={['top']}>
-      <StatusBar style="dark" />
-      <LinearGradient colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+    <View style={s.root}>
+      <StatusBar style="light" />
+      <LinearGradient
+        colors={[
+          C.gradientResultTop,
+          C.gradientResultMid1,
+          C.gradientResultMid2,
+          C.gradientResultMid3,
+          C.gradientMid4,
+          C.gradientBottom,
+        ]}
+        locations={[0, 0.10, 0.25, 0.42, 0.58, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         {/* Back */}
@@ -355,7 +367,12 @@ const handleRetry = () => {
 
       {/* Footer */}
       <View style={s.footer}>
-        <LinearGradient colors={['transparent', 'rgba(253,250,245,0.95)', C.base]} locations={[0, 0.35, 0.75]} style={s.footerFade} pointerEvents="none" />
+        <LinearGradient
+          colors={['transparent', 'rgba(12,12,12,0.85)', C.background]}
+          locations={[0, 0.35, 0.75]}
+          style={s.footerFade}
+          pointerEvents="none"
+        />
         <View style={s.footerContent}>
           <View style={s.footerRow}>
             <Pressable onPress={handleSave} disabled={saved || saving} style={({ pressed }) => [s.footerGhost, pressed && { opacity: 0.7 }]}>
@@ -370,84 +387,99 @@ const handleRetry = () => {
           </View>
         </View>
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
+const card = {
+  backgroundColor: C.surface,
+  borderWidth:     1,
+  borderColor:     C.border,
+  borderTopWidth:  1,
+  borderTopColor:  C.borderHi,
+  borderRadius:    18,
+  shadowColor:     '#000000',
+  shadowOffset:    { width: 0, height: 6 },
+  shadowOpacity:   0.35,
+  shadowRadius:    20,
+  elevation:       4,
+} as const;
+
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.base },
+  root: { flex: 1, backgroundColor: C.background },
   scroll: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40, gap: 14 },
 
   backRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   back: { alignSelf: 'flex-start', paddingVertical: 6 },
-  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textMuted },
+  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textSecondary },
   homeBtn: { paddingVertical: 6, paddingHorizontal: 10 },
   homeBtnText: { fontSize: 20 },
 
-  fallbackCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 16, padding: 14, backgroundColor: 'rgba(129,178,154,0.08)', borderWidth: 1, borderColor: 'rgba(129,178,154,0.15)' },
+  fallbackCard: { ...card, flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 14 },
   fallbackTitle: { fontFamily: F.bodySemi, fontSize: 14, color: C.sage },
-  fallbackBody: { fontFamily: F.body, fontSize: 13, color: C.textSub },
+  fallbackBody: { fontFamily: F.body, fontSize: 13, color: C.textSecondary },
 
-  summary: { fontFamily: F.scriptItalic, fontSize: 21, color: C.rose, lineHeight: 30, marginBottom: 8 },
+  summary: { fontFamily: F.scriptItalic, fontSize: 21, color: C.text, lineHeight: 30, marginBottom: 8 },
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   ava: { width: 22, height: 22, borderRadius: 11, backgroundColor: C.sage, alignItems: 'center', justifyContent: 'center' },
-  avaText: { fontFamily: F.bodySemi, fontSize: 10, color: '#FFF' },
-  tagText: { fontFamily: F.body, fontSize: 12, color: C.textMuted },
+  avaText: { fontFamily: F.bodySemi, fontSize: 10, color: '#FFFFFF' },
+  tagText: { fontFamily: F.body, fontSize: 12, color: C.textSecondary },
 
   safetyLink: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 2 },
-  safetyIcon: { color: C.rose, fontSize: 16 },
-  safetyText: { fontFamily: F.body, fontSize: 12, color: C.textMuted },
-  safetyLinkText: { fontFamily: F.bodySemi, color: C.rose, textDecorationLine: 'underline' },
+  safetyIcon: { color: C.sos, fontSize: 16 },
+  safetyText: { fontFamily: F.body, fontSize: 12, color: C.textSecondary },
+  safetyLinkText: { fontFamily: F.bodySemi, color: C.sos, textDecorationLine: 'underline' },
 
-  voiceCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 18, backgroundColor: C.cardGlass, borderWidth: 1, borderColor: C.border },
+  voiceCard: { ...card, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   playBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: C.sage, alignItems: 'center', justifyContent: 'center' },
-  playBtnActive: { backgroundColor: C.rose },
-  playBtnLocked: { backgroundColor: 'rgba(247,149,102,0.45)' },
+  playBtnActive: { backgroundColor: C.sos },
+  playBtnLocked: { backgroundColor: C.amberMuted },
   voicePremiumPill: {
     fontFamily: F.label, fontSize: 9, letterSpacing: 0.8,
-    color: C.amber, backgroundColor: 'rgba(247,149,102,0.12)',
+    color: C.amber, backgroundColor: C.amberBadge,
     paddingHorizontal: 8, paddingVertical: 3,
     borderRadius: 999, overflow: 'hidden', marginLeft: 4,
   },
   voiceTitle: { fontFamily: F.bodySemi, fontSize: 14, color: C.text },
-  voiceSub: { fontFamily: F.body, fontSize: 12, color: C.textMuted, marginTop: 2 },
+  voiceSub: { fontFamily: F.body, fontSize: 12, color: C.textSecondary, marginTop: 2 },
 
-  avoidHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderRadius: 18, backgroundColor: C.cardGlass, borderWidth: 1, borderColor: C.border },
-  avoidLabel: { fontFamily: F.bodySemi, fontSize: 12, letterSpacing: 0.6, color: C.rose },
-  avoidCount: { fontFamily: F.bodyMedium, fontSize: 11, color: C.textMuted, backgroundColor: 'rgba(0,0,0,0.04)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+  avoidHeader: { ...card, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14 },
+  avoidLabel: { fontFamily: F.bodySemi, fontSize: 12, letterSpacing: 0.6, color: C.sos },
+  avoidCount: { fontFamily: F.bodyMedium, fontSize: 11, color: C.textMuted, backgroundColor: C.chipBg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
   avoidBody: { paddingHorizontal: 18, paddingBottom: 14, gap: 8, marginTop: -8 },
-  avoidX: { fontFamily: F.bodySemi, fontSize: 10, color: C.rose, marginTop: 3 },
-  avoidText: { fontFamily: F.script, fontSize: 14, color: C.textSub, lineHeight: 21, flex: 1 },
+  avoidX: { fontFamily: F.bodySemi, fontSize: 10, color: C.sos, marginTop: 3 },
+  avoidText: { fontFamily: F.script, fontSize: 14, color: C.textSecondary, lineHeight: 21, flex: 1 },
 
-  feedbackCard: { alignItems: 'center', gap: 12, borderRadius: 18, padding: 18, backgroundColor: C.cardGlass, borderWidth: 1, borderColor: C.border },
+  feedbackCard: { ...card, alignItems: 'center', gap: 12, padding: 18 },
   feedbackQuestion: { fontFamily: F.bodySemi, fontSize: 15, color: C.text },
   feedbackRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
-  feedbackChip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.04)', borderWidth: 1, borderColor: C.border },
+  feedbackChip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, backgroundColor: C.chipBg, borderWidth: 1, borderColor: C.chipBorder },
   feedbackChipText: { fontFamily: F.bodyMedium, fontSize: 13, color: C.text },
   feedbackThanks: { alignItems: 'center', paddingVertical: 12 },
   feedbackThanksText: { fontFamily: F.bodyMedium, fontSize: 13, color: C.sage },
 
-  escalationCard: { borderRadius: 18, padding: 18, gap: 10, backgroundColor: 'rgba(201,123,99,0.06)', borderWidth: 1, borderColor: 'rgba(201,123,99,0.15)' },
-  escalationTitle: { fontFamily: F.display, fontSize: 18, color: C.rose },
+  escalationCard: { ...card, padding: 18, gap: 10, backgroundColor: C.sosLight, borderColor: 'rgba(232,116,97,0.20)' },
+  escalationTitle: { fontFamily: F.heading, fontSize: 18, color: C.sos },
   escalationBody: { fontFamily: F.body, fontSize: 14, color: C.text, lineHeight: 22 },
-  escalationBtn: { alignSelf: 'flex-start', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(201,123,99,0.12)', borderWidth: 1, borderColor: 'rgba(201,123,99,0.25)' },
-  escalationBtnText: { fontFamily: F.bodySemi, fontSize: 14, color: C.rose },
+  escalationBtn: { alignSelf: 'flex-start', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 12, backgroundColor: C.sosBadge, borderWidth: 1, borderColor: 'rgba(232,116,97,0.30)' },
+  escalationBtnText: { fontFamily: F.bodySemi, fontSize: 14, color: C.sos },
 
-  nudgeCard: { alignSelf: 'center', maxWidth: 360, alignItems: 'center', gap: 6, borderRadius: 18, paddingVertical: 14, paddingHorizontal: 18, backgroundColor: 'rgba(129,178,154,0.06)', borderWidth: 1, borderColor: 'rgba(129,178,154,0.12)' },
-  nudgeText: { fontFamily: F.body, fontSize: 13, color: C.textSub, textAlign: 'center' },
+  nudgeCard: { ...card, alignSelf: 'center', maxWidth: 360, alignItems: 'center', gap: 6, paddingVertical: 14, paddingHorizontal: 18, backgroundColor: C.sageLight, borderColor: 'rgba(138,160,96,0.20)' },
+  nudgeText: { fontFamily: F.body, fontSize: 13, color: C.textSecondary, textAlign: 'center' },
   nudgeName: { fontFamily: F.headingItalic, fontSize: 14, color: C.text },
   nudgeLink: { fontFamily: F.bodySemi, fontSize: 13, color: C.sage },
 
-  shareText: { fontFamily: F.bodySemi, fontSize: 13, color: C.rose, textDecorationLine: 'underline' },
-  errorText: { fontFamily: F.body, fontSize: 13, color: C.rose, textAlign: 'center' },
+  shareText: { fontFamily: F.bodySemi, fontSize: 13, color: C.amberLight, textDecorationLine: 'underline' },
+  errorText: { fontFamily: F.body, fontSize: 13, color: C.sos, textAlign: 'center' },
 
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10 },
   footerFade: { height: 40 },
-  footerContent: { backgroundColor: C.base, paddingHorizontal: 24, paddingBottom: 28, paddingTop: 4 },
+  footerContent: { backgroundColor: C.background, paddingHorizontal: 24, paddingBottom: 28, paddingTop: 4 },
   footerRow: { flexDirection: 'row', gap: 10 },
-  footerGhost: { flex: 1, borderRadius: 16, minHeight: 50, alignItems: 'center', justifyContent: 'center', backgroundColor: C.cardGlass, borderWidth: 1, borderColor: C.border },
+  footerGhost: { flex: 1, borderRadius: 16, minHeight: 50, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderTopWidth: 1, borderTopColor: C.borderHi },
   footerGhostText: { fontFamily: F.bodyMedium, fontSize: 14, color: C.text },
-  footerPrimary: { flex: 1, borderRadius: 16, minHeight: 50, minWidth: 100, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, backgroundColor: C.rose },
+  footerPrimary: { flex: 1, borderRadius: 16, minHeight: 50, minWidth: 100, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, backgroundColor: C.sos },
   footerPrimaryText: { fontFamily: F.subheading, fontSize: 14, color: '#FFFFFF', letterSpacing: 0.3 },
 });
 

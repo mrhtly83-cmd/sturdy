@@ -6,7 +6,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -34,7 +33,6 @@ import { getTone, setTone, type Tone, TONE_DEFAULT } from '../../src/utils/tone'
 import { PaywallSheet } from '../../src/components/ui/PaywallSheet';
 import { colors as C, fonts as F } from '../../src/theme';
 
-const HORIZON_PHOTO = require('../../assets/images/welcome/welcome-horizon.jpg');
 
 // ═══════════════════════════════════════════════
 // CONSTANTS
@@ -44,7 +42,7 @@ const INTENSITY_OPTIONS = [
   { level: 1, label: 'Mild',     color: C.sage },
   { level: 2, label: 'Building', color: '#5778A3' },
   { level: 3, label: 'Hard',     color: '#F79566' },
-  { level: 4, label: 'Intense',  color: C.rose },
+  { level: 4, label: 'Intense',  color: C.sos },
 ] as const;
 
 // Tone selector — Sturdy+ only. Free users default to Gentle (per
@@ -341,24 +339,28 @@ export default function ChildHubScreen() {
     return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
 
+  // ─── Background — single C-2 gradient ───
+  const Background = () => (
+    <LinearGradient
+      colors={[
+        C.gradientTop,
+        C.gradientMid1,
+        C.gradientMid2,
+        C.gradientMid3,
+        C.gradientMid4,
+        C.gradientBottom,
+      ]}
+      locations={[0, 0.14, 0.28, 0.42, 0.58, 1]}
+      style={StyleSheet.absoluteFill}
+    />
+  );
+
   // ─── Loading gate (child profile not yet resolved) ───
   if (!child) {
     return (
       <View style={s.root}>
         <StatusBar style="light" />
-        <Image
-          source={HORIZON_PHOTO}
-          style={StyleSheet.absoluteFill}
-          resizeMode="cover"
-        />
-        <LinearGradient
-          colors={[
-            'rgba(15,10,18,0.45)',
-            'rgba(15,10,18,0.65)',
-            'rgba(15,10,18,0.82)',
-          ]}
-          style={StyleSheet.absoluteFill}
-        />
+        <Background />
       </View>
     );
   }
@@ -366,20 +368,7 @@ export default function ChildHubScreen() {
   return (
     <View style={s.root}>
       <StatusBar style="light" />
-
-      <Image
-        source={HORIZON_PHOTO}
-        style={StyleSheet.absoluteFill}
-        resizeMode="cover"
-      />
-      <LinearGradient
-        colors={[
-          'rgba(15,10,18,0.45)',
-          'rgba(15,10,18,0.65)',
-          'rgba(15,10,18,0.82)',
-        ]}
-        style={StyleSheet.absoluteFill}
-      />
+      <Background />
 
       <SafeAreaView style={s.safe} edges={['top']}>
         <KeyboardAvoidingView
@@ -396,7 +385,7 @@ export default function ChildHubScreen() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={handleRefresh}
-                tintColor={C.rose}
+                tintColor={C.amber}
               />
             }
           >
@@ -521,11 +510,21 @@ export default function ChildHubScreen() {
                 pressed && canSubmit && !loading && { opacity: 0.9, transform: [{ scale: 0.98 }] },
               ]}
             >
-              <View style={[s.ctaBtn, (!canSubmit || loading) && s.ctaBtnDisabled]}>
-                <Text style={[s.ctaLabel, (!canSubmit || loading) && { color: C.textMuted }]}>
-                  {loading ? copy.ctaLoading : copy.cta}
-                </Text>
-              </View>
+              {(!canSubmit || loading) ? (
+                <View style={[s.ctaBtn, s.ctaBtnDisabled]}>
+                  <Text style={[s.ctaLabel, { color: C.disabledText }]}>
+                    {loading ? copy.ctaLoading : copy.cta}
+                  </Text>
+                </View>
+              ) : (
+                <LinearGradient
+                  colors={[C.amber, C.amberMid]}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                  style={s.ctaBtn}
+                >
+                  <Text style={s.ctaLabel}>{copy.cta}</Text>
+                </LinearGradient>
+              )}
             </Pressable>
 
             {/* ─── Emergency link ─── */}
@@ -624,171 +623,217 @@ export default function ChildHubScreen() {
 // STYLES
 // ═══════════════════════════════════════════════
 
+const card = {
+  backgroundColor: C.surface,
+  borderWidth:     1,
+  borderColor:     C.border,
+  borderTopWidth:  1,
+  borderTopColor:  C.borderHi,
+  borderRadius:    18,
+  shadowColor:     '#000000',
+  shadowOffset:    { width: 0, height: 6 },
+  shadowOpacity:   0.35,
+  shadowRadius:    20,
+  elevation:       4,
+} as const;
+
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.base },
+  root: { flex: 1, backgroundColor: C.background },
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 24, paddingBottom: 20, gap: 22 },
 
-  // Blobs
-  blob: { position: 'absolute', borderRadius: 999 },
-  blob1: {
-    top: -80, right: -60, width: 280, height: 280,
-    backgroundColor: 'rgba(253, 221, 230, 0.55)',
-  },
-  blob2: {
-    bottom: -60, left: -80, width: 240, height: 240,
-    backgroundColor: 'rgba(212, 232, 209, 0.50)',
-  },
-
   // Top bar
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingTop: 4, paddingBottom: 4 },
-  backBtn: { paddingVertical: 6 },
-  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textMuted },
+  topBar:   { flexDirection: 'row', alignItems: 'center', paddingTop: 4, paddingBottom: 4 },
+  backBtn:  { paddingVertical: 6 },
+  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textSecondary },
 
-  // Identity
+  // Identity (sits on warm parchment top zone)
   identityWrap: { alignItems: 'center', gap: 10, marginTop: 8 },
   avatar: {
-    width: 88, height: 88, borderRadius: 44,
-    backgroundColor: C.sage,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: C.sage,
-    shadowOpacity: 0.25,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
+    width:          88,
+    height:         88,
+    borderRadius:   44,
+    backgroundColor: C.amber,
+    alignItems:     'center',
+    justifyContent: 'center',
+    shadowColor:    C.amber,
+    shadowOpacity:  0.35,
+    shadowRadius:   20,
+    shadowOffset:   { width: 0, height: 6 },
+    elevation:      4,
   },
   avatarText: { fontFamily: F.heading, fontSize: 36, color: '#FFFFFF', letterSpacing: -0.5 },
-  childName: { fontFamily: F.heading, fontSize: 28, color: '#FFFFFF', letterSpacing: -0.3, marginTop: 4 },
-  childAge: { fontFamily: F.body, fontSize: 14, color: 'rgba(255,255,255,0.72)' },
+  childName:  { fontFamily: F.heading, fontSize: 28, color: C.text, letterSpacing: -0.3, marginTop: 4 },
+  childAge:   { fontFamily: F.body, fontSize: 14, color: C.textSecondary },
 
   // Textarea
   textareaCard: {
-    backgroundColor: C.cardGlass,
-    borderWidth: 1, borderColor: C.border,
-    borderRadius: 18, overflow: 'hidden',
+    backgroundColor: C.inputBg,
+    borderWidth:     1,
+    borderColor:     C.inputBorder,
+    borderTopWidth:  1,
+    borderTopColor:  C.inputHighlight,
+    borderRadius:    18,
+    overflow:        'hidden',
   },
-  textareaFocused: { borderColor: 'rgba(129,178,154,0.40)' },
+  textareaFocused: { borderColor: C.borderFocus },
   textarea: {
-    padding: 16, fontFamily: F.body, fontSize: 16,
-    color: C.text, lineHeight: 24, minHeight: 130,
+    padding:    16,
+    fontFamily: F.body,
+    fontSize:   16,
+    color:      C.text,
+    lineHeight: 24,
+    minHeight:  130,
   },
   textareaHint: {
-    fontFamily: F.body, fontSize: 12,
-    color: C.textMuted, fontStyle: 'italic',
-    paddingHorizontal: 16, paddingBottom: 12,
+    fontFamily:        F.body,
+    fontSize:          12,
+    color:             C.textMuted,
+    fontStyle:         'italic',
+    paddingHorizontal: 16,
+    paddingBottom:     12,
   },
 
   // Crisis banner
   crisisBanner: {
-    borderTopWidth: 1, borderTopColor: 'rgba(201,123,99,0.20)',
-    backgroundColor: 'rgba(201,123,99,0.06)',
+    borderTopWidth:  1,
+    borderTopColor:  'rgba(232,116,97,0.30)',
+    backgroundColor: C.sosLight,
   },
   crisisBannerInner: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    padding: 12, paddingHorizontal: 16,
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               10,
+    padding:           12,
+    paddingHorizontal: 16,
   },
-  crisisIcon: { fontSize: 16 },
-  crisisTitle: { fontFamily: F.bodySemi, fontSize: 13, color: C.rose },
-  crisisSub: { fontFamily: F.body, fontSize: 11, color: C.textSub },
+  crisisIcon:  { fontSize: 16 },
+  crisisTitle: { fontFamily: F.bodySemi, fontSize: 13, color: C.sos },
+  crisisSub:   { fontFamily: F.body,     fontSize: 11, color: C.textSecondary },
 
   // Intensity
   intensitySection: { gap: 10 },
-  intensityHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  intensityLabel: { fontFamily: F.bodyMedium, fontSize: 14, color: C.text },
-  intensityOpt: { fontFamily: F.body, fontSize: 12, color: C.textMuted, fontStyle: 'italic' },
-  intensityRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  intensityHeader:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  intensityLabel:   { fontFamily: F.bodyMedium, fontSize: 14, color: C.text },
+  intensityOpt:     { fontFamily: F.body, fontSize: 12, color: C.textMuted, fontStyle: 'italic' },
+  intensityRow:     { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   intensityPill: {
-    flex: 1, minWidth: 60,
-    paddingVertical: 10, paddingHorizontal: 8, borderRadius: 12,
-    backgroundColor: C.cardGlass,
-    borderWidth: 1, borderColor: C.border,
-    alignItems: 'center', justifyContent: 'center',
+    flex:              1,
+    minWidth:          60,
+    paddingVertical:   10,
+    paddingHorizontal: 8,
+    borderRadius:      12,
+    backgroundColor:   C.surface,
+    borderWidth:       1,
+    borderColor:       C.border,
+    borderTopWidth:    1,
+    borderTopColor:    C.borderHi,
+    alignItems:        'center',
+    justifyContent:    'center',
   },
-  intensityPillText: { fontFamily: F.bodyMedium, fontSize: 12, color: C.textSub },
+  intensityPillText: { fontFamily: F.bodyMedium, fontSize: 12, color: C.textSecondary },
 
   // Error
-  errorText: { fontFamily: F.body, fontSize: 14, color: C.rose, textAlign: 'center' },
+  errorText: { fontFamily: F.body, fontSize: 14, color: C.sos, textAlign: 'center' },
 
   // CTA
- ctaBtn: {
-    backgroundColor: '#C8883A',
-    shadowColor:     '#D4944A',
-    shadowOffset:    { width: 0, height: 4 },
-    shadowOpacity:   0.40,
-    shadowRadius:    12,
-    elevation:       8,
+  ctaBtn: {
+    minHeight:      56,
+    borderRadius:   18,
+    alignItems:     'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    shadowColor:    C.amber,
+    shadowOffset:   { width: 0, height: 6 },
+    shadowOpacity:  0.35,
+    shadowRadius:   20,
+    elevation:      4,
   },
-  ctaBtnDisabled: { backgroundColor: 'rgba(0,0,0,0.06)' },
-  ctaLabel: { fontFamily: F.subheading, fontSize: 17, color: '#FFFFFF', letterSpacing: 0.3 },
+  ctaBtnDisabled: { backgroundColor: C.disabled, shadowOpacity: 0, elevation: 0 },
+  ctaLabel:       { fontFamily: F.subheading, fontSize: 17, color: '#FFFFFF', letterSpacing: 0.3 },
 
-  emergencyBtn: { alignSelf: 'center', paddingVertical: 6 },
-  emergencyText: { fontFamily: F.body, fontSize: 12, color: C.textMuted, textDecorationLine: 'underline' },
+  emergencyBtn:  { alignSelf: 'center', paddingVertical: 6 },
+  emergencyText: { fontFamily: F.body, fontSize: 12, color: C.sos, textDecorationLine: 'underline' },
 
   // Saved scripts
   savedSection: { gap: 10, marginTop: 8 },
   sectionHeader: {
-    flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between',
+    flexDirection:  'row',
+    alignItems:     'baseline',
+    justifyContent: 'space-between',
   },
   sectionTitle: { fontFamily: F.bodySemi, fontSize: 15, color: C.text },
-  sectionLink: { fontFamily: F.bodyMedium, fontSize: 13, color: C.rose },
+  sectionLink:  { fontFamily: F.bodyMedium, fontSize: 13, color: C.amberLight },
 
   savedScroll: { gap: 10, paddingRight: 4 },
   savedCard: {
-    width: 220,
-    padding: 14, gap: 6,
+    ...card,
+    width:        220,
+    padding:      14,
+    gap:          6,
     borderRadius: 16,
-    backgroundColor: C.cardGlass,
-    borderWidth: 1, borderColor: C.border,
   },
-  savedDate: { fontFamily: F.body, fontSize: 11, color: C.textMuted },
-  savedTitle: { fontFamily: F.bodySemi, fontSize: 14, color: C.text, lineHeight: 20 },
-  savedPreview: {
-    fontFamily: F.scriptItalic, fontSize: 13, color: C.textBody, lineHeight: 19,
-  },
+  savedDate:    { fontFamily: F.body, fontSize: 11, color: C.textMuted },
+  savedTitle:   { fontFamily: F.bodySemi, fontSize: 14, color: C.text, lineHeight: 20 },
+  savedPreview: { fontFamily: F.scriptItalic, fontSize: 13, color: C.textSecondary, lineHeight: 19 },
 
   // Tone selector
   toneSection: { gap: 8 },
-  toneHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  toneLabel: { fontFamily: F.bodyMedium, fontSize: 13, color: C.textMuted, letterSpacing: 0.3 },
+  toneHeader:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  toneLabel:   { fontFamily: F.bodyMedium, fontSize: 13, color: C.text, letterSpacing: 0.3 },
   tonePremiumPill: {
-    fontFamily: F.label, fontSize: 9, letterSpacing: 0.8,
-    color: C.amber, backgroundColor: 'rgba(247,149,102,0.12)',
-    paddingHorizontal: 8, paddingVertical: 3,
-    borderRadius: 999, overflow: 'hidden',
+    fontFamily:        F.label,
+    fontSize:          9,
+    letterSpacing:     0.8,
+    color:             C.amber,
+    backgroundColor:   C.amberBadge,
+    paddingHorizontal: 8,
+    paddingVertical:   3,
+    borderRadius:      999,
+    overflow:          'hidden',
   },
   toneRow: { flexDirection: 'row', gap: 8 },
   tonePill: {
-    flex: 1, padding: 12, gap: 4,
-    borderRadius: 14,
-    backgroundColor: C.cardGlass,
-    borderColor: C.border, borderWidth: 1,
+    flex:            1,
+    padding:         12,
+    gap:             4,
+    borderRadius:    14,
+    backgroundColor: C.surface,
+    borderColor:     C.border,
+    borderWidth:     1,
+    borderTopWidth:  1,
+    borderTopColor:  C.borderHi,
   },
   tonePillSelected: {
-    backgroundColor: 'rgba(247,149,102,0.10)',
-    borderColor: 'rgba(247,149,102,0.45)',
+    backgroundColor: 'rgba(200,136,58,0.08)',
+    borderColor:     C.amber,
   },
-  toneTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  tonePillLabel: { fontFamily: F.bodySemi, fontSize: 14, color: C.text },
+  toneTopRow:            { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  tonePillLabel:         { fontFamily: F.bodySemi, fontSize: 14, color: C.text },
   tonePillLabelSelected: { color: C.amber },
-  tonePillSub: { fontFamily: F.body, fontSize: 11, color: C.textSub },
-  toneLockIcon: { fontSize: 11 },
+  tonePillSub:           { fontFamily: F.body, fontSize: 11, color: C.textSecondary },
+  toneLockIcon:          { fontSize: 11, color: C.amber },
 
   // Insights / profile-link card
   insightsSection: {
-    padding: 16, gap: 6,
-    borderRadius: 16,
-    backgroundColor: 'rgba(129,178,154,0.08)',
-    borderWidth: 1, borderColor: 'rgba(129,178,154,0.18)',
+    ...card,
+    padding:         16,
+    gap:             6,
+    borderRadius:    16,
+    backgroundColor: C.sageLight,
+    borderColor:     'rgba(138,160,96,0.30)',
   },
-  insightsRow:    { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  insightsTitle:  { fontFamily: F.bodySemi, fontSize: 14, color: C.sage },
-  insightsBody:   { fontFamily: F.body, fontSize: 13, color: C.textBody, lineHeight: 20 },
-  insightsArrow:  { fontFamily: F.bodySemi, fontSize: 18, color: C.sage },
+  insightsRow:   { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  insightsTitle: { fontFamily: F.bodySemi, fontSize: 14, color: C.sage },
+  insightsBody:  { fontFamily: F.body, fontSize: 13, color: C.textSecondary, lineHeight: 20 },
+  insightsArrow: { fontFamily: F.bodySemi, fontSize: 18, color: C.sage },
 
   // Edit
-  editBtn: { alignSelf: 'center', paddingVertical: 8 },
+  editBtn:  { alignSelf: 'center', paddingVertical: 8 },
   editText: {
-    fontFamily: F.bodyMedium, fontSize: 13, color: C.textMuted,
+    fontFamily:         F.bodyMedium,
+    fontSize:           13,
+    color:              C.textMuted,
     textDecorationLine: 'underline',
   },
 });

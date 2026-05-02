@@ -1,6 +1,5 @@
 // app/(tabs)/settings.tsx
-// v3 — Journal identity: pastel gradient, frosted glass cards
-// Settings screen with grouped sections
+// v4 — Deep Warm v5.2: C-2 settings gradient, dark glass, amber section labels.
 
 import { useState } from 'react';
 import {
@@ -30,18 +29,8 @@ function SectionLabel({ label }: { label: string }) {
   );
 }
 
-function SettingGroup({ children, tint }: { children: React.ReactNode; tint?: 'rose' | 'sage' }) {
-  const bg = tint === 'rose' ? 'rgba(201,123,99,0.05)'
-    : tint === 'sage' ? 'rgba(129,178,154,0.05)'
-    : C.cardGlass;
-  const bc = tint === 'rose' ? 'rgba(201,123,99,0.12)'
-    : tint === 'sage' ? 'rgba(129,178,154,0.12)'
-    : C.border;
-  return (
-    <View style={[s.group, { backgroundColor: bg, borderColor: bc }]}>
-      {children}
-    </View>
-  );
+function SettingGroup({ children }: { children: React.ReactNode }) {
+  return <View style={s.group}>{children}</View>;
 }
 
 function SettingRow({
@@ -58,8 +47,8 @@ function SettingRow({
     >
       <Text style={[
         s.rowLabel,
-        danger && { color: '#C0524A' },
-        accent && { color: C.rose },
+        danger && { color: C.sos },
+        accent && { color: C.amber },
       ]}>
         {label}
       </Text>
@@ -67,7 +56,7 @@ function SettingRow({
         <Switch
           value={toggleValue}
           onValueChange={(v) => { Haptics.selectionAsync(); onToggle?.(v); }}
-          trackColor={{ false: 'rgba(0,0,0,0.08)', true: C.sage }}
+          trackColor={{ false: 'rgba(255,255,255,0.10)', true: C.amber }}
           thumbColor="#FFFFFF"
         />
       ) : value ? (
@@ -98,171 +87,250 @@ export default function SettingsScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     try {
       await signOut();
-      // AuthGate in _layout.tsx handles post-signout routing (returning users
-      // → /auth?mode=signin). Do NOT router.replace here — bypassing AuthGate
-      // leaves /welcome in the back stack and creates the guest re-entry loop.
+      // AuthGate handles post-signout routing.
     } catch {
       setSigningOut(false);
     }
   };
 
   return (
-    <SafeAreaView style={s.root} edges={['top']}>
-      <StatusBar style="dark" />
+    <View style={s.root}>
+      <StatusBar style="light" />
       <LinearGradient
-        colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]}
-        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        colors={[
+          C.gradientSettingsTop,
+          C.gradientSettingsMid1,
+          C.gradientSettingsMid2,
+          C.gradientMid3,
+          C.gradientMid4,
+          C.gradientBottom,
+        ]}
+        locations={[0, 0.12, 0.26, 0.42, 0.58, 1]}
         style={StyleSheet.absoluteFill}
       />
+      <SafeAreaView style={s.safe} edges={['top']}>
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={s.title}>Settings</Text>
 
-      <ScrollView
-        contentContainerStyle={s.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={s.title}>Settings</Text>
-
-        {/* ACCOUNT */}
-        <SectionLabel label="ACCOUNT" />
-        <SettingGroup>
-          <View style={s.accountRow}>
-            <View style={s.accountAva}>
-              <Text style={s.accountAvaText}>
-                {email ? email[0].toUpperCase() : '?'}
-              </Text>
+          {/* ACCOUNT */}
+          <SectionLabel label="ACCOUNT" />
+          <SettingGroup>
+            <View style={s.accountRow}>
+              <LinearGradient
+                colors={[C.amber, C.amberMid]}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={s.accountAva}
+              >
+                <Text style={s.accountAvaText}>
+                  {email ? email[0].toUpperCase() : '?'}
+                </Text>
+              </LinearGradient>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={s.accountEmail}>{email ?? 'Guest'}</Text>
+                <Text style={s.accountPlan}>Free plan</Text>
+              </View>
             </View>
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={s.accountEmail}>{email ?? 'Guest'}</Text>
-              <Text style={s.accountPlan}>Free plan</Text>
-            </View>
-          </View>
-        </SettingGroup>
+          </SettingGroup>
 
-        {/* SUBSCRIPTION */}
-        <SectionLabel label="SUBSCRIPTION" />
-        <SettingGroup tint="rose">
-          <Pressable
-            onPress={() => router.push('/upgrade')}
-            style={({ pressed }) => [s.upgradeRow, pressed && { opacity: 0.85 }]}
-          >
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={s.upgradeLabel}>Upgrade to Sturdy+</Text>
-              <Text style={s.upgradeSub}>Unlimited scripts, full history, insights</Text>
-            </View>
-            <View style={s.upgradeBtn}>
-              <Text style={s.upgradeBtnText}>→</Text>
-            </View>
-          </Pressable>
-          <Divider />
-          <SettingRow label="Restore purchase" onPress={() => {}} />
-        </SettingGroup>
+          {/* SUBSCRIPTION */}
+          <SectionLabel label="SUBSCRIPTION" />
+          <SettingGroup>
+            <Pressable
+              onPress={() => router.push('/upgrade')}
+              style={({ pressed }) => [s.upgradeRow, pressed && { opacity: 0.85 }]}
+            >
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={s.upgradeLabel}>Upgrade to Sturdy+</Text>
+                <Text style={s.upgradeSub}>Unlimited scripts, full history, insights</Text>
+              </View>
+              <View style={s.upgradeBtn}>
+                <Text style={s.upgradeBtnText}>→</Text>
+              </View>
+            </Pressable>
+            <Divider />
+            <SettingRow label="Restore purchase" onPress={() => {}} />
+          </SettingGroup>
 
-        {/* CHILDREN */}
-        <SectionLabel label="CHILDREN" />
-        <SettingGroup tint="sage">
-          <SettingRow label="Manage children" onPress={() => router.push('/child/new')} />
-        </SettingGroup>
+          {/* CHILDREN */}
+          <SectionLabel label="CHILDREN" />
+          <SettingGroup>
+            <SettingRow label="Manage children" onPress={() => router.push('/child/new')} />
+          </SettingGroup>
 
-        {/* GENERAL */}
-        <SectionLabel label="GENERAL" />
-        <SettingGroup>
-          <SettingRow
-            label="Push notifications"
-            toggle toggleValue={pushEnabled} onToggle={setPushEnabled}
-          />
-        </SettingGroup>
+          {/* GENERAL */}
+          <SectionLabel label="GENERAL" />
+          <SettingGroup>
+            <SettingRow
+              label="Push notifications"
+              toggle toggleValue={pushEnabled} onToggle={setPushEnabled}
+            />
+          </SettingGroup>
 
-        {/* PRIVACY */}
-        <SectionLabel label="PRIVACY" />
-        <SettingGroup>
-          <SettingRow
-            label="Research consent"
-            toggle toggleValue={researchConsent} onToggle={setResearchConsent}
-          />
-          <Divider />
-          <SettingRow label="Privacy policy" onPress={() => router.push('/legal/privacy-policy')} />
-          <Divider />
-          <SettingRow label="Terms of service" onPress={() => router.push('/legal/terms-of-service')} />
-        </SettingGroup>
+          {/* PRIVACY */}
+          <SectionLabel label="PRIVACY" />
+          <SettingGroup>
+            <SettingRow
+              label="Research consent"
+              toggle toggleValue={researchConsent} onToggle={setResearchConsent}
+            />
+            <Divider />
+            <SettingRow label="Privacy policy" onPress={() => router.push('/legal/privacy-policy')} />
+            <Divider />
+            <SettingRow label="Terms of service" onPress={() => router.push('/legal/terms-of-service')} />
+          </SettingGroup>
 
-        {/* SUPPORT */}
-        <SectionLabel label="SUPPORT" />
-        <SettingGroup>
-          <SettingRow label="Help & FAQ" onPress={() => {}} />
-          <Divider />
-          <SettingRow label="Contact us" onPress={() => {}} />
-        </SettingGroup>
+          {/* SUPPORT */}
+          <SectionLabel label="SUPPORT" />
+          <SettingGroup>
+            <SettingRow label="Help & FAQ" onPress={() => {}} />
+            <Divider />
+            <SettingRow label="Contact us" onPress={() => {}} />
+          </SettingGroup>
 
-        {/* MANAGE ACCOUNT */}
-        <SectionLabel label="MANAGE ACCOUNT" />
-        <SettingGroup>
-          <SettingRow label="Export my data" onPress={() => router.push('/account/export')} />
-          <Divider />
-          <SettingRow label="Pause account"  onPress={() => router.push('/account/pause')} />
-          <Divider />
-          <SettingRow label="Delete account" danger onPress={() => router.push('/account/delete')} />
-        </SettingGroup>
+          {/* MANAGE ACCOUNT */}
+          <SectionLabel label="MANAGE ACCOUNT" />
+          <SettingGroup>
+            <SettingRow label="Export my data" onPress={() => router.push('/account/export')} />
+            <Divider />
+            <SettingRow label="Pause account"  onPress={() => router.push('/account/pause')} />
+            <Divider />
+            <SettingRow label="Delete account" danger onPress={() => router.push('/account/delete')} />
+          </SettingGroup>
 
-        {/* SIGN OUT */}
-        <SettingGroup>
-          <SettingRow
-            label={signingOut ? 'Signing out…' : 'Sign out'}
-            onPress={handleSignOut}
-          />
-        </SettingGroup>
+          {/* SIGN OUT */}
+          <SettingGroup>
+            <SettingRow
+              label={signingOut ? 'Signing out…' : 'Sign out'}
+              onPress={handleSignOut}
+            />
+          </SettingGroup>
 
-        <Text style={s.version}>Sturdy v6.0 · Made with ♥</Text>
+          <Text style={s.version}>Sturdy v6.0 · Made with ♥</Text>
 
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </SafeAreaView>
+          <View style={{ height: 60 }} />
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 // ─── Styles ───
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.base },
+  root: { flex: 1, backgroundColor: C.background },
+  safe: { flex: 1 },
   scroll: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 60, gap: 6 },
 
-  title: { fontFamily: F.display, fontSize: 28, color: C.text, letterSpacing: -0.3, marginBottom: 8 },
+  title: {
+    fontFamily:    F.heading,
+    fontSize:      28,
+    color:         C.text,
+    letterSpacing: -0.3,
+    marginBottom:  8,
+  },
 
-  sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, marginBottom: 4 },
-  sectionLabel: { fontFamily: F.label, fontSize: 10, letterSpacing: 0.9, color: C.textMuted },
-  sectionLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(0,0,0,0.08)' },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           10,
+    marginTop:     14,
+    marginBottom:  4,
+  },
+  sectionLabel: {
+    fontFamily:    F.label,
+    fontSize:      10,
+    letterSpacing: 1.2,
+    color:         C.amber,
+    textTransform: 'uppercase',
+  },
+  sectionLine: {
+    flex:            1,
+    height:          StyleSheet.hairlineWidth,
+    backgroundColor: C.divider,
+  },
 
-  group: { borderRadius: 18, borderWidth: 1, overflow: 'hidden' },
+  group: {
+    backgroundColor: C.surface,
+    borderWidth:     1,
+    borderColor:     C.border,
+    borderTopWidth:  1,
+    borderTopColor:  C.borderHi,
+    borderRadius:    18,
+    overflow:        'hidden',
+    shadowColor:     '#000000',
+    shadowOffset:    { width: 0, height: 6 },
+    shadowOpacity:   0.35,
+    shadowRadius:    20,
+    elevation:       4,
+  },
 
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(0,0,0,0.06)', marginLeft: 16 },
+  divider: {
+    height:          StyleSheet.hairlineWidth,
+    backgroundColor: C.divider,
+    marginLeft:      16,
+  },
 
   row: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 15, minHeight: 52,
+    flexDirection:     'row',
+    alignItems:        'center',
+    justifyContent:    'space-between',
+    paddingHorizontal: 16,
+    paddingVertical:   15,
+    minHeight:         52,
   },
-  rowLabel: { fontFamily: F.bodyMedium, fontSize: 15, color: C.text },
-  rowValue: { fontFamily: F.body, fontSize: 14, color: C.textMuted },
-  rowChevron: { fontSize: 18, color: 'rgba(42,37,32,0.18)' },
+  rowLabel:   { fontFamily: F.bodyMedium, fontSize: 15, color: C.text },
+  rowValue:   { fontFamily: F.body,       fontSize: 14, color: C.textMuted },
+  rowChevron: { fontSize: 22, color: C.textFaint },
 
-  accountRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
+  accountRow: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               12,
+    paddingHorizontal: 16,
+    paddingVertical:   14,
+  },
   accountAva: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: C.sage,
-    alignItems: 'center', justifyContent: 'center',
+    width:          44,
+    height:         44,
+    borderRadius:   22,
+    alignItems:     'center',
+    justifyContent: 'center',
   },
-  accountAvaText: { fontFamily: F.subheading, fontSize: 16, color: '#FFF' },
+  accountAvaText: {
+    fontFamily: F.subheading,
+    fontSize:   16,
+    color:      '#FFFFFF',
+  },
   accountEmail: { fontFamily: F.bodyMedium, fontSize: 14, color: C.text },
-  accountPlan: { fontFamily: F.body, fontSize: 12, color: C.textMuted },
+  accountPlan:  { fontFamily: F.body,       fontSize: 12, color: C.textMuted },
 
-  upgradeRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
-  upgradeLabel: { fontFamily: F.bodySemi, fontSize: 15, color: '#D4944A' },
-  upgradeSub: { fontFamily: F.body, fontSize: 12, color: C.textMuted },
+  upgradeRow: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               12,
+    paddingHorizontal: 16,
+    paddingVertical:   14,
+  },
+  upgradeLabel: { fontFamily: F.bodySemi, fontSize: 15, color: C.amber },
+  upgradeSub:   { fontFamily: F.body,     fontSize: 12, color: C.textSecondary },
   upgradeBtn: {
-    width: 36, height: 36, borderRadius: 12,
-    backgroundColor: '#C8883A',
-    alignItems: 'center', justifyContent: 'center',
+    width:          36,
+    height:         36,
+    borderRadius:   12,
+    backgroundColor: C.amber,
+    alignItems:     'center',
+    justifyContent: 'center',
   },
   upgradeBtnText: { fontSize: 16, color: '#FFFFFF', fontFamily: F.bodySemi },
 
-  version: { fontFamily: F.body, fontSize: 12, color: C.textMuted, textAlign: 'center', marginTop: 16 },
+  version: {
+    fontFamily: F.body,
+    fontSize:   12,
+    color:      C.textMuted,
+    textAlign:  'center',
+    marginTop:  20,
+  },
 });
-
-

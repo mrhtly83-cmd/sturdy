@@ -214,16 +214,13 @@ export default function ThoughtScreen() {
 
   return (
     <View style={s.root}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
 
       <LinearGradient
-        colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]}
-        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        colors={[C.gradientResultTop, C.gradientResultMid1, C.gradientResultMid2, C.gradientResultMid3, C.gradientMid4, C.gradientBottom]}
+        locations={[0, 0.10, 0.25, 0.42, 0.58, 1]}
         style={StyleSheet.absoluteFill}
       />
-
-      <View style={[s.blob, s.blob1]} />
-      <View style={[s.blob, s.blob2]} />
 
       <SafeAreaView style={s.safe} edges={['top']}>
         <ScrollView
@@ -293,10 +290,10 @@ export default function ThoughtScreen() {
                       pressed && { opacity: 0.85 },
                     ]}
                   >
-                    <Text style={[s.actionIcon, isPinned && { color: C.rose }]}>
+                    <Text style={[s.actionIcon, isPinned && { color: C.sos }]}>
                       {isPinned ? '📌' : '📍'}
                     </Text>
-                    <Text style={[s.actionLabel, isPinned && { color: C.rose }]}>
+                    <Text style={[s.actionLabel, isPinned && { color: C.sos }]}>
                       {isPinned ? 'Pinned' : 'Pin'}
                     </Text>
                   </Pressable>
@@ -341,20 +338,9 @@ export default function ThoughtScreen() {
 // ═══════════════════════════════════════════════
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.base },
+  root: { flex: 1, backgroundColor: C.background },
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 24, paddingBottom: 20, gap: 22 },
-
-  // Blobs
-  blob: { position: 'absolute', borderRadius: 999 },
-  blob1: {
-    top: -80, right: -60, width: 280, height: 280,
-    backgroundColor: 'rgba(253, 221, 230, 0.55)',
-  },
-  blob2: {
-    bottom: -60, left: -80, width: 240, height: 240,
-    backgroundColor: 'rgba(212, 232, 209, 0.50)',
-  },
 
   // Top bar
   topBar: {
@@ -363,7 +349,7 @@ const s = StyleSheet.create({
   },
   backBtn: { paddingVertical: 6 },
   backText: {
-    fontFamily: F.bodyMedium, fontSize: 15, color: C.textMuted,
+    fontFamily: F.bodyMedium, fontSize: 15, color: C.textSecondary,
   },
 
   // Prompt
@@ -373,7 +359,7 @@ const s = StyleSheet.create({
     letterSpacing: 0.5, textTransform: 'uppercase',
   },
   promptText: {
-      fontFamily: F.scriptItalic, fontSize: 15, color: C.textSub,
+      fontFamily: F.scriptItalic, fontSize: 15, color: C.text,
       lineHeight: 22,
     },
     savedTo: {
@@ -386,9 +372,15 @@ const s = StyleSheet.create({
   responseCard: {
     padding: 24, gap: 14,
     borderRadius: 22,
-    backgroundColor: C.cardGlass,
+    backgroundColor: C.surface,
     borderWidth: 1, borderColor: C.border,
+    borderTopWidth: 1, borderTopColor: C.borderHi,
     minHeight: 200,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 4,
   },
   responseText: {
     fontFamily: F.body, fontSize: 17, color: C.text,
@@ -404,14 +396,14 @@ const s = StyleSheet.create({
 
   // Error
   errorText: {
-    fontFamily: F.body, fontSize: 15, color: C.rose,
+    fontFamily: F.body, fontSize: 15, color: C.sos,
     textAlign: 'center', lineHeight: 22,
   },
   errorBackBtn: {
     alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 18, marginTop: 8,
   },
   errorBackText: {
-    fontFamily: F.bodyMedium, fontSize: 14, color: C.textSub,
+    fontFamily: F.bodyMedium, fontSize: 14, color: C.textSecondary,
   },
 
   // Action row
@@ -423,15 +415,16 @@ const s = StyleSheet.create({
     paddingVertical: 14, paddingHorizontal: 8,
     alignItems: 'center', justifyContent: 'center',
     borderRadius: 14,
-    backgroundColor: C.cardGlass,
+    backgroundColor: C.surface,
     borderWidth: 1, borderColor: C.border,
+    borderTopWidth: 1, borderTopColor: C.borderHi,
   },
   actionBtnActive: {
-    backgroundColor: 'rgba(201,123,99,0.10)',
-    borderColor: 'rgba(201,123,99,0.30)',
+    backgroundColor: C.sosLight,
+    borderColor: 'rgba(232,116,97,0.30)',
   },
   actionIcon: { fontSize: 20 },
   actionLabel: {
-    fontFamily: F.bodyMedium, fontSize: 12, color: C.textSub,
+    fontFamily: F.bodyMedium, fontSize: 12, color: C.text,
   },
 });

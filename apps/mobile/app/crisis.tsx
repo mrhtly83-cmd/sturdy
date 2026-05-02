@@ -1,7 +1,6 @@
 // app/crisis.tsx
-// v8 — Journal identity: pastel gradient, frosted glass, calm blue cards
-// Calm, warm, no red, no alarm aesthetics
-// Per SAFETY_SYSTEM.md: "invisible infrastructure — protects without alarming"
+// v9 — Deep Warm v5.2: result-variant gradient, dark glass cards with calm
+// steel accents. No red, no alarm. "Invisible infrastructure" still applies.
 
 import { Pressable, ScrollView, StyleSheet, Text, View, Linking } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -111,13 +110,21 @@ export default function CrisisScreen() {
   };
 
   return (
-    <SafeAreaView style={s.root} edges={['top', 'bottom']}>
-      <StatusBar style="dark" />
+    <View style={s.root}>
+      <StatusBar style="light" />
       <LinearGradient
-        colors={[C.gradStart, C.gradMid1, C.gradMid2, C.gradEnd]}
-        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        colors={[
+          C.gradientResultTop,
+          C.gradientResultMid1,
+          C.gradientResultMid2,
+          C.gradientResultMid3,
+          C.gradientMid4,
+          C.gradientBottom,
+        ]}
+        locations={[0, 0.10, 0.25, 0.42, 0.58, 1]}
         style={StyleSheet.absoluteFill}
       />
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         <Pressable onPress={() => router.back()} style={s.backBtn} hitSlop={12}>
@@ -175,50 +182,79 @@ export default function CrisisScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
+const card = {
+  backgroundColor: C.surface,
+  borderWidth:     1,
+  borderColor:     C.border,
+  borderTopWidth:  1,
+  borderTopColor:  C.borderHi,
+  borderRadius:    18,
+  shadowColor:     '#000000',
+  shadowOffset:    { width: 0, height: 6 },
+  shadowOpacity:   0.35,
+  shadowRadius:    20,
+  elevation:       4,
+} as const;
+
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.base },
+  root: { flex: 1, backgroundColor: C.background },
   scroll: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 60, gap: 16 },
 
-  backBtn: { alignSelf: 'flex-start', paddingVertical: 6 },
-  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textMuted },
+  backBtn:  { alignSelf: 'flex-start', paddingVertical: 6 },
+  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textSecondary },
 
   groundingCard: {
-    borderRadius: 18, padding: 18, alignItems: 'center',
-    backgroundColor: 'rgba(87,120,163,0.06)', borderWidth: 1, borderColor: 'rgba(87,120,163,0.12)',
+    ...card,
+    padding:    18,
+    alignItems: 'center',
+    backgroundColor: C.steelLight,
+    borderColor:     'rgba(87,120,163,0.20)',
   },
-  groundingText: { fontFamily: F.bodyMedium, fontSize: 16, color: C.textSub, lineHeight: 24, textAlign: 'center' },
+  groundingText: { fontFamily: F.bodyMedium, fontSize: 16, color: C.text, lineHeight: 24, textAlign: 'center' },
 
-  header: { gap: 12, marginTop: 4 },
-  title: { fontFamily: F.heading, fontSize: 28, color: C.text, letterSpacing: -0.3 },
+  header:  { gap: 12, marginTop: 4 },
+  title:   { fontFamily: F.heading, fontSize: 28, color: C.text, letterSpacing: -0.3 },
   message: { fontFamily: F.body, fontSize: 16, color: C.text, lineHeight: 25 },
 
   resources: { gap: 12 },
   resourceCard: {
-    borderRadius: 18, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: C.cardGlass, borderWidth: 1, borderColor: 'rgba(87,120,163,0.12)',
+    ...card,
+    padding:        18,
+    flexDirection:  'row',
+    alignItems:     'center',
+    gap:            12,
+    borderColor:    'rgba(87,120,163,0.20)',
   },
-  resourceLabel: { fontFamily: F.bodySemi, fontSize: 16, color: C.text },
-  resourceDetail: { fontFamily: F.body, fontSize: 14, color: C.textSub },
+  resourceLabel:  { fontFamily: F.bodySemi, fontSize: 16, color: C.text },
+  resourceDetail: { fontFamily: F.body,     fontSize: 14, color: C.textSecondary },
   resourceArrow: {
-    width: 36, height: 36, borderRadius: 12,
-    backgroundColor: 'rgba(87,120,163,0.10)', borderWidth: 1, borderColor: 'rgba(87,120,163,0.20)',
-    alignItems: 'center', justifyContent: 'center',
+    width:           36,
+    height:          36,
+    borderRadius:    12,
+    backgroundColor: C.steelLight,
+    borderWidth:     1,
+    borderColor:     'rgba(87,120,163,0.30)',
+    alignItems:      'center',
+    justifyContent:  'center',
   },
-  resourceArrowText: { fontSize: 16, color: '#5778A3', fontFamily: F.bodySemi },
+  resourceArrowText: { fontSize: 16, color: C.steel, fontFamily: F.bodySemi },
 
-  reassurance: { paddingVertical: 8 },
+  reassurance:     { paddingVertical: 8 },
   reassuranceText: { fontFamily: F.body, fontSize: 13, color: C.textMuted, lineHeight: 20, textAlign: 'center' },
 
   actions: { gap: 16, alignItems: 'center' },
   safeBtn: {
-    borderRadius: 18, paddingVertical: 16, alignItems: 'center', width: '100%',
-    backgroundColor: C.cardGlass, borderWidth: 1, borderColor: C.border,
+    ...card,
+    paddingVertical: 16,
+    alignItems:      'center',
+    width:           '100%',
   },
   safeBtnText: { fontFamily: F.bodySemi, fontSize: 16, color: C.text },
-  homeLink: { fontFamily: F.bodyMedium, fontSize: 14, color: C.textMuted },
+  homeLink:    { fontFamily: F.bodyMedium, fontSize: 14, color: C.textMuted },
 });
 
