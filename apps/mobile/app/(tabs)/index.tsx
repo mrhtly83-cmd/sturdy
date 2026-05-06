@@ -39,7 +39,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../src/context/AuthContext';
 import { useChildProfile } from '../../src/context/ChildProfileContext';
 import { supabase } from '../../src/lib/supabase';
-import { getQuestionResponse, CrisisDetectedError } from '../../src/lib/api';
+import { getQuestionResponse, CrisisDetectedError, RateLimitError } from '../../src/lib/api';
 import { colors as C, fonts as F } from '../../src/theme';
 
 // ═══════════════════════════════════════════════
@@ -237,6 +237,10 @@ export default function HomeScreen() {
           pathname: '/crisis',
           params: { crisisType: err.crisisType, riskLevel: err.riskLevel },
         });
+        return;
+      }
+      if (err instanceof RateLimitError) {
+        setError(err.message);
         return;
       }
       setError("Couldn't get a response right now. Please try again.");
