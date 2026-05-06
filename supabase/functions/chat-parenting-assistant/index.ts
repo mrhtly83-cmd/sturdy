@@ -8,6 +8,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { buildPrompt }              from "../_shared/buildPrompt.ts";
 import { validateResponse }         from "../_shared/validateResponse.ts";
 import { runSafetyFilter }          from "../_shared/safetyFilter.ts";
+import { checkAnthropicRateLimit }  from "../_shared/rateLimit.ts";
 import { classifyTrigger }          from "../_shared/triggerClassifier.ts";
 import { buildQuestionPrompt }      from "../_shared/prompts/question.ts";
 import { validateQuestionResponse } from "../_shared/validateQuestionResponse.ts";
@@ -26,10 +27,10 @@ function cors() {
   };
 }
 
-function jsonRes(body: unknown, status = 200) {
+function jsonRes(body: unknown, status = 200, extraHeaders: Record<string, string> = {}) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...cors(), "Content-Type": "application/json" },
+    headers: { ...cors(), "Content-Type": "application/json", ...extraHeaders },
   });
 }
 
@@ -230,14 +231,36 @@ serve(async (req) => {
   try { input = validateInput(body); }
   catch (e) { return jsonRes({ error: e instanceof Error ? e.message : "Invalid request." }, 400); }
 
-// Safety filter — also for question mode (questions can carry crisis content too)
-      if (input.mode === 'question') {
-        const safety = runSafetyFilter(input.message);
-        if (!safety.isSafe) {
-          logSafetyEvent({ userId: input.userId, childProfileId: input.childProfileId, messageExcerpt: input.message, riskLevel: safety.riskLevel, policyRoute: safety.policyRoute, crisisType: safety.crisisType });
-          return jsonRes({ response_type: "crisis", crisis_type: safety.crisisType, risk_level: safety.riskLevel, policy_route: safety.policyRoute }, 200);
-        }
-      }
+  // ─── Safety filter — runs on every path before any Anthropic call.
+  //     Crisis short-circuits with a 200 + crisis envelope; never counted
+  //     against the rate limit (Principle 4 — crisis is always free). ───
+  const safety = runSafetyFilter(input.message);
+  if (!safety.isSafe) {
+    logSafetyEvent({
+      userId:         input.userId,
+      childProfileId: input.childProfileId,
+      messageExcerpt: input.message,
+      riskLevel:      safety.riskLevel,
+      policyRoute:    safety.policyRoute,
+      crisisType:     safety.crisisType,
+    });
+    return jsonRes({
+      response_type: "crisis",
+      crisis_type:   safety.crisisType,
+      risk_level:    safety.riskLevel,
+      policy_route:  safety.policyRoute,
+    }, 200);
+  }
+
+  // ─── Rate limit — abuse prevention only. Caps live in _shared/rateLimit.ts. ───
+  const rate = await checkAnthropicRateLimit(input.userId);
+  if (!rate.ok) {
+    const headers: Record<string, string> = {};
+    if (rate.retryAfterSeconds) {
+      headers["Retry-After"] = String(rate.retryAfterSeconds);
+    }
+    return jsonRes({ error: rate.error }, rate.status, headers);
+  }
 
       // ─── Question mode branch ───
       if (input.mode === 'question') {

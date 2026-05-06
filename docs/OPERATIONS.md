@@ -427,3 +427,121 @@ that were a workaround for the missing FKs PR 19 fixed at the source.
 The export update closes a real gap — exporting a parent's account
 without their saved scripts would not have honoured the "Export your
 data first" promise in the privacy policy.
+
+### 2026-05-06 — Anthropic rate limit + scheduled-pause-cleanup cron + SOS safety filter fix
+
+**Context:** Pre-launch audit identified two production-readiness gaps and
+one latent safety bug:
+
+1. The `chat-parenting-assistant` Edge Function had no per-user rate limit.
+   A single user (or bot) could call the SOS or Question endpoints in a
+   tight loop, billing real Anthropic spend with no ceiling. CLAUDE.md
+   warns about this scenario explicitly and the FEATURE_INVENTORY flagged
+   it. Real launch risk.
+2. `scheduled-pause-cleanup` was deployed in the Edge Functions runtime
+   and declared in `supabase/config.toml`, but the cron schedule itself
+   was never wired. Without it, paused accounts never auto-delete at the
+   30-day mark — a privacy-policy promise that wouldn't be kept.
+3. While reviewing the code, the safety filter was found running ONLY on
+   the `mode === 'question'` branch. The SOS path (the larger, more common
+   path) bypassed it entirely. CLAUDE.md says "Safety filter precedes
+   Claude. Don't bypass it for the question path — questions can carry
+   crisis content." The current state was the inverse — the SOS path was
+   the bypassed one. A parent describing a crisis on SOS would get a
+   normal R/C/G script back instead of being routed to /crisis.
+
+**Decision:** Fixed all three in a single PR.
+
+1. Added `supabase/functions/_shared/rateLimit.ts` with two abuse-prevention
+   caps that are deliberately above any real parent's usage. Both are
+   counted from the existing `usage_events` table — no new tables, single
+   PostgREST round-trip per request:
+
+   | Window | Cap | Why |
+   |---|---|---|
+   | 60 s burst | 10 events | covers retries + follow-ups during a hard moment |
+   | 24 h daily | 100 events | ~5x the heaviest plausible parent-day |
+
+   Counted event types: `script_generated`, `followup_generated`,
+   `question_generated`. The crisis path bypasses the limit entirely
+   (Principle 4 — crisis is always free). On any DB error the helper
+   fails OPEN (returns `ok: true` with a console.warn) so a transient
+   Supabase outage doesn't block real parents during a hard moment;
+   Anthropic-side billing alerts are the real cost ceiling.
+
+2. Lifted `runSafetyFilter(input.message)` out of the `mode === 'question'`
+   branch in `chat-parenting-assistant/index.ts` so it runs on every path
+   before any Anthropic call. Crisis short-circuits with the same 200
+   crisis envelope the question path used. The rate limit then runs only
+   for the safe path (so crisis is never blocked).
+
+3. Created migration `20260506_005_schedule_pause_cleanup_cron.sql` that
+   enables `pg_cron` + `pg_net` extensions and registers a daily 03:00 UTC
+   job calling `/scheduled-pause-cleanup` over HTTPS. The URL and bearer
+   secret are pulled from runtime database settings the operator sets
+   once per environment — see "Operator setup" below.
+
+   Mobile-side, `RateLimitError` is added to `apps/mobile/src/lib/api.ts`
+   and surfaced in both Home (Question) and child hub (SOS) handlers,
+   showing the server-supplied message ("Sturdy needs a brief breather…"
+   or "You've hit Sturdy's daily limit. It resets in 24 hours.") inline
+   instead of the generic "couldn't get a response" copy.
+
+**Operator setup (one-time per environment, run via Supabase SQL Editor as
+superuser, NOT in a migration since values are environment-specific):**
+
+```
+alter database postgres set app.functions_url
+  = 'https://<project-ref>.supabase.co/functions/v1';
+alter database postgres set app.cron_secret
+  = '<value-of-CRON_SHARED_SECRET-set-via-supabase-secrets>';
+```
+
+**Verification:**
+
+```sql
+-- Cron job registered
+select jobid, jobname, schedule, active from cron.job
+ where jobname = 'scheduled-pause-cleanup';
+
+-- After the first scheduled tick (or manual trigger):
+select status, return_message, start_time, end_time
+  from cron.job_run_details
+ where jobid = (select jobid from cron.job
+                 where jobname = 'scheduled-pause-cleanup')
+ order by start_time desc limit 5;
+```
+
+```bash
+# Rate limit smoke test (replace <USER_JWT> with a real authenticated user):
+for i in $(seq 1 12); do
+  curl -s -o /dev/null -w "%{http_code}\n" \
+    -X POST "$PROJECT_URL/functions/v1/chat-parenting-assistant" \
+    -H "Authorization: Bearer $ANON_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"childName":"Test","childAge":5,"message":"hi","userId":"<USER_ID>"}'
+done
+# Expect: first ~10 return 200; the 11th returns 429 with Retry-After: 60.
+```
+
+**Rollback:**
+- Migration: `select cron.unschedule('scheduled-pause-cleanup');`
+- Rate limit: revert `_shared/rateLimit.ts` import + the safety/rate
+  block in `chat-parenting-assistant/index.ts`. Mobile `RateLimitError`
+  branches are no-ops if the server stops returning 429.
+
+**Reasoning:** The two pre-launch gaps were single-user cost exposure and
+an unkept privacy-policy promise — both real, both solvable with one PR.
+The SOS safety filter bypass was found during the rate-limit insertion
+work and is severe enough that it would have shipped at launch
+otherwise. Folding the fix in here means CLAUDE.md's "safety precedes
+Claude" rule is finally enforced on every path.
+
+**Out of scope (logged for follow-up):**
+- JWT validation in `chat-parenting-assistant` (closes the userId-rotation
+  rate-limit bypass; needs mobile client coordination).
+- Anthropic retry/backoff for transient 429/5xx (S4 from the launch audit).
+- Sentry breadcrumb for rate-limit hits (will land with H8 / Sentry wiring).
+- Composite index on `usage_events(user_id, created_at)` (S6) — works on
+  the existing single-column indexes today; revisit when usage scales past
+  ~100k events/user.

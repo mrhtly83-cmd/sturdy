@@ -74,6 +74,27 @@ export class CrisisDetectedError extends Error {
 }
 
 
+// Thrown when the Edge Function returns 429. Server-supplied message is the
+// safe one to surface to the parent. Crisis paths bypass the rate limit by
+// design, so callers don't need to special-case crisis here.
+export class RateLimitError extends Error {
+  readonly retryAfterSeconds: number | null;
+  constructor(message: string, retryAfterSeconds: number | null) {
+    super(message);
+    this.name              = 'RateLimitError';
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+
+function parseRetryAfter(response: Response): number | null {
+  const raw = response.headers.get('Retry-After');
+  if (!raw) return null;
+  const n = Number.parseInt(raw, 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+
 function isValidStep(v: unknown): v is ScriptStep {
   if (!v || typeof v !== 'object') return false;
   const s = v as Record<string, unknown>;
@@ -142,6 +163,9 @@ export async function getParentingScript(
       typeof (data as { error: unknown }).error === 'string'
         ? (data as { error: string }).error : 'request-failed';
     console.log('[API] Response not ok:', msg);
+    if (response.status === 429) {
+      throw new RateLimitError(msg, parseRetryAfter(response));
+    }
     throw new Error(msg);
   }
 
@@ -236,6 +260,9 @@ export async function getQuestionResponse(
       typeof (data as { error: unknown }).error === 'string'
         ? (data as { error: string }).error : 'request-failed';
     console.log('[API] Question response not ok:', msg);
+    if (response.status === 429) {
+      throw new RateLimitError(msg, parseRetryAfter(response));
+    }
     throw new Error(msg);
   }
 
