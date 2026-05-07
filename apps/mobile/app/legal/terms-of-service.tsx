@@ -1,13 +1,27 @@
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
-import { router }       from 'expo-router';
-import { StatusBar }    from 'expo-status-bar';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router }        from 'expo-router';
+import { StatusBar }     from 'expo-status-bar';
+import { SafeAreaView }  from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, type } from '../../src/theme';
 
 export default function TermsScreen() {
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-      <StatusBar style="dark" />
+    <View style={styles.root}>
+      <StatusBar style="light" />
+      <LinearGradient
+        colors={[
+          colors.gradientResultTop,
+          colors.gradientResultMid1,
+          colors.gradientResultMid2,
+          colors.gradientResultMid3,
+          colors.gradientMid4,
+          colors.gradientBottom,
+        ]}
+        locations={[0, 0.10, 0.25, 0.42, 0.58, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
         <Pressable
           onPress={() =>
@@ -35,12 +49,14 @@ export default function TermsScreen() {
           Do not rely on Sturdy in an emergency.
         </Text>
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root:    { flex: 1, backgroundColor: colors.background },
+  safe:    { flex: 1, backgroundColor: 'transparent' },
   content: {
     paddingHorizontal: spacing.lg,
     paddingTop:        spacing.md,

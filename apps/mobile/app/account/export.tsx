@@ -46,8 +46,21 @@ export default function ExportAccountScreen() {
   };
 
   return (
-    <SafeAreaView style={s.root} edges={['top', 'bottom']}>
+    <View style={s.root}>
       <StatusBar style="light" />
+      <LinearGradient
+        colors={[
+          C.gradientResultTop,
+          C.gradientResultMid1,
+          C.gradientResultMid2,
+          C.gradientResultMid3,
+          C.gradientMid4,
+          C.gradientBottom,
+        ]}
+        locations={[0, 0.10, 0.25, 0.42, 0.58, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={s.scroll}>
         <Pressable onPress={() => router.back()} style={s.closeBtn} hitSlop={16}>
           <Text style={s.closeText}>‹ Back</Text>
@@ -91,12 +104,14 @@ export default function ExportAccountScreen() {
           </Pressable>
         </View>
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   root:   { flex: 1, backgroundColor: C.background },
+  safe:   { flex: 1, backgroundColor: 'transparent' },
   scroll: { padding: 24, paddingBottom: 40, gap: 24 },
 
   closeBtn:  { alignSelf: 'flex-start', paddingVertical: 8 },

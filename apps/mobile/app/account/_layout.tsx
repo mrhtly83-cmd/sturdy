@@ -3,13 +3,14 @@
 // Headers are hidden — each screen renders its own back button.
 
 import { Stack } from 'expo-router';
+import { colors } from '../../src/theme/colors';
 
 export default function AccountLayout() {
   return (
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#0e0a10' },
+        contentStyle: { backgroundColor: colors.background },
       }}
     />
   );
