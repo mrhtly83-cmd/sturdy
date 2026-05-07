@@ -578,14 +578,14 @@ const s = StyleSheet.create({
   greeting: {
     fontFamily:    F.heading,
     fontSize:      32,
-    color:         C.text,
+    color:         C.textDark,
     letterSpacing: -0.5,
     lineHeight:    38,
   },
   subGreeting: {
     fontFamily: F.body,
     fontSize:   16,
-    color:      'rgba(232,116,97,0.90)',
+    color:      C.textDarkSecondary,
     lineHeight: 22,
   },
 
