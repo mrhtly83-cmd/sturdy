@@ -118,8 +118,15 @@ router.replace('/(tabs)');
       <StatusBar style="light" />
 
       <LinearGradient
-        colors={['#0e0a10', '#14101a', '#1a1622', '#1e1a28', '#201c2a', '#1e1a24', '#1a1620', '#18141e', '#14101a']}
-        locations={[0, 0.10, 0.22, 0.35, 0.48, 0.60, 0.72, 0.85, 1]}
+        colors={[
+          C.gradientResultTop,
+          C.gradientResultMid1,
+          C.gradientResultMid2,
+          C.gradientResultMid3,
+          C.gradientMid4,
+          C.gradientBottom,
+        ]}
+        locations={[0, 0.10, 0.25, 0.42, 0.58, 1]}
         style={StyleSheet.absoluteFill}
       />
       <Stars />
@@ -202,7 +209,7 @@ router.replace('/(tabs)');
             <View style={s.sliderWrap}>
               <View style={s.sliderTrack}>
                 <LinearGradient
-                  colors={[C.amber, C.peach]}
+                  colors={[C.amber, C.amberMid]}
                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                   style={[s.sliderFill, { width: `${sliderProgress}%` as any }]}
                 />
@@ -231,8 +238,7 @@ router.replace('/(tabs)');
           ]}
         >
           <LinearGradient
-            colors={canContinue ? ['#C8883A', '#E8A855'] : ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.04)']}
-            
+            colors={canContinue ? [C.amber, C.amberMid] : ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.04)']}
             style={s.ctaBtn}
           >
             <Text style={[s.ctaText, !canContinue && { color: 'rgba(255,255,255,0.20)' }]}>
@@ -255,7 +261,7 @@ router.replace('/(tabs)');
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0e0a10' },
+  root: { flex: 1, backgroundColor: C.background },
   content: { paddingHorizontal: 28, paddingTop: 24, paddingBottom: 40, gap: 24 },
 
   logoWrap: { alignItems: 'center' },

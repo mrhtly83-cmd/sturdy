@@ -7,10 +7,11 @@
 
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router }   from 'expo-router';
-import { StatusBar }   from 'expo-status-bar';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage  from '@react-native-async-storage/async-storage';
+import { router }    from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { SafeAreaView }   from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { colors as C, fonts as F } from '../../src/theme';
 import { supabase } from '../../src/lib/supabase';
@@ -66,8 +67,21 @@ export default function DeleteAccountScreen() {
   };
 
   return (
-    <SafeAreaView style={s.root} edges={['top', 'bottom']}>
+    <View style={s.root}>
       <StatusBar style="light" />
+      <LinearGradient
+        colors={[
+          C.gradientResultTop,
+          C.gradientResultMid1,
+          C.gradientResultMid2,
+          C.gradientResultMid3,
+          C.gradientMid4,
+          C.gradientBottom,
+        ]}
+        locations={[0, 0.10, 0.25, 0.42, 0.58, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
         <Pressable onPress={() => router.back()} style={s.closeBtn} hitSlop={16}>
           <Text style={s.closeText}>‹ Back</Text>
@@ -121,12 +135,14 @@ export default function DeleteAccountScreen() {
           </Pressable>
         </View>
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   root:   { flex: 1, backgroundColor: C.background },
+  safe:   { flex: 1, backgroundColor: 'transparent' },
   scroll: { padding: 24, paddingBottom: 40, gap: 24 },
 
   closeBtn:  { alignSelf: 'flex-start', paddingVertical: 8 },

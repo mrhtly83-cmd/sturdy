@@ -465,7 +465,7 @@ const s = StyleSheet.create({
   metaPillText: {
     fontFamily: F.bodyMedium,
     fontSize: 11,
-    color: C.peach,
+    color: C.amber,
   },
   deleteText: {
     fontFamily: F.bodyMedium,

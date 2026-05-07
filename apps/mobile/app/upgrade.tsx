@@ -1,6 +1,7 @@
 // app/upgrade.tsx
-// v3 — Dark identity: solid #0e0a10 base, glass cards, amber gradient CTA.
-// Replaces the v2 Journal pastel-gradient + rose-coral accents.
+// v4 — Deep Warm v5.2: C-2 fast-fade gradient backdrop, glass cards,
+// amber gradient CTA. All accent colors now sourced from theme tokens
+// (C.amber / C.amberMid) rather than file-local hex constants.
 //
 // Pricing (locked):
 //   Monthly  $9.99/month   · 3-day free trial
@@ -24,19 +25,17 @@ import { useChildProfile } from '../src/context/ChildProfileContext';
 import { colors as C, fonts as F } from '../src/theme';
 
 // ═══════════════════════════════════════════════
-// V3 DARK IDENTITY TOKENS (hardcoded per spec)
+// File-local non-theme tokens (rgb-glass surfaces specific to this screen).
+// Brand colors come from `C.*` (theme) so the paywall stays in sync with
+// the rest of the Deep Warm v5.2 system.
 // ═══════════════════════════════════════════════
 
-const BG          = '#0e0a10';
 const SURFACE     = 'rgba(255,255,255,0.055)';
 const BORDER      = 'rgba(255,255,255,0.07)';
 const BORDER_HI   = 'rgba(255,255,255,0.13)';
 const TEXT        = 'rgba(255,255,255,0.92)';
 const TEXT_SEC    = 'rgba(255,255,255,0.52)';
 const TEXT_MUTED  = 'rgba(255,255,255,0.28)';
-const AMBER       = '#D4944A';                       // selected-plan accents
-const AMBER_DEEP  = '#C8883A';                       // CTA gradient start
-const AMBER_LIGHT = '#E8A855';                       // CTA gradient end
 const SAGE        = '#8DB89A';                       // checkmarks + savings badge
 const SAGE_BG     = 'rgba(141,184,154,0.12)';
 
@@ -161,7 +160,7 @@ export default function UpgradeScreen() {
                     {isYearly ? <View style={s.radioDot} /> : null}
                   </View>
                   <View style={{ flex: 1, gap: 2 }}>
-                    <Text style={[s.planName, isYearly && { color: AMBER }]}>Yearly</Text>
+                    <Text style={[s.planName, isYearly && { color: C.amber }]}>Yearly</Text>
                     <Text style={s.planPrice}>$69.99/year · $5.83/mo</Text>
                   </View>
                   <View style={s.trialBadge}>
@@ -187,7 +186,7 @@ export default function UpgradeScreen() {
                     {!isYearly ? <View style={s.radioDot} /> : null}
                   </View>
                   <View style={{ flex: 1, gap: 2 }}>
-                    <Text style={[s.planName, !isYearly && { color: AMBER }]}>Monthly</Text>
+                    <Text style={[s.planName, !isYearly && { color: C.amber }]}>Monthly</Text>
                     <Text style={s.planPrice}>$9.99/month</Text>
                   </View>
                   <View style={s.trialBadge}>
@@ -205,7 +204,7 @@ export default function UpgradeScreen() {
             style={({ pressed }) => [pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] }]}
           >
             <LinearGradient
-              colors={[AMBER_DEEP, AMBER_LIGHT]}
+              colors={[C.amber, C.amberMid]}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
               style={s.ctaBtn}
             >
@@ -265,7 +264,7 @@ const s = StyleSheet.create({
 
   // Hero
   hero:      { alignItems: 'center', gap: 8, paddingVertical: 16 },
-  heroIcon:  { fontSize: 32, color: AMBER, marginBottom: 4 },
+  heroIcon:  { fontSize: 32, color: C.amber, marginBottom: 4 },
   heroTitle: { fontFamily: F.heading, fontSize: 36, color: TEXT, letterSpacing: -0.5 },
   heroSub:   { fontFamily: F.body, fontSize: 16, color: TEXT_SEC, textAlign: 'center', lineHeight: 24, maxWidth: 320 },
 
@@ -275,7 +274,7 @@ const s = StyleSheet.create({
     backgroundColor: SURFACE,
     borderWidth: 1, borderColor: BORDER,
   },
-  featuresTitle: { fontFamily: F.label, fontSize: 11, letterSpacing: 0.8, color: AMBER },
+  featuresTitle: { fontFamily: F.label, fontSize: 11, letterSpacing: 0.8, color: C.amber },
   featureRow:    { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   featureIcon:   { fontSize: 18, marginTop: 1 },
   featureLabel:  { fontFamily: F.bodySemi, fontSize: 15, color: TEXT },
@@ -297,8 +296,8 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: BORDER,
   },
   planCardActive: {
-    borderColor: 'rgba(212,148,74,0.45)',
-    backgroundColor: 'rgba(212,148,74,0.06)',
+    borderColor: C.amberBorder,
+    backgroundColor: 'rgba(200,136,58,0.06)',
   },
   planRow:   { flexDirection: 'row', alignItems: 'center', gap: 12 },
   planName:  { fontFamily: F.bodySemi, fontSize: 16, color: TEXT },
@@ -310,8 +309,8 @@ const s = StyleSheet.create({
     borderWidth: 2, borderColor: BORDER_HI,
     alignItems: 'center', justifyContent: 'center',
   },
-  radioActive: { borderColor: AMBER },
-  radioDot:    { width: 10, height: 10, borderRadius: 5, backgroundColor: AMBER },
+  radioActive: { borderColor: C.amber },
+  radioDot:    { width: 10, height: 10, borderRadius: 5, backgroundColor: C.amber },
 
   // Trial / savings badges
   trialBadge: {
