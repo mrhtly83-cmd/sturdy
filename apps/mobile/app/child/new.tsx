@@ -23,6 +23,7 @@ import { LinearGradient }   from 'expo-linear-gradient';
 import * as Haptics         from 'expo-haptics';
 import { useAuth }          from '../../src/context/AuthContext';
 import { useChildProfile }  from '../../src/context/ChildProfileContext';
+import { useSubscription }  from '../../src/hooks/useSubscription';
 import { supabase }         from '../../src/lib/supabase';
 import { colors as C, fonts as F } from '../../src/theme/colors';
 
@@ -44,8 +45,9 @@ function getAgeHint(age: number): string {
 
 // ─── Main ───
 export default function NewChildScreen() {
-  const { session }        = useAuth();
-  const { reloadChild }    = useChildProfile();
+  const { session }              = useAuth();
+  const { children, reloadChild } = useChildProfile();
+  const { isPremium }            = useSubscription();
   const [name, setName]    = useState('');
   const [age, setAge]      = useState(5);
   const [notes, setNotes]  = useState('');
@@ -66,6 +68,15 @@ export default function NewChildScreen() {
 
   const handleSave = async () => {
     if (!canSave || saving || !session) return;
+
+    // Free-tier 1-child cap. First child setup goes through child-setup.tsx,
+    // so reaching this screen with children.length >= 1 means an extra child.
+    if (!isPremium && children.length >= 1) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      router.replace('/upgrade');
+      return;
+    }
+
     setSaving(true); setError('');
     try {
       const preferences: Record<string, string> = {};
