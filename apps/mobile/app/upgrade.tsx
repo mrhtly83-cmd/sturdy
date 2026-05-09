@@ -9,6 +9,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
   Pressable,
   ScrollView,
@@ -22,6 +23,7 @@ import { SafeAreaView }  from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics      from 'expo-haptics';
 import { useChildProfile } from '../src/context/ChildProfileContext';
+import { useSubscription } from '../src/hooks/useSubscription';
 import { colors as C, fonts as F } from '../src/theme';
 
 // ═══════════════════════════════════════════════
@@ -56,6 +58,7 @@ const FREE_FEATURES = [
 
 export default function UpgradeScreen() {
   const { activeChild } = useChildProfile();
+  const { purchase, restore } = useSubscription();
   const childName = activeChild?.name?.trim() || '';
 
   const [selectedPlan, setSelectedPlan] = useState<'yearly' | 'monthly'>('yearly');
@@ -74,13 +77,48 @@ export default function UpgradeScreen() {
   const handlePurchase = async () => {
     setPurchasing(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    // TODO: Wire to RevenueCat / StoreKit
-    setTimeout(() => { setPurchasing(false); }, 2000);
+    try {
+      const planType = selectedPlan === 'yearly' ? 'annual' : 'monthly';
+      await purchase(planType);
+      // If we get here without error, purchase succeeded
+      router.back();
+    } catch (err: any) {
+      // userCancelled is already handled inside the hook (returns silently)
+      // so any error here is a real failure
+      Alert.alert(
+        'Purchase failed',
+        'Something went wrong. Please try again later.',
+        [{ text: 'OK' }],
+      );
+      console.error('[BILLING] Purchase error on upgrade screen:', err);
+    } finally {
+      setPurchasing(false);
+    }
   };
 
-  const handleRestore = () => {
+  const handleRestore = async () => {
     Haptics.selectionAsync();
-    // TODO: Wire to RevenueCat restore
+    try {
+      const restored = await restore();
+      if (restored) {
+        Alert.alert('Purchase restored', 'Welcome back to Sturdy+!', [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
+      } else {
+        Alert.alert(
+          'No purchase found',
+          'We couldn\'t find an active Sturdy+ subscription for this account.',
+          [{ text: 'OK' }],
+        );
+      }
+    } catch (err) {
+      Alert.alert(
+        'Restore failed',
+        'Something went wrong. Please try again later.',
+        [{ text: 'OK' }],
+      );
+      console.error('[BILLING] Restore error on upgrade screen:', err);
+    }
   };
 
   const isYearly = selectedPlan === 'yearly';
