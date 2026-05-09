@@ -1,5 +1,6 @@
 // app/_layout.tsx
 // v5 — Logo-derived premium dark theme; Fraunces (serif) + DM Sans (sans).
+// + RevenueCat initialization
 
 import { useEffect, useRef, useState } from 'react';
 import { Platform, Text, TextInput } from 'react-native';
@@ -18,6 +19,7 @@ import {
   DMSans_600SemiBold,
   DMSans_700Bold,
 } from '@expo-google-fonts/dm-sans';
+import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { ChildProfileProvider }   from '../src/context/ChildProfileContext';
 import { colors }                 from '../src/theme/colors';
@@ -25,7 +27,27 @@ import { hasCompletedOnboarding } from '../src/utils/onboarding';
 
 SplashScreen.preventAutoHideAsync();
 
-// Cap text scaling
+// ── RevenueCat initialization ──────────────────────────────────────────
+const RC_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY;
+
+function initRevenueCat() {
+  if (!RC_API_KEY) {
+    console.warn('[BILLING] EXPO_PUBLIC_REVENUECAT_API_KEY is not set — skipping RevenueCat init');
+    return;
+  }
+  if (Platform.OS === 'web') return; // RevenueCat doesn't run on web
+
+  if (__DEV__) {
+    Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+  }
+
+  Purchases.configure({ apiKey: RC_API_KEY });
+}
+
+// Run once at module load — before any component renders
+initRevenueCat();
+
+// ── Cap text scaling ───────────────────────────────────────────────────
 if (Platform.OS !== 'web') {
   const originalTextRender = (Text as any).render;
   if (originalTextRender) {
@@ -76,6 +98,15 @@ function AuthGate() {
     (async () => {
       // Signed-in users skip onboarding entirely.
       if (session) {
+        // Identify the user to RevenueCat so purchases are tied to their account
+        if (RC_API_KEY && Platform.OS !== 'web') {
+          try {
+            await Purchases.logIn(session.user.id);
+          } catch (err) {
+            console.warn('[BILLING] RevenueCat logIn failed:', err);
+          }
+        }
+
         if (!cancelled) {
           router.replace('/(tabs)');
           setRouted(true);

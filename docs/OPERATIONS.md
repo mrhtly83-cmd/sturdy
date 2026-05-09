@@ -545,3 +545,32 @@ Claude" rule is finally enforced on every path.
 - Composite index on `usage_events(user_id, created_at)` (S6) — works on
   the existing single-column indexes today; revisit when usage scales past
   ~100k events/user.
+
+## 2026-05-09 — RevenueCat + Google Play Console Integration (Test Phase)
+
+### Context
+Sturdy+ billing was mocked (`useSubscription.ts` returned `isPremium: false` with console-log stubs). Ready to begin real in-app purchase testing on Android via RevenueCat.
+
+### Decisions
+1. **RevenueCat project recreated from scratch** — old project was outdated; clean slate avoids stale product IDs and API keys causing test confusion.
+2. **Entitlement ID: `sturdy_plus`** — single entitlement granted by both monthly and annual subscriptions. Matches codebase naming.
+3. **Lifetime plan removed** — RevenueCat suggested Monthly/Yearly/Lifetime; Lifetime removed to match the paywall in `upgrade.tsx` (monthly $9.99 + annual $69.99 only).
+4. **Platform: React Native** — selected over Native Android since Sturdy is Expo/RN.
+5. **SDK wired now, products later** — `react-native-purchases` installed, `useSubscription.ts` replaced with real RevenueCat calls, `_layout.tsx` initializes RevenueCat at module load and logs in users by Supabase ID. Purchases won't function until Play Console verification clears and product IDs are created there.
+
+### Files changed
+- `apps/mobile/src/hooks/useSubscription.ts` — full rewrite: checks `sturdy_plus` entitlement, real `purchase()` / `restore()`, listens for subscription changes.
+- `apps/mobile/app/_layout.tsx` — added `Purchases.configure()` at module load, `Purchases.logIn(session.user.id)` in AuthGate, debug logging in dev.
+- `.env` — added `EXPO_PUBLIC_REVENUECAT_API_KEY` (test key).
+
+### Remaining steps (blocked on Play Console verification)
+1. Create subscription products in Play Console: `sturdy_monthly_999` (monthly $9.99, 3-day trial) and `sturdy_annual_6999` (annual $69.99, 7-day trial).
+2. Create Google Play Service Account → download JSON key → connect to RevenueCat.
+3. Map Play Store product IDs to RevenueCat products under the `sturdy_plus` entitlement.
+4. Set up internal testing track, upload AAB via `eas build --platform android`.
+5. Add license testers (Gmail addresses) in Play Console → Settings → License testing.
+6. End-to-end test: purchase flow, restore, cancellation, entitlement gating.
+7. Future: RevenueCat webhook → new Supabase Edge Function to sync `subscriptions` table.
+
+### Reasoning
+Wiring the SDK before products exist lets us verify the code compiles, TypeScript is clean, and the hook interface is stable — without blocking on Google's verification timeline. The mock's interface (`{ isPremium, plan, purchase, restore }`) was preserved so zero call-site changes were needed.
