@@ -1,8 +1,12 @@
 // app/(tabs)/settings.tsx
 // v4 — Deep Warm v5.2: C-2 settings gradient, dark glass, amber section labels.
+// + Real subscription status from RevenueCat
 
 import { useState } from 'react';
 import {
+  Alert,
+  Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,6 +20,7 @@ import { SafeAreaView }    from 'react-native-safe-area-context';
 import { LinearGradient }  from 'expo-linear-gradient';
 import * as Haptics        from 'expo-haptics';
 import { useAuth }         from '../../src/context/AuthContext';
+import { useSubscription } from '../../src/hooks/useSubscription';
 import { colors as C, fonts as F } from '../../src/theme';
 
 // ─── Components ───
@@ -72,13 +77,34 @@ function Divider() {
   return <View style={s.divider} />;
 }
 
+// ─── Helpers ───
+
+function planDisplayName(plan: 'free' | 'monthly' | 'annual'): string {
+  switch (plan) {
+    case 'monthly': return 'Sturdy+ Monthly';
+    case 'annual':  return 'Sturdy+ Annual';
+    default:        return 'Free plan';
+  }
+}
+
+function handleManageSubscription() {
+  // Deep-link to the platform's subscription management
+  if (Platform.OS === 'android') {
+    Linking.openURL('https://play.google.com/store/account/subscriptions');
+  } else if (Platform.OS === 'ios') {
+    Linking.openURL('https://apps.apple.com/account/subscriptions');
+  }
+}
+
 // ─── Main ───
 
 export default function SettingsScreen() {
   const { session, signOut } = useAuth();
+  const { isPremium, plan, restore } = useSubscription();
   const [pushEnabled, setPushEnabled] = useState(false);
   const [researchConsent, setResearchConsent] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [restoring, setRestoring] = useState(false);
 
   const email = session?.user?.email ?? null;
 
@@ -90,6 +116,32 @@ export default function SettingsScreen() {
       // AuthGate handles post-signout routing.
     } catch {
       setSigningOut(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    setRestoring(true);
+    Haptics.selectionAsync();
+    try {
+      const restored = await restore();
+      if (restored) {
+        Alert.alert('Purchase restored', 'Welcome back to Sturdy+!', [{ text: 'OK' }]);
+      } else {
+        Alert.alert(
+          'No purchase found',
+          'We couldn\'t find an active Sturdy+ subscription for this account.',
+          [{ text: 'OK' }],
+        );
+      }
+    } catch (err) {
+      Alert.alert(
+        'Restore failed',
+        'Something went wrong. Please try again later.',
+        [{ text: 'OK' }],
+      );
+      console.error('[BILLING] Restore error on settings:', err);
+    } finally {
+      setRestoring(false);
     }
   };
 
@@ -130,28 +182,60 @@ export default function SettingsScreen() {
               </LinearGradient>
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={s.accountEmail}>{email ?? 'Guest'}</Text>
-                <Text style={s.accountPlan}>Free plan</Text>
+                <Text style={[
+                  s.accountPlan,
+                  isPremium && { color: C.amber },
+                ]}>
+                  {planDisplayName(plan)}
+                </Text>
               </View>
+              {isPremium && (
+                <View style={s.premiumBadge}>
+                  <Text style={s.premiumBadgeText}>✦</Text>
+                </View>
+              )}
             </View>
           </SettingGroup>
 
           {/* SUBSCRIPTION */}
           <SectionLabel label="SUBSCRIPTION" />
           <SettingGroup>
-            <Pressable
-              onPress={() => router.push('/upgrade')}
-              style={({ pressed }) => [s.upgradeRow, pressed && { opacity: 0.85 }]}
-            >
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={s.upgradeLabel}>Upgrade to Sturdy+</Text>
-                <Text style={s.upgradeSub}>Unlimited scripts, full history, insights</Text>
-              </View>
-              <View style={s.upgradeBtn}>
-                <Text style={s.upgradeBtnText}>→</Text>
-              </View>
-            </Pressable>
+            {isPremium ? (
+              <>
+                <View style={s.activePlanRow}>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={s.activePlanLabel}>{planDisplayName(plan)}</Text>
+                    <Text style={s.activePlanSub}>Your subscription is active</Text>
+                  </View>
+                  <View style={s.activeBadge}>
+                    <Text style={s.activeBadgeText}>Active</Text>
+                  </View>
+                </View>
+                <Divider />
+                <SettingRow
+                  label="Manage subscription"
+                  onPress={handleManageSubscription}
+                />
+              </>
+            ) : (
+              <Pressable
+                onPress={() => router.push('/upgrade')}
+                style={({ pressed }) => [s.upgradeRow, pressed && { opacity: 0.85 }]}
+              >
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={s.upgradeLabel}>Upgrade to Sturdy+</Text>
+                  <Text style={s.upgradeSub}>Unlimited scripts, full history, insights</Text>
+                </View>
+                <View style={s.upgradeBtn}>
+                  <Text style={s.upgradeBtnText}>→</Text>
+                </View>
+              </Pressable>
+            )}
             <Divider />
-            <SettingRow label="Restore purchase" onPress={() => {}} />
+            <SettingRow
+              label={restoring ? 'Restoring…' : 'Restore purchase'}
+              onPress={handleRestore}
+            />
           </SettingGroup>
 
           {/* CHILDREN */}
@@ -218,6 +302,9 @@ export default function SettingsScreen() {
 }
 
 // ─── Styles ───
+
+const SAGE = '#8DB89A';
+const SAGE_BG = 'rgba(141,184,154,0.12)';
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.background },
@@ -306,6 +393,41 @@ const s = StyleSheet.create({
   },
   accountEmail: { fontFamily: F.bodyMedium, fontSize: 14, color: C.text },
   accountPlan:  { fontFamily: F.body,       fontSize: 12, color: C.textMuted },
+
+  premiumBadge: {
+    width:           28,
+    height:          28,
+    borderRadius:    14,
+    backgroundColor: 'rgba(200,136,58,0.15)',
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
+  premiumBadgeText: {
+    fontSize: 14,
+    color:    C.amber,
+  },
+
+  activePlanRow: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               12,
+    paddingHorizontal: 16,
+    paddingVertical:   14,
+  },
+  activePlanLabel: { fontFamily: F.bodySemi, fontSize: 15, color: C.text },
+  activePlanSub:   { fontFamily: F.body,     fontSize: 12, color: C.textSecondary },
+
+  activeBadge: {
+    backgroundColor: SAGE_BG,
+    paddingHorizontal: 10,
+    paddingVertical:   4,
+    borderRadius:      8,
+  },
+  activeBadgeText: {
+    fontFamily: F.bodyMedium,
+    fontSize:   11,
+    color:      SAGE,
+  },
 
   upgradeRow: {
     flexDirection:     'row',

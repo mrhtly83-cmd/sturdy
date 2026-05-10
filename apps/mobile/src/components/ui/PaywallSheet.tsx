@@ -21,10 +21,15 @@ type Props = {
 export function PaywallSheet({ visible, onClose, feature, body }: Props) {
   const { purchase } = useSubscription();
 
-  const handlePurchase = async () => {
+ const handlePurchase = async () => {
+  try {
     await purchase();
     onClose();
-  };
+  } catch {
+    // Error already logged in the hook
+    // Sheet stays open so user can retry
+  }
+};
 
   return (
     <Modal
