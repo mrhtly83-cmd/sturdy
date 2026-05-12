@@ -1,6 +1,5 @@
 // app/(tabs)/_layout.tsx
-// v6 — Deep Warm v5.2 tab bar; amber active, muted inactive, shadow separator.
-// Two tabs (post-Phase-1 architecture): Home · Settings.
+// v6 — Transparent tab bar with warm fade, amber active tint.
 
 import { Text } from 'react-native';
 import { Tabs } from 'expo-router';
@@ -12,20 +11,18 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: 'rgba(10,10,10,0.97)',    // deeper, near-opaque
-          borderTopWidth:  0,                         // shadow does the separator
-          paddingBottom:   24,
-          paddingTop:      8,
-          height:          80,
-          position:        'absolute',
-          shadowColor:     '#000000',
-          shadowOffset:    { width: 0, height: -4 },
-          shadowOpacity:   0.30,
-          shadowRadius:    12,
-          elevation:       8,
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          paddingBottom: 24,
+          paddingTop: 8,
+          height: 80,
+          position: 'absolute',
+          elevation: 0,
+          shadowOpacity: 0,
         },
-        tabBarActiveTintColor:   C.tabActive,         // amber #C8883A
-        tabBarInactiveTintColor: C.tabInactive,
+        tabBarBackground: () => null,
+        tabBarActiveTintColor: C.tabActive,
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.28)',
         tabBarLabelStyle: {
           fontFamily: F.bodySemi,
           fontSize: 10,
