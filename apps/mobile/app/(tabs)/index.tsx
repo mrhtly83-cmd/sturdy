@@ -569,7 +569,6 @@ return (
                 <Text style={s.subGreeting}>What's happening right now?</Text>
               </View>
               {/* ─── Input ─── */}
-             {/* ─── Input ─── */}
 <View style={[s.inputArea, inputFocused && s.inputAreaFocused]}>
   <TextInput
     multiline
