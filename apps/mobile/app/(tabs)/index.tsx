@@ -28,6 +28,7 @@ import {
   Text,
   TextInput,
   View,
+  Image,
 } from 'react-native';
 
 import { router, useFocusEffect } from 'expo-router';
@@ -35,6 +36,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import { ImageBackground } from 'react-native';
 
 import { useAuth } from '../../src/context/AuthContext';
 import { useChildProfile } from '../../src/context/ChildProfileContext';
@@ -428,109 +430,128 @@ export default function HomeScreen() {
   // BACKGROUND — matches sturdy-home-final.html exactly
   // ═══════════════════════════════════════════════
 
-  const Background = () => (
+  // FIND the entire Background component (const Background = () => ( ... ))
+// REPLACE with:
+
+const Background = () => {
+  // Setup the animation value
+  const moveAnim = useRef(new Animated.Value(0)).current;
+
+  // Start a continuous, slow loop when the component mounts
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(moveAnim, {
+          toValue: 1,
+          duration: 25000, // 25 seconds for a very slow, premium drift
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(moveAnim, {
+          toValue: 0,
+          duration: 25000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        })
+      ])
+    ).start();
+  }, [moveAnim]);
+
+  // Translate the animation value into actual movement
+  const translateY = moveAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -40] // Drifts up by 40 pixels
+  });
+
+  const scale = moveAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.1] // Very subtle zoom in
+  });
+
+  return (
     <>
-      {/* Base gradient: warm brown, 20% softer */}
+      <Animated.Image
+        source={require('../../assets/golden-particles-bg.png')}
+        style={[
+          StyleSheet.absoluteFill,
+          { 
+            width: '100%', 
+            height: '100%', 
+            transform: [{ translateY }, { scale }] // Applies the moving particle effect
+          }
+        ]}
+        resizeMode="cover"
+      />
+      {/* The "Sunglasses" Overlay:
+        We darkened these rgba values significantly from your original 
+        so the bright text will pop flawlessly.
+      */}
       <LinearGradient
-        colors={['#3d3328', '#362c22', '#2e261c', '#282018', '#231c14']}
-        locations={[0, 0.28, 0.52, 0.72, 1]}
-        start={{ x: 0.4, y: 0 }}
-        end={{ x: 0.6, y: 1 }}
+        colors={[
+          'rgba(0,0,0,0.50)', 
+          'rgba(0,0,0,0.65)', 
+          'rgba(0,0,0,0.80)', 
+          'rgba(0,0,0,0.90)', 
+          'rgba(0,0,0,0.95)', 
+        ]}
+        locations={[0, 0.25, 0.50, 0.72, 1]}
         style={StyleSheet.absoluteFill}
       />
-      {/* Diagonal golden light beam — top-right
-          HTML: linear-gradient(225deg, rgba(255,225,150,0.22)→transparent)
-          RN: rotated LinearGradient overlay */}
-      <View style={s.lightBeamWrap} pointerEvents="none">
-        <LinearGradient
-         colors={[
-  'rgba(255,225,150,0.33)',
-  'rgba(244,200,120,0.18)',
-  'rgba(220,170,80,0.08)',
-  'transparent',
-]}
-          locations={[0, 0.2, 0.4, 0.6]}
-          start={{ x: 1, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={s.lightBeamGradient}
-        />
-      </View>
-      {/* Mid-left warmth glow */}
-      <LinearGradient
-        colors={['rgba(232,168,85,0.05)', 'transparent']}
-        style={s.warmthMid}
-        start={{ x: 0.5, y: 0.5 }}
-        end={{ x: 1, y: 1 }}
-      />
-      {/* Bottom-right corner warmth */}
-      <LinearGradient
-        colors={['rgba(220,170,90,0.05)', 'transparent']}
-        style={s.warmthCorner}
-        start={{ x: 0.5, y: 0.5 }}
-        end={{ x: 1, y: 1 }}
-      />
-      {/* Floor warmth — prevents cave feeling */}
-      <LinearGradient
-        colors={['transparent', 'rgba(200,150,80,0.02)', 'rgba(200,160,90,0.06)']}
-        locations={[0, 0.5, 1]}
-        style={s.warmthFloor}
-      />
-      {/* Animated particles */}
-      <ParticleField />
     </>
   );
+};
 
   // ─── Loading ───
   if (isLoadingChild) {
-    return (
-      <View style={s.root}>
-        <StatusBar style="light" />
-        <Background />
-        <SafeAreaView style={s.centerGate}>
-          <ActivityIndicator color={C.amber} />
-        </SafeAreaView>
-      </View>
-    );
-  }
+  return (
+    <View style={s.root}>
+      <Background /> 
+      <StatusBar style="light" />
+      <SafeAreaView style={s.centerGate}>
+        <ActivityIndicator color={C.amber} />
+      </SafeAreaView>
+    </View>
+  );
+}
+
 
   // ─── Empty: 0 children ───
   if (kidList.length === 0) {
-    return (
-      <View style={s.root}>
-        <StatusBar style="light" />
-        <Background />
-        <SafeAreaView style={s.safe} edges={['top']}>
-          <View style={s.emptyWrap}>
-            <Text style={s.greetingText}>{greeting}, {displayName}.</Text>
-            <Text style={s.emptyTitle}>Let's add your first child.</Text>
-            <Text style={s.emptyBody}>
-              Sturdy tailors every response to your child's age and world.
-            </Text>
-            <Pressable
-              onPress={handleAddChild}
-              style={({ pressed }) => [pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] }]}
-            >
-              <LinearGradient
-                colors={[C.amber, C.amberMid]}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                style={s.primaryBtn}
-              >
-                <Text style={s.primaryBtnText}>Add a child</Text>
-              </LinearGradient>
-            </Pressable>
-          </View>
-        </SafeAreaView>
-      </View>
-    );
-  }
-
-  // ─── Main: 1+ children ───
   return (
     <View style={s.root}>
-      <StatusBar style="light" />
       <Background />
-
+      <StatusBar style="light" />
       <SafeAreaView style={s.safe} edges={['top']}>
+        <View style={s.emptyWrap}>
+          <Text style={s.greetingText}>{greeting}, {displayName}.</Text>
+          <Text style={s.emptyTitle}>Let's add your first child.</Text>
+          <Text style={s.emptyBody}>
+            Sturdy tailors every response to your child's age and world.
+          </Text>
+          <Pressable
+            onPress={handleAddChild}
+            style={({ pressed }) => [pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] }]}
+          >
+            <LinearGradient
+              colors={[C.amber, C.amberMid]}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              style={s.primaryBtn}
+            >
+              <Text style={s.primaryBtnText}>Add a child</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    </View>
+  );
+}
+
+  // ─── Main: 1+ children ───
+return (
+  <View style={s.root}>
+    <Background />
+    <StatusBar style="light" />
+    <SafeAreaView style={s.safe} edges={['top']}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={{ flex: 1 }}
@@ -542,52 +563,55 @@ export default function HomeScreen() {
             showsVerticalScrollIndicator={false}
           >
             <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-
               {/* ─── Greeting ─── */}
               <View style={s.greetingWrap}>
                 <Text style={s.greetingText}>{greeting}, {displayName}.</Text>
                 <Text style={s.subGreeting}>What's happening right now?</Text>
               </View>
-
               {/* ─── Input ─── */}
-              <View style={[s.inputArea, inputFocused && s.inputAreaFocused]}>
-                <TextInput
-                  multiline
-                  numberOfLines={4}
-                  placeholder="She won't put her shoes on and we're already late..."
-                  placeholderTextColor="rgba(255,255,255,0.40)"
-                  value={question}
-                  onChangeText={(t) => { setQuestion(t); if (error) setError(''); }}
-                  onFocus={() => setInputFocused(true)}
-                  onBlur={() => setInputFocused(false)}
-                  style={s.textarea}
-                  textAlignVertical="top"
-                  editable={!sending}
-                />
-                <Text style={s.inputHint}>A snapshot is enough.</Text>
-              </View>
+             {/* ─── Input ─── */}
+<View style={[s.inputArea, inputFocused && s.inputAreaFocused]}>
+  <TextInput
+    multiline
+    numberOfLines={4}
+    placeholder="She won't put her shoes on and we're already late..."
+    placeholderTextColor="rgba(255, 248, 231, 0.75)" // 👈 HIGH CONTRAST PLACEHOLDER
+    value={question}
+    onChangeText={(t) => { setQuestion(t); if (error) setError(''); }}
+    onFocus={() => setInputFocused(true)}
+    onBlur={() => setInputFocused(false)}
+    style={s.textarea}
+    textAlignVertical="top"
+    editable={!sending}
+  />
+  <Text style={s.inputHint}>A snapshot is enough.</Text>
+</View>
+{error ? <Text style={s.errorText}>{error}</Text> : null}
 
-              {error ? <Text style={s.errorText}>{error}</Text> : null}
-
-              {/* ─── CTA: "Get words to say" ─── */}
-             {/* ─── CTA: "Get words to say" ─── */}
+{/* ─── CTA: "Get words to say" ─── */}
 <Pressable
   onPress={handleSend}
   disabled={!canSend}
   style={({ pressed }) => [
-    pressed && canSend && { opacity: 0.92, transform: [{ scale: 0.98 }] },
-    !canSend && { opacity: 0.45 },
+    s.ctaBtnWrap,
+    pressed && canSend && { transform: [{ scale: 0.98 }] },
   ]}
 >
-  <LinearGradient
-    colors={[C.amber, C.amberMid]}
-    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-    style={s.ctaBtn}
-  >
-    <Text style={s.ctaBtnText}>
-      {sending ? 'Getting words…' : 'Get words to say'}
-    </Text>
-  </LinearGradient>
+  {canSend ? (
+    <LinearGradient
+      colors={[C.amber, C.amberMid]}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+      style={s.ctaBtnActive}
+    >
+      <Text style={s.ctaBtnTextActive}>
+        {sending ? 'Getting words…' : 'Get words to say'}
+      </Text>
+    </LinearGradient>
+  ) : (
+    <View style={s.ctaBtnDisabled}>
+      <Text style={s.ctaBtnTextDisabled}>Get words to say</Text>
+    </View>
+  )}
 </Pressable>
 
               {/* ─── Mode selector (horizontal swipe) ─── */}
@@ -633,7 +657,6 @@ export default function HomeScreen() {
                   ))}
                 </View>
               </View>
-
               {/* ─── Children row ─── */}
               <View style={s.childrenSection}>
                 <View style={s.childrenRow}>
@@ -679,13 +702,11 @@ export default function HomeScreen() {
                   </Pressable>
                 </View>
               </View>
-
             </Animated.View>
             <View style={{ height: 40 }} />
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
-
       {/* ─── Multi-child picker modal ─── */}
       <Modal visible={pickerMode !== null} animationType="fade" transparent onRequestClose={handlePickerCancel}>
         <Pressable style={s.pickerBackdrop} onPress={handlePickerCancel}>
@@ -736,7 +757,7 @@ export default function HomeScreen() {
 // ═══════════════════════════════════════════════
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#231c14' },
+  root: { flex: 1, backgroundColor: '#0d0b08' },
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 20 },
   centerGate: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -799,61 +820,86 @@ const s = StyleSheet.create({
 
   // ─── Input ───
   inputArea: {
-    backgroundColor: 'rgba(244,200,120,0.04)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)', // More solid frost
     borderWidth: 1,
-    borderColor: 'rgba(244,200,120,0.09)',
-    borderRadius: 18,
-    padding: 18,
-    paddingBottom: 14,
-    marginBottom: 14,
+    borderColor: 'rgba(255, 248, 231, 0.3)', // Soft cream outline
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
   },
   inputAreaFocused: {
-    borderColor: 'rgba(244,200,120,0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.20)', // Brightens slightly when typing
+    borderColor: 'rgba(255, 248, 231, 0.8)', // Outline gets solid cream when active
   },
   textarea: {
-    fontFamily: F.body,
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.88)',
-    lineHeight: 22,
-    minHeight: 80,
-    padding: 0,
+    color: '#FFF8E7', // High contrast cream text
+    fontSize: 16,
+    fontWeight: '500',
+    minHeight: 80, // Ensures the 4 lines of space exist
+    textShadowColor: 'rgba(0, 0, 0, 0.8)', // Lifts text off the background
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   inputHint: {
-    fontFamily: F.body,
-    fontSize: 11,
-    color: 'rgba(244,200,120,0.32)',      // bumped from 0.24
-    marginTop: 10,
+    color: 'rgba(255, 248, 231, 0.8)', // Bright cream for the hint
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 8,
+    textAlign: 'right', // Looks good tucked in the corner
   },
   errorText: {
-    fontFamily: F.body,
-    fontSize: 14,
-    color: C.sos,
-    textAlign: 'center',
-    marginBottom: 8,
+    color: '#FF8A7D',
+    fontSize: 13,
+    marginTop: 8,
   },
-
+  
   // ─── CTA ───
-  ctaBtn: {
+  ctaBtnWrap: { marginBottom: 36 },
+  ctaBtnActive: {
     minHeight: 52,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 36,
+    shadowColor: '#F4C878', // Amber glow when active
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
   },
-  ctaBtnText: {
+  ctaBtnDisabled: {
+    minHeight: 52,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)', // Frosted glass look
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  ctaBtnTextActive: {
     fontFamily: F.subheading,
-    fontSize: 15,
+    fontSize: 16,
+    fontWeight: '800',
     color: '#140f0a',
+    letterSpacing: 0.3,
+  },
+  ctaBtnTextDisabled: {
+    fontFamily: F.subheading,
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'rgba(255, 248, 231, 0.5)', // Highly legible even when disabled
     letterSpacing: 0.3,
   },
 
   // ─── Mode cards ───
-  modesSection: { marginBottom: 32 },
+ modesSection: { marginBottom: 32 },
   modesLabel: {
     fontFamily: F.label,
-    fontSize: 10,
+    fontSize: 11, // Bumped up slightly
+    fontWeight: '800', // Made bold
     letterSpacing: 1.5,
-    color: 'rgba(255,255,255,0.25)',      // bumped from 0.18
+    color: '#FFFFFF', // Pure white for max contrast
+    textShadowColor: 'rgba(0, 0, 0, 0.8)', // Strong drop shadow
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
     marginBottom: 14,
   },
   modesCarousel: { paddingRight: 24, gap: 10 },
@@ -917,8 +963,8 @@ const s = StyleSheet.create({
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#362c22',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 248, 231, 0.3)', // Brightens the ring around avatars
   },
   avatarText: {
     fontSize: 12,
@@ -938,18 +984,18 @@ const s = StyleSheet.create({
     fontSize: 16,
     color: 'rgba(255,255,255,0.14)',
   },
-  childrenNames: {
+ childrenNames: {
     fontFamily: F.body,
-    fontSize: 12,
-    color: 'rgba(255,240,220,0.50)',      // bumped from 0.40
+    fontSize: 13, 
+    color: 'rgba(255, 248, 231, 0.85)', // Bumped opacity heavily
     flex: 1,
   },
   childrenManage: {
     fontFamily: F.bodyMedium,
-    fontSize: 11,
-    color: 'rgba(244,200,120,0.34)',      // bumped from 0.25
+    fontSize: 12,
+    color: 'rgba(244, 200, 120, 0.90)', // Made bright amber
+    textDecorationLine: 'underline', // Makes it obviously tappable
   },
-
   // ─── Empty state ───
   emptyWrap: { flex: 1, paddingHorizontal: 24, gap: 14, justifyContent: 'center' },
   emptyTitle: {
