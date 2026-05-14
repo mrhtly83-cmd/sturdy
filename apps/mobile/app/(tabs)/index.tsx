@@ -615,6 +615,9 @@ return (
       <Text style={s.ctaBtnTextActive}>Get words to say</Text>
     </LinearGradient>
   )}
+</Pressable>
+
+              {/* ─── Mode selector (horizontal swipe) ─── */}
 
               {/* ─── Mode selector (horizontal swipe) ─── */}
               <View style={s.modesSection}>
