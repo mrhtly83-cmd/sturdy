@@ -607,11 +607,14 @@ return (
       </Text>
     </LinearGradient>
   ) : (
-    <View style={s.ctaBtnDisabled}>
-      <Text style={s.ctaBtnTextDisabled}>Get words to say</Text>
-    </View>
+    <LinearGradient
+      colors={[C.amber, C.amberMid]}
+      start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+      style={[s.ctaBtnActive, { opacity: 0.35 }]}
+    >
+      <Text style={s.ctaBtnTextActive}>Get words to say</Text>
+    </LinearGradient>
   )}
-</Pressable>
 
               {/* ─── Mode selector (horizontal swipe) ─── */}
               <View style={s.modesSection}>
@@ -922,7 +925,7 @@ const s = StyleSheet.create({
   modeDesc: {
     fontFamily: F.body,
     fontSize: 10,
-    color: 'rgba(255,255,255,0.40)',      // bumped from 0.32
+    color: 'rgba(255,255,255,0.55)',      // bumped from 0.32
     lineHeight: 14,
   },
 
