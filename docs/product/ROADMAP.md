@@ -23,56 +23,115 @@ Every decision should serve at least one of these:
 
 ---
 
-## Phase 1 — Foundation (largely complete)
+## Phase 1 — Foundation (complete)
 
 **Goal:** A working, trustworthy SOS tool that sounds human and adapts to the child.
 
 ### ✅ Shipped and working
-- Authentication — sign up, sign in, sign out (email + password)
-- Forgot password flow — email reset link + deep-link reset-password screen
-- Confirm-email state after sign-up (shown when Supabase requires confirmation)
-- Child profiles — exact age (2–17), name, optional personality notes
-- Per-child hub (`child/[id].tsx`) — SOS / Reconnect / Understand / Conversation modes
-- Regulate → Connect → Guide script generation (all four modes)
-- Output schema: `situation_summary` + `regulate` / `connect` / `guide` + `avoid`
-- Intensity selector (SOS only), tone selector (Soft / Gentle / Direct — Sturdy+ gated)
-- Question mode — home screen textarea → prose response → `thought/[id]`
-- Safety filter — 8 crisis categories, phrase-based detection, before every AI call
-- Crisis screen — adaptive content per crisis type, real phone numbers + deep links
-- Safety event logging to Supabase
-- Rate limiting — per-user cap on Edge Function calls (`checkAnthropicRateLimit`)
-- Neurotype auto-detection from message (silent, never surfaced in output)
-- Welcome — v12 native: 5-page paged ScrollView, photo-identity, guest path
-- Result screen — collapsible regulate/connect/guide cards, avoid section, voice, profile nudge, save script
-- Voice playback — `expo-speech` (platform TTS), free on SOS, Sturdy+-gated on other modes
-- Saved scripts library (`saved.tsx`, reads from `saved_scripts` table)
-- Interaction history (`history.tsx`, reads from `interaction_logs`)
-- Child profile screen (`child-profile/[id].tsx`) — triggers, what works, patterns teaser
-- Settings screen — account, subscription, children, notifications, legal, account lifecycle
-- Account lifecycle — pause / delete / export Edge Functions + mobile UI
-- Sturdy+ paywall screen (`upgrade.tsx`) — Monthly $9.99 / Annual $69.99
-- Legal screens — privacy policy, ToS, AI limitations, medical safety (placeholder text)
-- Schema integrity — 14 tables, all FK constraints with explicit ON DELETE behaviour
 
-### 🟡 Built but stubbed / incomplete
-- **Subscription / billing** — `useSubscription` is a mock (`isPremium: false` always). RevenueCat/StoreKit not wired.
-- **Restore purchase** — Settings row exists, does nothing. Required for App Store §3.1.1.
-- **Push notifications** — toggle in Settings is UI-only, not persisted or wired to APNs/FCM.
-- **Research consent** — toggle in Settings is UI-only, not saved to database.
-- **Help & FAQ / Contact us** — Settings rows are dead tap targets.
-- **Weekly insight** — locked teaser UI exists, no generation code.
-- **Emerging patterns** — placeholder + lock icon, no detection logic.
-- **Legal docs** — long-form drafts written, not yet committed or wired into in-app screens.
-- **Analytics** — `analytics.ts` stub logs in dev, no-op in prod. No backend.
+**Authentication**
+- Sign up / sign in / sign out — email + password (`app/auth/index.tsx`)
+- Forgot password — email reset link, "check your inbox" confirm state (`app/auth/forgot-password.tsx`)
+- Password reset — deep link handler in `_layout.tsx`, new password screen (`app/auth/reset-password.tsx`)
+- Confirm-email state shown after sign-up when Supabase requires email confirmation
+- `handle_new_user()` Postgres trigger auto-creates `profiles` row on signup
+
+**Child profiles**
+- Add child — name + exact age 2–17, optional personality notes (`child-setup.tsx`, `child/new.tsx`)
+- Multi-child support — home screen handles 0/1/many children with avatar picker
+- Guest path — child stored to AsyncStorage (`sturdy_guest_child`), migrates on sign-up
+
+**AI script generation — all four modes**
+- Per-child hub (`child/[id].tsx?mode=...`) serves SOS / Reconnect / Understand / Conversation
+- Edge Function: `chat-parenting-assistant` — Anthropic Claude `claude-sonnet-4-20250514`
+- Prompt assembly in `buildPrompt.ts`: age calibration, silent neurotype detection, 5 trigger-category guidance blocks (meltdown / refusal / shutdown / aggression / transition), tone injection
+- Output: `situation_summary` + `regulate` / `connect` / `guide` steps + `avoid[]`
+- `coaching` + `strategies[]` optional per step
+- Result screen (`result.tsx`) — collapsible cards, avoid section, "what happened next?" feedback, save, share, voice player, profile nudge after 3rd script
+
+**Question mode**
+- Home screen textarea → Edge Function `mode: 'question'` → prose response
+- Result at `thought/[id].tsx` — persisted to `parent_thoughts` table
+- Pin / delete / ask-another actions
+
+**Safety**
+- Safety filter (`_shared/safetyFilter.ts`) — 8 crisis categories, phrase-based detection, runs before every AI call on both SOS and question paths
+- Crisis screen (`crisis.tsx`) — adaptive content per crisis_type, real hotlines (988, Crisis Text Line, Poison Control), `tel:` / `sms:` deep links
+- Safety events logged to `safety_events` table (SET NULL on deletion — anonymized row retained per Principle 8)
+- Rate limiting — per-user burst + daily cap (`_shared/rateLimit.ts`); crisis paths always bypass
+
+**Tone system**
+- Three tones: Soft / Gentle / Direct — end-to-end wired
+- AsyncStorage-backed (`src/utils/tone.ts`) → API request body → `validateInput` → `getToneBlock()` injects into all four mode prompts
+- Gentle is the default free-tier voice (no-op — prompt unchanged); Soft + Direct are Sturdy+ gated
+
+**Trigger classification**
+- `_shared/triggerClassifier.ts` — 15 categories (homework, bedtime, screen_time, leaving_places, mealtime, morning_routine, sharing, sibling, separation, public_meltdown, getting_dressed, bath_time, sport_activity, social_conflict, + fallback)
+- Logged silently to `interaction_logs.trigger_category` — feeds child profile screen
+
+**Subscription / billing**
+- RevenueCat fully wired in `useSubscription.ts` — real purchase / restore / entitlement checks via `react-native-purchases`
+- `Purchases.configure({ apiKey: RC_API_KEY })` runs at app launch in `_layout.tsx`
+- Entitlement ID: `sturdy_plus`; plan detection: free / monthly / annual from `productIdentifier`
+- `purchase(packageType)` and `restore()` call RevenueCat SDK — not mocks
+- Requires `EXPO_PUBLIC_REVENUECAT_API_KEY` env var; logs a warning and skips if missing
+
+**Paywall + gating**
+- `upgrade.tsx` — Monthly $9.99 (3-day trial) / Annual $69.99 (7-day trial)
+- `PaywallSheet.tsx` — reusable bottom-sheet shown when free user taps locked feature
+- All Sturdy+ gates read from `useSubscription().isPremium`
+
+**Account lifecycle**
+- Pause account (30-day reversible) — `account-pause` Edge Function + `app/account/pause.tsx`
+- Permanent deletion — "DELETE" confirmation required — `account-delete` Edge Function + `app/account/delete.tsx`
+- Data export — signed 24-hour URL → zip with JSON + Markdown — `account-export` Edge Function + `app/account/export.tsx`
+- Daily cron (`scheduled-pause-cleanup`) auto-deletes accounts paused > 30 days
+
+**Content screens**
+- Saved scripts library (`saved.tsx`) — grouped by child, swipe-to-delete
+- Interaction history (`history.tsx`) — filterable by mode + trigger category
+- Child profile / "Your Child" (`child-profile/[id].tsx`) — common triggers, what works, patterns teaser, weekly insight teaser
+- Settings — real wiring: RevenueCat status, tone, legal, account lifecycle, sign out
+
+**Welcome / onboarding**
+- v12 native flow (`welcome/index.tsx`) — 5-page paged ScrollView, photo-identity (`welcome-family.jpg`, `welcome-horizon.jpg`), spring animations, haptics
+- Three CTA paths: Get started → `child-setup`, Try without account → guest flag, Sign in → auth
+- `TypingDemo.tsx` — live animated demo of Regulate/Connect/Guide output during onboarding
+
+**Legal**
+- Four in-app screens: privacy-policy, terms-of-service, ai-limitations, medical-safety (`app/legal/`)
+
+**Database**
+- 14 tables, all with FK constraints + explicit ON DELETE behaviour
+- Migration `20260428_004` retroactively added missing FKs
+- `enforce_conversation_child_ownership` trigger maintains cross-table user_id consistency
+
+---
+
+### 🟡 Built but incomplete
+
+| Area | What exists | What's missing |
+|---|---|---|
+| Push notifications | Toggle in Settings (React state only) | Not persisted to DB; no APNs/FCM wiring; no Expo push token |
+| Research consent | Toggle in Settings (React state only) | Not persisted to DB |
+| Help & FAQ / Contact us | Settings rows exist | Tap targets are empty handlers; no FAQ content; no contact form |
+| Weekly insight | Locked teaser UI on child-profile screen | No generation code; `child_insights` table exists but unpopulated |
+| Emerging patterns | Placeholder + lock UI | No detection logic; `incident_events` table exists but unused |
+| Legal docs (long-form) | Short placeholder text in legal screens | Long-form drafts not yet committed or wired |
+| Analytics backend | `analytics.ts` event stubs (logs in dev, no-op in prod) | No backend wired; no funnel visibility |
+| Error monitoring | Nothing | No Sentry / Bugsnag; production crashes invisible |
+| Welcome dead code | `welcome/` has orphaned files: `trial.tsx`, `trial-result.tsx`, `child-setup.tsx`, `signup.tsx` | These are unreachable from v12 but not deleted; `OnboardingProvider` is vestigial |
+
+---
 
 ### ⬜ Remaining for App Store submission
-1. **Real subscription via RevenueCat** — swap `useSubscription.ts` body
-2. **Restore purchase wiring** — required for App Store §3.1.1
-3. **Wire long-form legal docs** into in-app legal screens
-4. **Privacy policy public URL** — App Store listing requires a live URL
-5. **App Store assets** — screenshots, listing copy, age rating
-6. **Error monitoring** — Sentry or equivalent; production crashes are invisible today
-7. **Email verification flow** — App Store may flag account creation without email confirmation
+
+1. **Wire long-form legal docs** into in-app legal screens (drafts exist, not committed)
+2. **Privacy policy public URL** — App Store listing requires a live public URL (`apps/web/` exists, needs `/privacy` route)
+3. **App Store assets** — screenshots, listing copy, age rating, content advisory
+4. **Error monitoring** — Sentry or equivalent before going live
+5. **Email verification flow** — Supabase supports it; app needs a "check your inbox" state post-sign-up (partially done: confirm-email state added, but email confirmation not yet enabled on Supabase project)
+6. **RevenueCat products config** — SDK is wired; products must be created in App Store Connect / Google Play and added to RevenueCat dashboard before billing works in production
 
 ---
 
