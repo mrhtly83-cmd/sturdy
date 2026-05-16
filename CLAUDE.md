@@ -68,7 +68,7 @@ State:
 - `src/context/OnboardingContext.tsx` exists but is **vestigial** — used by the orphaned welcome funnel files only.
 - `src/lib/supabase.ts` reads `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` and throws at import if missing.
 - `src/lib/api.ts` is the only call-site to the Edge Function. Exposes `getParentingScript()` (SOS-style flows) and `getQuestionResponse()` (Question mode). A `crisis` `response_type` becomes a thrown `CrisisDetectedError` so callers can route to `/crisis`.
-- `src/hooks/useSubscription.ts` is a **mock** subscription hook returning `{ isPremium: false, plan: 'free', purchase, restore }`. `purchase()` and `restore()` log a `[BILLING]` line. Single swap-point — replacing this file's body with the real RevenueCat client unlocks every gated feature automatically.
+- `src/hooks/useSubscription.ts` — calls the RevenueCat SDK (`react-native-purchases`) but **behaves as a mock** because `EXPO_PUBLIC_REVENUECAT_API_KEY` is not configured. `initRevenueCat()` in `_layout.tsx` exits early when the key is missing, so `Purchases.getCustomerInfo()` throws and `isPremium` stays `false` for all users. Single activation point — set the API key and configure products in the RevenueCat dashboard to make billing live. Entitlement ID: `sturdy_plus`.
 - `src/utils/onboarding.ts` — `hasCompletedOnboarding()` / `markOnboardingComplete()` / `resetOnboarding()` (dev-only) wrap `@sturdy/onboarding-complete`. v12 welcome uses a separate `sturdy_guest_seen_v1` key for the guest path.
 - `src/utils/profileNudge.ts` — per-child script counter + "shown" flag. The result screen surfaces a one-time-per-child profile nudge after the 3rd script.
 - `src/utils/tone.ts` — AsyncStorage-backed Sturdy+ tone preference (`soft` / `gentle` / `direct`). Default `gentle`.
@@ -127,7 +127,7 @@ Defined in `apps/mobile/app/upgrade.tsx`:
 
 Free tier (always free, never paywalled): unlimited SOS scripts, voice playback on SOS mode, Regulate → Connect → Guide structure. Crisis routing is always free per Master Blueprint.
 
-Billing is **not yet wired** — `useSubscription` is a mock (`isPremium: false`). When real RevenueCat / StoreKit lands, swap that file's body and every gated feature unlocks: tone Soft/Direct chips, voice on non-SOS modes, weekly insight, full child-profile insights.
+Billing is **not yet wired** — `useSubscription` calls the RevenueCat SDK but `EXPO_PUBLIC_REVENUECAT_API_KEY` is not set, so RevenueCat never initializes and `isPremium` is always `false`. All Sturdy+ gates are effectively open-but-blocked. To activate: set the API key, create products in App Store Connect / Google Play, and configure the `sturdy_plus` entitlement in the RevenueCat dashboard.
 
 ## Database
 
@@ -141,7 +141,7 @@ Schema lives across `supabase/migrations/` and historical SQL Editor changes. As
 - `parent_thoughts` — Question mode entries (CASCADE)
 - `saved_scripts` — user-saved scripts (CASCADE)
 - `script_feedback` — outcome feedback (CASCADE)
-- `subscriptions` — billing records (CASCADE; currently dormant pending RevenueCat)
+- `subscriptions` — billing records (CASCADE; currently dormant — RevenueCat not yet activated)
 - `usage_events` — usage tracking (CASCADE)
 - `user_preferences` — settings, tone, notifications (CASCADE)
 - `safety_events` — risk-flagged events (CASCADE today, will become SET NULL with the account-deletion migration to retain anonymized safety data per Principle 8)
