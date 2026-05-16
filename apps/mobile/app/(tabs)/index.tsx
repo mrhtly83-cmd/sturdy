@@ -41,7 +41,7 @@ import { ImageBackground } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
 import { useChildProfile } from '../../src/context/ChildProfileContext';
 import { supabase } from '../../src/lib/supabase';
-import { getQuestionResponse, CrisisDetectedError, RateLimitError } from '../../src/lib/api';
+import { getAutoResponse, CrisisDetectedError, RateLimitError } from '../../src/lib/api';
 import { colors as C, fonts as F } from '../../src/theme';
 
 // ═══════════════════════════════════════════════
@@ -382,29 +382,60 @@ export default function HomeScreen() {
     setSending(true);
 
     try {
-      const detectedChildId = detectChildFromMessage(msg, kidList);
-      const result = await getQuestionResponse({
-        message: msg,
-        userId: session?.user?.id,
-        childName: null,
-        childAge: null,
-        childProfileId: detectedChildId,
-      } as any);
+      const detectedChild = detectChildFromMessage(msg, kidList)
+        ? kidList.find((k: any) => k.id === detectChildFromMessage(msg, kidList))
+        : kidList.length === 1 ? kidList[0] : null;
+
+      const result = await getAutoResponse({
+        message:        msg,
+        userId:         session?.user?.id,
+        childName:      detectedChild?.name ?? null,
+        childAge:       detectedChild?.childAge ?? null,
+        childProfileId: detectedChild?.id ?? null,
+      });
 
       setQuestion('');
-      const responsePayload = (result as any).response ?? '';
-      const thoughtId = (result as any).thought_id ?? null;
 
-      if (thoughtId) {
+      if (result.response_type === 'normal') {
+        // Script response — route to result screen with params
+        const r = result as any;
         router.push({
-          pathname: `/thought/${thoughtId}` as any,
-          params: { fallbackResponse: responsePayload, prompt: msg },
+          pathname: '/result' as any,
+          params: {
+            situationSummary:   r.situation_summary ?? '',
+            regulateAction:     r.regulate?.parent_action ?? '',
+            regulateScript:     r.regulate?.script ?? '',
+            regulateCoaching:   r.regulate?.coaching ?? '',
+            regulateStrategies: JSON.stringify(r.regulate?.strategies ?? []),
+            connectAction:      r.connect?.parent_action ?? '',
+            connectScript:      r.connect?.script ?? '',
+            connectCoaching:    r.connect?.coaching ?? '',
+            connectStrategies:  JSON.stringify(r.connect?.strategies ?? []),
+            guideAction:        r.guide?.parent_action ?? '',
+            guideScript:        r.guide?.script ?? '',
+            guideCoaching:      r.guide?.coaching ?? '',
+            guideStrategies:    JSON.stringify(r.guide?.strategies ?? []),
+            avoid:              JSON.stringify(r.avoid ?? []),
+            childMessage:       msg,
+            mode:               r.detected_mode ?? 'sos',
+            childId:            detectedChild?.id ?? '',
+          },
         });
       } else {
-        router.push({
-          pathname: '/thought/inline' as any,
-          params: { fallbackResponse: responsePayload, prompt: msg },
-        });
+        // Prose response — route to thought screen
+        const responsePayload = result.response ?? '';
+        const thoughtId = (result as any).thought_id ?? null;
+        if (thoughtId) {
+          router.push({
+            pathname: `/thought/${thoughtId}` as any,
+            params: { fallbackResponse: responsePayload, prompt: msg },
+          });
+        } else {
+          router.push({
+            pathname: '/thought/inline' as any,
+            params: { fallbackResponse: responsePayload, prompt: msg },
+          });
+        }
       }
     } catch (err) {
       if (err instanceof CrisisDetectedError) {

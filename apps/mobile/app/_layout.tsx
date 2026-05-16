@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Platform, Text, TextInput } from 'react-native';
 import { Stack, router } from 'expo-router';
+import * as Linking from 'expo-linking';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import {
@@ -128,7 +129,34 @@ function AuthGate() {
   return null;
 }
 
+// ── Password-reset deep link handler ─────────────────────────────────────
+// Supabase sends: sturdy://password-reset#access_token=...&type=recovery
+// We parse the hash manually (React Native does not process URL fragments)
+// and navigate to the reset-password screen with the tokens as params.
+function usePasswordResetDeepLink() {
+  useEffect(() => {
+    const handleUrl = (url: string) => {
+      const hash = url.split('#')[1];
+      if (!hash) return;
+      const params = new URLSearchParams(hash);
+      if (params.get('type') !== 'recovery') return;
+      const accessToken  = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      if (!accessToken || !refreshToken) return;
+      router.push({
+        pathname: '/auth/reset-password' as any,
+        params:   { accessToken, refreshToken },
+      });
+    };
+
+    Linking.getInitialURL().then((url) => { if (url) handleUrl(url); });
+    const sub = Linking.addEventListener('url', ({ url }) => handleUrl(url));
+    return () => sub.remove();
+  }, []);
+}
+
 export default function RootLayout() {
+  usePasswordResetDeepLink();
   const [fontsLoaded] = useFonts({
     // Fraunces (serif) — headings, hero, AI script text
     Fraunces_600SemiBold,

@@ -202,13 +202,105 @@ export type QuestionRequest = {
 };
 
 export type QuestionResponse = {
-  response: string;
+  response:  string;
+  thought_id?: string | null;
 };
+
+// ═══════════════════════════════════════════════
+// Auto mode — home screen sends this; backend
+// classifies the message and returns either a
+// script (response_type: "normal") or a prose
+// response (response_type: "question").
+// ═══════════════════════════════════════════════
+
+export type AutoRequest = {
+  childName?:      string | null;
+  childAge?:       number | null;
+  childProfileId?: string | null;
+  message:         string;
+  userId?:         string;
+  tone?:           'soft' | 'gentle' | 'direct';
+};
+
+export type AutoResponse =
+  | (ParentingScriptResponse & { response_type: 'normal'; detected_mode: string })
+  | (QuestionResponse        & { response_type: 'question'; detected_mode: string });
 
 function isValidQuestionResponse(value: unknown): value is QuestionResponse {
   if (typeof value !== 'object' || value === null) return false;
   const v = value as Record<string, unknown>;
   return typeof v.response === 'string' && v.response.trim().length > 0;
+}
+
+export async function getAutoResponse(
+  input: AutoRequest,
+): Promise<AutoResponse> {
+  let response: Response;
+
+  console.log('[API] Sending auto-mode request');
+
+  try {
+    response = await fetch(PARENTING_SCRIPT_URL, {
+      method:  'POST',
+      headers: HEADERS,
+      body:    JSON.stringify({
+        childName:      input.childName ?? null,
+        childAge:       input.childAge  ?? null,
+        childProfileId: input.childProfileId ?? null,
+        message:        input.message,
+        userId:         input.userId,
+        tone:           input.tone,
+        mode:           'auto',
+      }),
+    });
+  } catch (e) {
+    console.log('[API] Network error:', e);
+    throw new Error('network-error');
+  }
+
+  console.log('[API] Auto response status:', response.status);
+
+  let rawText = '';
+  try {
+    rawText = await response.text();
+  } catch (e) {
+    throw new Error('read-error');
+  }
+
+  let data: unknown = null;
+  try {
+    data = JSON.parse(rawText);
+  } catch (e) {
+    throw new Error('parse-error');
+  }
+
+  if (!response.ok) {
+    const msg = typeof data === 'object' && data !== null && 'error' in data &&
+      typeof (data as { error: unknown }).error === 'string'
+        ? (data as { error: string }).error : 'request-failed';
+    if (response.status === 429) throw new RateLimitError(msg, parseRetryAfter(response));
+    throw new Error(msg);
+  }
+
+  if (
+    typeof data === 'object' && data !== null && 'response_type' in data &&
+    (data as { response_type: unknown }).response_type === 'crisis'
+  ) {
+    const c = data as { crisis_type?: string; risk_level?: string };
+    throw new CrisisDetectedError(c.crisis_type ?? 'unknown', c.risk_level ?? 'ELEVATED_RISK');
+  }
+
+  const d = data as Record<string, unknown>;
+  if (d.response_type === 'question') {
+    if (typeof d.response !== 'string' || !d.response.trim()) throw new Error('invalid-response');
+    return data as AutoResponse;
+  }
+  if (d.response_type === 'normal') {
+    if (!isParentingScriptResponse(data)) throw new Error('invalid-response');
+    return data as AutoResponse;
+  }
+
+  throw new Error('invalid-response');
 }
 
 export async function getQuestionResponse(

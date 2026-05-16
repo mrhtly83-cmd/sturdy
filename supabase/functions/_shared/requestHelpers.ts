@@ -66,8 +66,9 @@ export function validateInput(body: RequestBody): ValidatedInput {
     ? body.originalScript as ValidatedInput["originalScript"]
     : null;
 
-  // SOS mode requires child context. Question mode does not (auto-detection elsewhere).
-  if (mode !== 'question') {
+  // SOS / Reconnect / Understand / Conversation modes require child context.
+  // Question mode and auto mode do not (auto-mode child context is optional).
+  if (mode !== 'question' && mode !== 'auto') {
     if (!childName)    throw new Error("childName is required.");
     if (!Number.isFinite(childAge) || childAge < 2 || childAge > 17) {
       throw new Error("childAge must be between 2 and 17.");
