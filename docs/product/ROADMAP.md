@@ -69,12 +69,11 @@ Every decision should serve at least one of these:
 - `_shared/triggerClassifier.ts` — 15 categories (homework, bedtime, screen_time, leaving_places, mealtime, morning_routine, sharing, sibling, separation, public_meltdown, getting_dressed, bath_time, sport_activity, social_conflict, + fallback)
 - Logged silently to `interaction_logs.trigger_category` — feeds child profile screen
 
-**Subscription / billing**
-- RevenueCat fully wired in `useSubscription.ts` — real purchase / restore / entitlement checks via `react-native-purchases`
-- `Purchases.configure({ apiKey: RC_API_KEY })` runs at app launch in `_layout.tsx`
-- Entitlement ID: `sturdy_plus`; plan detection: free / monthly / annual from `productIdentifier`
-- `purchase(packageType)` and `restore()` call RevenueCat SDK — not mocks
-- Requires `EXPO_PUBLIC_REVENUECAT_API_KEY` env var; logs a warning and skips if missing
+**Subscription / billing (SDK installed, not activated)**
+- `react-native-purchases` installed and `Purchases.configure()` called in `_layout.tsx`
+- `useSubscription.ts` has real purchase / restore / entitlement logic
+- **Behaves as a mock** — `EXPO_PUBLIC_REVENUECAT_API_KEY` is not set, so RevenueCat never initializes and `isPremium` is always `false`
+- Entitlement ID: `sturdy_plus`; to activate: set API key + create products in App Store Connect / Google Play + configure RevenueCat dashboard
 
 **Paywall + gating**
 - `upgrade.tsx` — Monthly $9.99 (3-day trial) / Annual $69.99 (7-day trial)
@@ -112,6 +111,8 @@ Every decision should serve at least one of these:
 
 | Area | What exists | What's missing |
 |---|---|---|
+| Subscription / billing | SDK installed, purchase/restore logic written | `EXPO_PUBLIC_REVENUECAT_API_KEY` not set — always `isPremium: false`; products not in App Store Connect / Google Play |
+| Restore purchase | `restore()` in `useSubscription.ts` + Settings row | SDK not activated; Settings row does nothing |
 | Push notifications | Toggle in Settings (React state only) | Not persisted to DB; no APNs/FCM wiring; no Expo push token |
 | Research consent | Toggle in Settings (React state only) | Not persisted to DB |
 | Help & FAQ / Contact us | Settings rows exist | Tap targets are empty handlers; no FAQ content; no contact form |
