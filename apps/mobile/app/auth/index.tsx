@@ -31,6 +31,8 @@ function isMode(v: unknown): v is Mode {
   return v === 'signup' || v === 'signin';
 }
 
+type ScreenState = 'form' | 'confirm-email';
+
 export default function AuthScreen() {
   const params = useLocalSearchParams<{ mode?: string }>();
   const initialMode: Mode = isMode(params.mode) ? params.mode : 'signup';
@@ -38,6 +40,7 @@ export default function AuthScreen() {
   const { signInWithEmail } = useAuth();
 
   const [mode, setMode]         = useState<Mode>(initialMode);
+  const [screenState, setScreenState] = useState<ScreenState>('form');
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw]     = useState(false);
@@ -57,7 +60,7 @@ export default function AuthScreen() {
     try {
       const e = email.trim().toLowerCase();
       if (isSignup) {
-        const { error: authErr } = await supabase.auth.signUp({ email: e, password });
+        const { data: signUpData, error: authErr } = await supabase.auth.signUp({ email: e, password });
         if (authErr) throw authErr;
 
         // Pending-child migration — preserved verbatim from sign-up.tsx.
@@ -81,8 +84,14 @@ export default function AuthScreen() {
         } catch { /* non-blocking */ }
 
         await markOnboardingComplete();
-        // No router.replace here — AuthGate in _layout.tsx handles
-        // post-signup routing once the session lands.
+
+        // If email confirmation is required, session will be null.
+        // Show a "check your inbox" screen instead of leaving the user hanging.
+        if (!signUpData.session) {
+          setScreenState('confirm-email');
+          return;
+        }
+        // Session present (confirmation disabled) — AuthGate routes to /(tabs).
       } else {
         await signInWithEmail(e, password);
         await markOnboardingComplete();
@@ -132,90 +141,129 @@ export default function AuthScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Pressable onPress={handleBack} style={s.back} hitSlop={8}>
-          <Text style={s.backText}>← Back</Text>
-        </Pressable>
-
-        <View style={s.hlArea}>
-          <Text style={s.headline}>
-            {isSignup ? 'Create account' : 'Welcome back'}
-          </Text>
-          <Text style={s.headlineSub}>
-            {isSignup ? 'Save scripts and personalise for your child.' : 'Sign in to continue'}
-          </Text>
-        </View>
-
-        <View style={s.formCard}>
-          <View style={s.field}>
-            <Text style={s.fieldLabel}>EMAIL</Text>
-            <View style={[s.inputWrap, emailFocused && s.inputFocused]}>
-              <TextInput
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                autoComplete="email"
-                placeholder="you@example.com"
-                placeholderTextColor={C.inputPlaceholder}
-                value={email}
-                onChangeText={(v) => { setEmail(v); if (error) setError(''); }}
-                onFocus={() => setEmailFocused(true)}
-                onBlur={() => setEmailFocused(false)}
-                style={s.input}
-                editable={!loading}
-              />
-            </View>
-          </View>
-
-          <View style={s.field}>
-            <Text style={s.fieldLabel}>PASSWORD</Text>
-            <View style={[s.inputWrap, pwFocused && s.inputFocused, s.inputRow]}>
-              <TextInput
-                secureTextEntry={!showPw}
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete={isSignup ? 'password-new' : 'password'}
-                placeholder={isSignup ? 'Choose a password' : 'Enter your password'}
-                placeholderTextColor={C.inputPlaceholder}
-                value={password}
-                onChangeText={(v) => { setPassword(v); if (error) setError(''); }}
-                onFocus={() => setPwFocused(true)}
-                onBlur={() => setPwFocused(false)}
-                style={[s.input, { flex: 1 }]}
-                editable={!loading}
-                returnKeyType="go"
-                onSubmitEditing={handleSubmit}
-              />
+        {screenState === 'confirm-email' ? (
+          // ─── Post-signup: email confirmation required ───
+          <>
+            <View style={s.confirmWrap}>
+              <Text style={s.confirmIcon}>📬</Text>
+              <Text style={s.headline}>Check your inbox</Text>
+              <Text style={s.headlineSub}>
+                We sent a confirmation link to{'\n'}
+                <Text style={s.emailDisplay}>{email.trim()}</Text>
+              </Text>
+              <Text style={s.confirmHint}>
+                Tap the link in the email to activate your account, then come back and sign in.
+                Check spam if you don't see it.
+              </Text>
               <Pressable
-                onPress={() => setShowPw((v) => !v)}
-                style={s.eyeBtn}
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel={showPw ? 'Hide password' : 'Show password'}
+                onPress={() => { setScreenState('form'); switchMode('signin'); }}
+                style={({ pressed }) => [s.linkBtn, pressed && { opacity: 0.6 }]}
               >
-                <Text style={s.eyeIcon}>{showPw ? '🙈' : '👁'}</Text>
+                <Text style={s.linkText}>
+                  Already confirmed? <Text style={s.linkAccent}>Sign in</Text>
+                </Text>
               </Pressable>
             </View>
-            {isSignup ? <Text style={s.pwHint}>Use at least 6 characters.</Text> : null}
-          </View>
-        </View>
+          </>
+        ) : (
+          // ─── Normal sign-in / sign-up form ───
+          <>
+            <Pressable onPress={handleBack} style={s.back} hitSlop={8}>
+              <Text style={s.backText}>← Back</Text>
+            </Pressable>
 
-        {error ? <Text style={s.errorText}>{error}</Text> : null}
+            <View style={s.hlArea}>
+              <Text style={s.headline}>
+                {isSignup ? 'Create account' : 'Welcome back'}
+              </Text>
+              <Text style={s.headlineSub}>
+                {isSignup ? 'Save scripts and personalise for your child.' : 'Sign in to continue'}
+              </Text>
+            </View>
 
-        <Pressable
-          onPress={() => switchMode(isSignup ? 'signin' : 'signup')}
-          style={({ pressed }) => [s.linkBtn, pressed && { opacity: 0.6 }]}
-          accessibilityRole="button"
-          disabled={loading}
-        >
-          <Text style={s.linkText}>
-            {isSignup ? "Already have an account? " : "Don't have an account? "}
-            <Text style={s.linkAccent}>{isSignup ? 'Sign in' : 'Sign up free'}</Text>
-          </Text>
-        </Pressable>
+            <View style={s.formCard}>
+              <View style={s.field}>
+                <Text style={s.fieldLabel}>EMAIL</Text>
+                <View style={[s.inputWrap, emailFocused && s.inputFocused]}>
+                  <TextInput
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="email-address"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    placeholderTextColor={C.inputPlaceholder}
+                    value={email}
+                    onChangeText={(v) => { setEmail(v); if (error) setError(''); }}
+                    onFocus={() => setEmailFocused(true)}
+                    onBlur={() => setEmailFocused(false)}
+                    style={s.input}
+                    editable={!loading}
+                  />
+                </View>
+              </View>
+
+              <View style={s.field}>
+                <Text style={s.fieldLabel}>PASSWORD</Text>
+                <View style={[s.inputWrap, pwFocused && s.inputFocused, s.inputRow]}>
+                  <TextInput
+                    secureTextEntry={!showPw}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoComplete={isSignup ? 'password-new' : 'password'}
+                    placeholder={isSignup ? 'Choose a password' : 'Enter your password'}
+                    placeholderTextColor={C.inputPlaceholder}
+                    value={password}
+                    onChangeText={(v) => { setPassword(v); if (error) setError(''); }}
+                    onFocus={() => setPwFocused(true)}
+                    onBlur={() => setPwFocused(false)}
+                    style={[s.input, { flex: 1 }]}
+                    editable={!loading}
+                    returnKeyType="go"
+                    onSubmitEditing={handleSubmit}
+                  />
+                  <Pressable
+                    onPress={() => setShowPw((v) => !v)}
+                    style={s.eyeBtn}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={showPw ? 'Hide password' : 'Show password'}
+                  >
+                    <Text style={s.eyeIcon}>{showPw ? '🙈' : '👁'}</Text>
+                  </Pressable>
+                </View>
+                {isSignup ? <Text style={s.pwHint}>Use at least 6 characters.</Text> : null}
+              </View>
+            </View>
+
+            {error ? <Text style={s.errorText}>{error}</Text> : null}
+
+            {!isSignup && (
+              <Pressable
+                onPress={() => router.push('/auth/forgot-password' as any)}
+                style={({ pressed }) => [s.forgotBtn, pressed && { opacity: 0.6 }]}
+                accessibilityRole="button"
+              >
+                <Text style={s.forgotText}>Forgot password?</Text>
+              </Pressable>
+            )}
+
+            <Pressable
+              onPress={() => switchMode(isSignup ? 'signin' : 'signup')}
+              style={({ pressed }) => [s.linkBtn, pressed && { opacity: 0.6 }]}
+              accessibilityRole="button"
+              disabled={loading}
+            >
+              <Text style={s.linkText}>
+                {isSignup ? "Already have an account? " : "Don't have an account? "}
+                <Text style={s.linkAccent}>{isSignup ? 'Sign in' : 'Sign up free'}</Text>
+              </Text>
+            </Pressable>
+          </>
+        )}
       </ScrollView>
 
-      {/* Sticky CTA with gradient fade into the dark base */}
-      <View style={s.stickyWrap}>
+      {/* Sticky CTA — hidden on confirm-email screen */}
+      {screenState !== 'confirm-email' && <View style={s.stickyWrap}>
         <LinearGradient
           colors={['transparent', 'rgba(12,12,12,0.85)', C.background]}
           locations={[0, 0.45, 0.85]}
@@ -253,7 +301,7 @@ export default function AuthScreen() {
             )}
           </Pressable>
         </View>
-      </View>
+      </View>}
       </SafeAreaView>
     </View>
   );
@@ -316,9 +364,25 @@ const s = StyleSheet.create({
 
   errorText: { fontFamily: F.body, fontSize: 14, color: C.sos, textAlign: 'center' },
 
+  forgotBtn:  { alignSelf: 'center', paddingVertical: 4 },
+  forgotText: { fontFamily: F.bodyMedium, fontSize: 13, color: C.textSecondary, textDecorationLine: 'underline' },
+
   linkBtn:    { alignSelf: 'center', paddingVertical: 8 },
   linkText:   { fontFamily: F.body, fontSize: 14, color: C.textSecondary, textAlign: 'center' },
   linkAccent: { fontFamily: F.bodySemi, color: C.amberLight },
+
+  // ─── Confirm-email state ───
+  confirmWrap: { flex: 1, alignItems: 'center', paddingTop: 48, gap: 16 },
+  confirmIcon: { fontSize: 48, lineHeight: 56 },
+  emailDisplay: { fontFamily: F.bodySemi, color: C.amberLight },
+  confirmHint: {
+    fontFamily:        F.body,
+    fontSize:          14,
+    color:             C.textSecondary,
+    textAlign:         'center',
+    lineHeight:        21,
+    paddingHorizontal: 8,
+  },
 
   stickyWrap: { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10 },
   stickyFade: { height: 36 },
