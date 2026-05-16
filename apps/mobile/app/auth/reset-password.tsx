@@ -6,6 +6,8 @@
 
 import { useState } from 'react';
 import {
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -75,6 +77,10 @@ export default function ResetPasswordScreen() {
         style={StyleSheet.absoluteFill}
       />
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
         <ScrollView
           contentContainerStyle={s.content}
           keyboardShouldPersistTaps="handled"
@@ -160,6 +166,7 @@ export default function ResetPasswordScreen() {
             </>
           )}
         </ScrollView>
+        </KeyboardAvoidingView>
 
         {hasTokens && (
           <View style={s.stickyWrap}>
