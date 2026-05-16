@@ -1,5 +1,9 @@
 # Sturdy Roadmap
 
+**Last updated: 2026-05-16**
+
+> Phase 1 section reflects actual shipped state as of May 2026. See `docs/FEATURE_INVENTORY.md` for the full ground-truth audit (last run 2026-04-30).
+
 ## Vision
 
 Sturdy is the go-to parenting companion for every parent at every level — built on the collective wisdom of the world's best parenting research, delivered in plain human language exactly when parents need it.
@@ -19,45 +23,56 @@ Every decision should serve at least one of these:
 
 ---
 
-## Phase 1 — Foundation (Current)
+## Phase 1 — Foundation (largely complete)
 
 **Goal:** A working, trustworthy SOS tool that sounds human and adapts to the child.
 
-### ✅ Completed
-- Authentication (sign up, sign in, sign out)
-- Child profiles (exact age, name)
-- SOS input with intensity indicator
-- Regulate → Connect → Guide script generation
-- Expanded output schema (parent_action + script + avoid)
-- Safety filter — 8 crisis categories, phrase-based detection
-- Crisis screen — one adaptive screen, four types
+### ✅ Shipped and working
+- Authentication — sign up, sign in, sign out (email + password)
+- Forgot password flow — email reset link + deep-link reset-password screen
+- Confirm-email state after sign-up (shown when Supabase requires confirmation)
+- Child profiles — exact age (2–17), name, optional personality notes
+- Per-child hub (`child/[id].tsx`) — SOS / Reconnect / Understand / Conversation modes
+- Regulate → Connect → Guide script generation (all four modes)
+- Output schema: `situation_summary` + `regulate` / `connect` / `guide` + `avoid`
+- Intensity selector (SOS only), tone selector (Soft / Gentle / Direct — Sturdy+ gated)
+- Question mode — home screen textarea → prose response → `thought/[id]`
+- Safety filter — 8 crisis categories, phrase-based detection, before every AI call
+- Crisis screen — adaptive content per crisis type, real phone numbers + deep links
 - Safety event logging to Supabase
-- Usage counter — real from Supabase usage_events
-- Free quota — 5 scripts, enforced
-- Welcome trial flow — live AI, Regulate shown, Connect+Guide locked
-- Neurotype auto-detection from message
-- Message length awareness
-- Follow-up mode — "What happened next?" Option B
-- Dashboard hub — greeting, counter, child, library
-- SOS centre tab — pulsing button, modal sheet
-- Settings — all sections with placeholders
-- Child profile saving — correct columns
+- Rate limiting — per-user cap on Edge Function calls (`checkAnthropicRateLimit`)
+- Neurotype auto-detection from message (silent, never surfaced in output)
+- Welcome — v12 native: 5-page paged ScrollView, photo-identity, guest path
+- Result screen — collapsible regulate/connect/guide cards, avoid section, voice, profile nudge, save script
+- Voice playback — `expo-speech` (platform TTS), free on SOS, Sturdy+-gated on other modes
+- Saved scripts library (`saved.tsx`, reads from `saved_scripts` table)
+- Interaction history (`history.tsx`, reads from `interaction_logs`)
+- Child profile screen (`child-profile/[id].tsx`) — triggers, what works, patterns teaser
+- Settings screen — account, subscription, children, notifications, legal, account lifecycle
+- Account lifecycle — pause / delete / export Edge Functions + mobile UI
+- Sturdy+ paywall screen (`upgrade.tsx`) — Monthly $9.99 / Annual $69.99
+- Legal screens — privacy policy, ToS, AI limitations, medical safety (placeholder text)
+- Schema integrity — 14 tables, all FK constraints with explicit ON DELETE behaviour
 
-### 🔧 In Progress
-- Switch to Claude (Anthropic) for script generation
-- Fix fallback chain bug
-- Tighten crisis keyword detection
+### 🟡 Built but stubbed / incomplete
+- **Subscription / billing** — `useSubscription` is a mock (`isPremium: false` always). RevenueCat/StoreKit not wired.
+- **Restore purchase** — Settings row exists, does nothing. Required for App Store §3.1.1.
+- **Push notifications** — toggle in Settings is UI-only, not persisted or wired to APNs/FCM.
+- **Research consent** — toggle in Settings is UI-only, not saved to database.
+- **Help & FAQ / Contact us** — Settings rows are dead tap targets.
+- **Weekly insight** — locked teaser UI exists, no generation code.
+- **Emerging patterns** — placeholder + lock icon, no detection logic.
+- **Legal docs** — long-form drafts written, not yet committed or wired into in-app screens.
+- **Analytics** — `analytics.ts` stub logs in dev, no-op in prod. No backend.
 
-### ⬜ Remaining Phase 1
-- C×B glassmorphism — full visual implementation (one coordinated session)
-- Upgrade screen — wire paywall to real subscription
-- IS_PREMIUM → real subscription check
-- Restore purchase (iOS requirement)
-- Child profile editing
-- Delete account API
-- Saved scripts screen (data model exists)
-- SOS History screen (data model exists)
-- Research consent → save to DB
+### ⬜ Remaining for App Store submission
+1. **Real subscription via RevenueCat** — swap `useSubscription.ts` body
+2. **Restore purchase wiring** — required for App Store §3.1.1
+3. **Wire long-form legal docs** into in-app legal screens
+4. **Privacy policy public URL** — App Store listing requires a live URL
+5. **App Store assets** — screenshots, listing copy, age rating
+6. **Error monitoring** — Sentry or equivalent; production crashes are invisible today
+7. **Email verification flow** — App Store may flag account creation without email confirmation
 
 ---
 

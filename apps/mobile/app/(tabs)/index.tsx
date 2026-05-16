@@ -349,6 +349,15 @@ export default function HomeScreen() {
     router.push('/child/new');
   };
 
+  const handleManageChildren = () => {
+    Haptics.selectionAsync();
+    if (kidList.length === 1 && kidList[0].id) {
+      router.push(`/child/${kidList[0].id}` as any);
+    } else if (kidList.length > 1) {
+      setPickerMode('sos');
+    }
+  };
+
   const handleSelectOutcome = (mode: OutcomeMode) => {
     Haptics.selectionAsync();
     if (kidList.length === 0) { router.push('/child/new'); return; }
@@ -705,7 +714,7 @@ return (
                   <Text style={s.childrenNames}>
                     {kidList.map((kid: any) => `${kid.name}, ${kid.childAge}`).join(' · ')}
                   </Text>
-                  <Pressable onPress={handleAddChild} style={({ pressed }) => [pressed && { opacity: 0.7 }]}>
+                  <Pressable onPress={handleManageChildren} style={({ pressed }) => [pressed && { opacity: 0.7 }]}>
                     <Text style={s.childrenManage}>manage</Text>
                   </Pressable>
                 </View>

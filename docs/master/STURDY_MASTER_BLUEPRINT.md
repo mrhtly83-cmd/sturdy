@@ -1,8 +1,10 @@
 # Sturdy Master Blueprint
 
-**Last updated: v4-rebuild**
+**Last updated: v4-rebuild → corrected 2026-05-16**
 
 This document is the single source of truth for Sturdy's product architecture. If all other documentation is lost, this file contains enough to rebuild the product.
+
+> **⚠️ ACCURACY NOTE (2026-05-16):** This Blueprint was written as a planning spec. Several sections describe the intended design, not what was actually built. For ground-truth feature inventory, see `docs/FEATURE_INVENTORY.md` (last audited 2026-04-30). Key divergences are noted inline below with `[AS BUILT]` markers.
 
 ---
 
@@ -65,6 +67,10 @@ Result screen (collapsible steps)
 Interaction logged → feeds child profile
 ```
 
+> **[AS BUILT]** The flow above describes the original spec. Actual implementation differs in two important ways:
+> 1. **Home screen = Question mode.** The home textarea sends to Question mode (prose response → `thought/[id]`). The four outcome cards are below the input and tap into the per-child hub, not an in-screen outcome selector.
+> 2. **Child hub (`child/[id].tsx?mode=...`)** is the entry point for SOS/Reconnect/Understand/Conversation. Each mode card on home routes to the child hub with the relevant mode param. The hub serves all four modes with a single screen.
+
 ### Four Internal Modes (invisible to parent)
 
 Each mode has its own dedicated prompt function in `buildPrompt.ts`:
@@ -80,11 +86,22 @@ Mode detection happens from the outcome selector + message content. The parent n
 ```json
 {
   "situation_summary": "string",
-  "step1": { "label": "string", "parent_action": "string", "script": "string", "coaching": "string", "strategies": ["string"] },
-  "step2": { "label": "string", "parent_action": "string", "script": "string", "coaching": "string", "strategies": ["string"] },
-  "step3": { "label": "string", "parent_action": "string", "script": "string", "coaching": "string", "strategies": ["string"] },
+  "regulate": { "parent_action": "string", "script": "string", "coaching": "string", "strategies": ["string"] },
+  "connect":  { "parent_action": "string", "script": "string", "coaching": "string", "strategies": ["string"] },
+  "guide":    { "parent_action": "string", "script": "string", "coaching": "string", "strategies": ["string"] },
   "avoid": ["string", "string", "string"]
 }
+```
+
+> **[AS BUILT]** Steps are named `regulate` / `connect` / `guide` (not `step1` / `step2` / `step3`). The `label` field does not exist. `coaching` and `strategies` are optional fields.
+
+### Question Mode (additional mode, not in original spec)
+
+Home screen single textarea → Edge Function with `mode: 'question'` → prose response (not R/C/G structure) → persisted to `parent_thoughts` table → result at `thought/[id].tsx`.
+
+**Output shape:**
+```json
+{ "response": "string" }
 ```
 
 ---
@@ -105,14 +122,13 @@ Mode detection happens from the outcome selector + message content. The parent n
 - Full interaction history
 - Tone selector (Soft / Gentle / Direct)
 
-### Sturdy Family ($14.99/month)
-- Everything in Sturdy+
-- 2 co-parent seats
-- Multiple child profiles
-- Co-parent sharing (send script cards to partner)
+### Sturdy Family ($14.99/month) — NOT BUILT
+> **[AS BUILT]** Sturdy Family tier does not exist in the current product. Only two tiers are active: Free and Sturdy+. Multiple child profiles already work for individual users. Co-parent sharing is not built.
 
 ### Revenue Target
 $100k/month = ~8,300 paying subscribers at ~$12 avg revenue.
+
+> **[AS BUILT]** Billing is not yet wired. `useSubscription` in `src/hooks/useSubscription.ts` is a mock — always returns `isPremium: false`. RevenueCat/StoreKit integration is the single swap point.
 
 ### Conversion Strategy
 - SOS is free and unlimited — this is the acquisition engine
@@ -135,19 +151,28 @@ $100k/month = ~8,300 paying subscribers at ~$12 avg revenue.
 
 **You** — account, subscription, co-parent setup, preferences, support, legal
 
+> **[AS BUILT]** 2 tabs, not 3: `Home` and `Settings`. "Your Child" is not a tab — it's a per-child profile screen at `child-profile/[id].tsx`, reachable from the child hub.
+
 ### Key Screens
 ```
-/welcome              → Welcome (new users only)
-/child-setup           → Add child: name + age (skippable)
-/auth/sign-up          → Create account (or continue as guest)
-/auth/sign-in          → Sign in (returning users)
-/(tabs)/index          → Home (single input)
-/(tabs)/your-child     → Your Child profile
-/(tabs)/you            → Settings / Account
-/result                → Script result (collapsible cards)
-/crisis                → Safety support (adaptive)
-/child/new             → Add child profile
-/child/[id]            → Edit child profile
+/welcome              → Welcome (v12: 5-page paged scroll, photo-identity)
+/child-setup          → Add child (welcome flow exit)
+/auth                 → Sign in / Sign up (unified, ?mode= param)
+/auth/forgot-password → Forgot password (email → reset link)
+/auth/reset-password  → Reset password (deep link from email)
+/(tabs)/index         → Home (Question mode textarea + mode cards)
+/(tabs)/settings      → Settings / Account
+/child/[id]           → Per-child hub (SOS/Reconnect/Understand/Conversation)
+/child/new            → Add a new child profile
+/child-profile/[id]   → "Your Child" — triggers, patterns, weekly insight teaser
+/result               → Script result (regulate/connect/guide collapsible cards)
+/thought/[id]         → Question mode response
+/thought/inline       → Question mode response (no thought_id)
+/crisis               → Safety support (adaptive per crisis_type)
+/upgrade              → Sturdy+ paywall
+/saved                → Saved scripts library
+/history              → Interaction history
+/legal/*              → Privacy policy, ToS, AI limitations, medical safety
 ```
 
 ### User Flows
@@ -223,6 +248,8 @@ Walks through each step with pauses between:
 ### Voice access
 - SOS mode: free
 - All other modes + weekly insight: Sturdy+
+
+> **[AS BUILT]** Voice uses `expo-speech` (device/platform TTS), not OpenAI TTS or ElevenLabs. There is no second API call after script generation — TTS is client-side only. No audio URL, no caching. Voice player is on the result screen with a play button and pulsing dot indicator (not the animated voice bar described above). Gating logic: `voiceLocked = mode !== 'sos' && !isPremium`. Since billing is mocked, all non-SOS voice currently shows PaywallSheet for all users.
 
 ---
 
