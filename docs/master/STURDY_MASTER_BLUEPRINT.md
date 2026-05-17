@@ -1,634 +1,140 @@
-# Sturdy Master Blueprint
+Sturdy Master Blueprint
+Version: v5 (Architecture Pivot & Consolidation)
+Date Locked: May 2026
+Status: Live Source of Truth
 
-**Last updated: v4-rebuild → corrected 2026-05-16**
-
-This document is the single source of truth for Sturdy's product architecture. If all other documentation is lost, this file contains enough to rebuild the product.
-
-> **⚠️ ACCURACY NOTE (2026-05-16):** This Blueprint was written as a planning spec. Several sections describe the intended design, not what was actually built. For ground-truth feature inventory, see `docs/FEATURE_INVENTORY.md` (last audited 2026-04-30). Key divergences are noted inline below with `[AS BUILT]` markers.
-
----
-
-## Vision
-
+1. The Vision & The Shift
 Sturdy is the go-to parenting companion for every parent at every level.
 
-It helps parents:
-1. **Respond in the moment** — calm, age-specific, human-sounding scripts
-2. **Understand their child** — why this happens, what's normal, what helps
-3. **Grow as a parent** — patterns, repair, reflection
-4. **Find their own voice** — scripts are a starting point, not a script to memorise
-
-The core question: **"What should I say right now?"**
-
-The deeper promise: **A better parent, one moment at a time.**
-
-The philosophy: **Sturdy gives you the words. Use them exactly, or make them yours.**
-
----
-
-## Product Architecture
-
-### One Input, One Flow
-
-There are no mode tabs or mode cards. The parent types what's happening and selects their desired outcome. Sturdy routes to the correct mode internally.
-
-**Flow:**
-```
-Parent opens app → Home screen
-        ↓
-Describes the moment (text input)
-        ↓
-Selects outcome: What do you need right now?
-  • Help us both calm down → SOS mode
-  • Get through this together → SOS mode (guide-weighted)
-  • Help me understand why → Understand mode
-  • Repair what just happened → Reconnect mode
-        ↓
-Selects tone: Soft / Gentle / Direct
-        ↓
-Safety filter (instant keyword scan)
-        ↓ safe              ↓ unsafe
-Normal pipeline         Safety support path
-        ↓
-Neurotype detection (from message)
-        ↓
-Message length analysis
-        ↓
-Age-specific prompt assembly
-        ↓
-Claude generates structured script
-        ↓
-Response validation
-        ↓
-Result screen (collapsible steps)
-        ↓
-"What happened next?" follow-up
-        ↓
-Interaction logged → feeds child profile
-```
-
-> **[AS BUILT]** The flow above describes the original spec. Actual implementation differs in two important ways:
-> 1. **Home screen = Question mode.** The home textarea sends to Question mode (prose response → `thought/[id]`). The four outcome cards are below the input and tap into the per-child hub, not an in-screen outcome selector.
-> 2. **Child hub (`child/[id].tsx?mode=...`)** is the entry point for SOS/Reconnect/Understand/Conversation. Each mode card on home routes to the child hub with the relevant mode param. The hub serves all four modes with a single screen.
-
-### Four Internal Modes (invisible to parent)
-
-Each mode has its own dedicated prompt function in `buildPrompt.ts`:
-
-- `getSOSPrompt()` — Regulate → Connect → Guide
-- `getReconnectPrompt()` — Open the Door → Hold Steady → Leave Space
-- `getUnderstandPrompt()` — Why it happens → What they need → What helps
-- `getConversationPrompt()` — Set up → Open with curiosity → State clearly
-
-Mode detection happens from the outcome selector + message content. The parent never sees mode names.
-
-**Output shape (all modes):**
-```json
-{
-  "situation_summary": "string",
-  "regulate": { "parent_action": "string", "script": "string", "coaching": "string", "strategies": ["string"] },
-  "connect":  { "parent_action": "string", "script": "string", "coaching": "string", "strategies": ["string"] },
-  "guide":    { "parent_action": "string", "script": "string", "coaching": "string", "strategies": ["string"] },
-  "avoid": ["string", "string", "string"]
-}
-```
-
-> **[AS BUILT]** Steps are named `regulate` / `connect` / `guide` (not `step1` / `step2` / `step3`). The `label` field does not exist. `coaching` and `strategies` are optional fields.
-
-### Question Mode (additional mode, not in original spec)
-
-Home screen single textarea → Edge Function with `mode: 'question'` → prose response (not R/C/G structure) → persisted to `parent_thoughts` table → result at `thought/[id].tsx`.
-
-**Output shape:**
-```json
-{ "response": "string" }
-```
-
----
-
-## Revenue Architecture
-
-### Free Tier (unlimited)
-- Unlimited SOS scripts — no cap, no limit, ever
-- All four modes via outcome selector
-- Basic script output (Regulate → Connect → Guide)
-- Voice playback on SOS mode
+The Shift: Sturdy is transitioning from a purely emergency SOS tool into a daily thinking partner. The SOS remains the safety net (housed inside each child's hub), but the primary daily use is asking questions and wondering aloud.
 
-### Sturdy+ ($9.99/month)
-- Coaching layer on all scripts ("Why this works")
-- Voice playback on all modes
-- Know Your Child profile (builds from interactions)
-- Weekly audio insight (Sunday push notification)
-- Full interaction history
-- Tone selector (Soft / Gentle / Direct)
+The core question: "What should I say right now?"
+The deeper promise: A better parent, one moment at a time.
+The philosophy: Sturdy gives you the words. Use them exactly, or make them yours.
 
-### Sturdy Family ($14.99/month) — NOT BUILT
-> **[AS BUILT]** Sturdy Family tier does not exist in the current product. Only two tiers are active: Free and Sturdy+. Multiple child profiles already work for individual users. Co-parent sharing is not built.
+2. Revenue, Onboarding & Data (The Core Rules)
+Authentication & Onboarding
+Mandatory Auth: Guest mode does not exist. All users must authenticate to use the app.
 
-### Revenue Target
-$100k/month = ~8,300 paying subscribers at ~$12 avg revenue.
+3-Beat Welcome Flow: A clean, 3-page onboarding sequence. The final CTA card contains only two options: "Get started" (Sign Up) and "Sign in". There is no "Try without account" fallback.
 
-> **[AS BUILT]** Billing is not yet wired. `useSubscription` in `src/hooks/useSubscription.ts` is a mock — always returns `isPremium: false`. RevenueCat/StoreKit integration is the single swap point.
+State Hydration: ChildProfileContext relies strictly on an authenticated Supabase session.
 
-### Conversion Strategy
-- SOS is free and unlimited — this is the acquisition engine
-- After 3+ interactions, subtle nudge: "Sturdy is learning how [child] responds. See their profile →"
-- Child profile is the conversion trigger — parents pay when they see Sturdy knows their child
-- No paywalls on crisis moments. Ever.
+The Metered Freemium Model
+Free Tier: 50 free script generations per calendar month.
 
----
+Sturdy+ ($9.99/month): Unlimited scripts, Voice playback on all modes, full weekly insights, and tone selector (Soft/Gentle/Direct).
 
-## Navigation
+The Quota System: Tracked strictly via a Supabase RPC (check_monthly_quota) evaluating the usage_events table. Free users hit a hard paywall (PaywallSheet.tsx) at script 51.
 
-### Tab Bar (3 tabs)
-```
-[ Home 🏠 ]    [ Your Child 👤 ]    [ You ⚙ ]
-```
+The Crisis Exemption: We never paywall safety. If the safety filter returns response_type: "crisis", it bypasses the quota limit and routes to the free /crisis support screen.
 
-**Home** — single input, outcome selector, tone, child card, weekly insight preview, free plan counter
+"Zero Trace" Data Safety
+Strict Deletion: Users have a "Delete Account & All Data" button in settings.
 
-**Your Child** — living profile that builds over time. Triggers, what works, emerging patterns, weekly insight with audio player. Empty state when new → builds after 5+ interactions.
+Database Level: All user-scoped tables, including safety_events, strictly use ON DELETE CASCADE so no anonymized traces remain. The deletion triggers supabase.auth.admin.deleteUser(uid) via a Service Role Edge Function.
 
-**You** — account, subscription, co-parent setup, preferences, support, legal
+3. The Two Product Modes
+1. Question Mode (Lives on Home)
+Purpose: For wondering, worrying, and celebrating.
 
-> **[AS BUILT]** 2 tabs, not 3: `Home` and `Settings`. "Your Child" is not a tab — it's a per-child profile screen at `child-profile/[id].tsx`, reachable from the child hub.
+Input: A single "What's on your mind?" text area on the Home tab.
 
-### Key Screens
-```
-/welcome              → Welcome (v12: 5-page paged scroll, photo-identity)
-/child-setup          → Add child (welcome flow exit)
-/auth                 → Sign in / Sign up (unified, ?mode= param)
-/auth/forgot-password → Forgot password (email → reset link)
-/auth/reset-password  → Reset password (deep link from email)
-/(tabs)/index         → Home (Question mode textarea + mode cards)
-/(tabs)/settings      → Settings / Account
-/child/[id]           → Per-child hub (SOS/Reconnect/Understand/Conversation)
-/child/new            → Add a new child profile
-/child-profile/[id]   → "Your Child" — triggers, patterns, weekly insight teaser
-/result               → Script result (regulate/connect/guide collapsible cards)
-/thought/[id]         → Question mode response
-/thought/inline       → Question mode response (no thought_id)
-/crisis               → Safety support (adaptive per crisis_type)
-/upgrade              → Sturdy+ paywall
-/saved                → Saved scripts library
-/history              → Interaction history
-/legal/*              → Privacy policy, ToS, AI limitations, medical safety
-```
+Output: A flowing, journal-style narrative (not structured cards). Length adapts to the question's complexity.
 
-### User Flows
+Child Auto-detection: Sturdy runs name-match detection. If it finds a child's name, it auto-tags the thought. If ambiguous with 2+ children, it prompts a tiny inline picker.
 
-**New user:**
-Open app → Welcome → Add child (or skip) → Sign up (or guest) → Home → first script
+Storage: Saves to parent_thoughts. Displayed in a "Recent Thoughts" strip.
 
-**Returning user (signed in):**
-Open app → Home. Straight there. No splash.
+2. Directed Modes (Lives in Child Hub)
+Purpose: For active parenting moments and meltdowns. Reached by tapping a child's avatar.
 
-**Returning user (signed out):**
-Open app → Sign in → Home.
+Internal Modes:
 
-**Guest returning:**
-Data persists locally. When they sign up, everything migrates. They never lose a script.
+SOS: Help us calm down (Regulate / Connect / Guide)
 
----
+Understand: Help me understand why (Why / What they need / What helps)
 
-## AI System
+Reconnect: Repair what happened (Open Door / Hold Steady / Leave Space)
 
-### Model
-**Anthropic Claude** (claude-sonnet-4-20250514)
+Conversation: Set up a talk (Set up / Curiosity / State clearly)
 
-### Edge Function
-`supabase/functions/chat-parenting-assistant/` — NO CHANGES in v4 rebuild.
+Output: Structured JSON translated into collapsible, interactive UI cards.
 
-### Prompt System
-`supabase/functions/_shared/buildPrompt.ts` — NO CHANGES in v4 rebuild.
+4. Navigation & Screen Architecture
+Tab Bar (Strictly 2 Tabs)
+🏠 Home (/(tabs)/index.tsx) — The Parent Hub / Distribution Center.
 
-### Response Validation
-`supabase/functions/_shared/validateResponse.ts` — NO CHANGES in v4 rebuild.
+⚙️ Settings (/(tabs)/settings.tsx) — Account, subscription, and data deletion.
 
-### Safety System
-`supabase/functions/_shared/safetyFilter.ts` — NO CHANGES in v4 rebuild.
+Home = The Parent Hub
+State of Mind Header: Rotating greeting using the parent's real first name.
 
-All AI/prompt/safety changes are deferred to a future phase after the UI rebuild is complete.
+Question Mode Input: Big text area ready to type with a mic button.
 
-### Knowledge Base
-Unchanged — 12 foundational parenting books. See PROMPT_SYSTEM.md.
+The Gateways (Child Roster): Horizontal or vertical stack of glass cards. Each represents a child profile. Tapping routes directly to /child/[id].
 
-### Neurotype Detection
+Action Grid: Quick routing to specific modes (SOS, Understand, Reconnect).
 
-**Principle: Neurotype is invisible.** Sturdy detects neurotype silently from
-how parents describe their child. The detection adapts AI output but is never
-named, displayed, or set by the user. There is no UI for neurotype selection.
-There is no premium feature for neurotype labelling. The column exists in the
-database for AI use only.
+Quota Counter: A subtle "X / 50 scripts remaining this month" for free users.
 
-Detection logic unchanged — detects from message content. See PROMPT_SYSTEM.md.
+Recent Thoughts: Strip showing the last 3-5 Q&A entries.
 
----
+The Child Hub (/child/[id].tsx)
+Personalized Dashboard: Header shows the specific child's name and age.
 
-## Voice Feature
+SOS Input: Direct access to script generation contextualized to this child.
 
-### Implementation
-1. Script generates as normal (text JSON from Claude)
-2. After response, second call to TTS API (OpenAI TTS or ElevenLabs)
-3. Audio URL returns to app alongside text response
-4. App plays audio with simple player — play/pause, step progress
-5. Audio caches locally for replay
+History: Saved scripts and recent activity for this child specifically.
 
-### Voice bar placement
-Top of result screen, above script cards. Shows play button, title, subtitle, organic sound wave animation.
+Profile Link: Entry to /child-profile/[id].tsx to see their locked weekly insights, common triggers, and emerging patterns.
 
-### During playback
-Walks through each step with pauses between:
-- Parent action (spoken)
-- 1.5s pause
-- Script (spoken)
-- 2s pause
-- Next step
+5. AI & Voice System
+Model: Anthropic Claude (claude-sonnet-4-20250514) via Supabase Edge Functions.
 
-### Voice access
-- SOS mode: free
-- All other modes + weekly insight: Sturdy+
+Safety First: The safetyFilter.ts runs instantly on every prompt.
 
-> **[AS BUILT]** Voice uses `expo-speech` (device/platform TTS), not OpenAI TTS or ElevenLabs. There is no second API call after script generation — TTS is client-side only. No audio URL, no caching. Voice player is on the result screen with a play button and pulsing dot indicator (not the animated voice bar described above). Gating logic: `voiceLocked = mode !== 'sos' && !isPremium`. Since billing is mocked, all non-SOS voice currently shows PaywallSheet for all users.
+Neurotype Detection: Sturdy detects neurotype silently from message context to adapt the AI's tone and strategies. It is never displayed as a label to the user.
 
----
+Voice Capabilities:
 
-## Result Screen — Visual Spec
+Input (v1): Speech-to-text populates the input fields.
 
-### Theme: Deep Warm
-Dark background (#1E1D25) with warm mesh gradient (amber/sage/slate radial gradients). Transparent glass cards. Generous spacing. Organic animations.
+Output (v2): expo-speech device TTS reads responses aloud. Unlocked for SOS for all users; Sturdy+ gated for other modes.
 
-### Layout (top to bottom)
-```
-‹ Back
+6. Design System: Deep Warm
+Background: #1E1D25 (warm dark charcoal)
 
-Situation summary (italic Fraunces serif, amber gradient)
-[outcome tag]  [child avatar + name, age]        [Avatar]
+Gradients: Transparent radial meshes using Amber (#D4944A), Sage (#8DB89A), and Slate (#82AAC4).
 
-[ ▶ Listen to this script                        ||||| ]
-[   Put in your earbuds — Sturdy walks you through it  ]
+Glass Cards: Transparent backgrounds, 0.03 accent tint when expanded, 0.14 opacity borders, 30px backdrop blur, 16px/20px border radii.
 
-▼ ⚠️ Avoid saying                              3 phrases
-   (collapsed dropdown — expands to show avoid list)
+Typography: Fraunces italic (serif) for situational summaries and philosophy; DM Sans for body and UI.
 
-▼ 1  REGULATE                          "This homework..."
-   (open by default — shows action, "Say this", script, coaching)
+Animations: Subtle, organic. Avatars 'breathe' (4s scale cycle). Buttons pulse with soft glows.
 
-▼ 2  CONNECT                    "You're frustrated because..."
-   (collapsed — preview snippet shown)
+7. Database Architecture
+Core Tables
+profiles (Auth parent accounts)
 
-▼ 3  GUIDE                     "Just this one. We'll figure..."
-   (collapsed — preview snippet shown)
+child_profiles (Child context: name, age, inferred neurotype array)
 
-   ─── (thin amber line) ───
-   Your child doesn't need perfect words.
-   They need you — these just help you get there.
+parent_thoughts (NEW: Question mode Q&A, auto-tagged to children)
 
-   What happened next?
-   [ 🚫 They refused           ]
-   [ 📈 It escalated           ]
-   [ 💛 It helped a bit        ]
-   [ 💬 Something else happened ]
+interaction_logs (Logs R/C/G mode results, tone selected, and user follow-up)
 
-   Sturdy is learning how Claude responds.
-   See Claude's profile →
-```
+usage_events (Tracking for the 50-script quota)
 
-### Script card structure (inside each dropdown)
-```
-[Parent action — italic, secondary color]
+safety_events (Logged triggers — MUST be ON DELETE CASCADE)
 
-SAY THIS
-"Script text — large, high contrast, readable"
+child_insights (Aggregated patterns, week_of dates, Sturdy+ content)
 
-💡 Why this works                           ▶
-   (collapsed coaching — expands to show explanation + strategies)
-```
+Key RPCs
+check_monthly_quota: Returns count of usage_events for auth.uid() in the current month.
 
-### Animation placement
-- Child avatar: gentle breathing scale (4s cycle)
-- Voice button: amber glow pulse (3s cycle)
-- Floating particles: 4 dots (amber/sage/slate), very slow float upward
-- "Your Way" text: slow shimmer animation (6s cycle)
-- Card entrance: staggered fadeSlide (0.2s, 0.35s, 0.5s delays)
-- NO animation on: script text, parent actions, coaching content
-
-### Card styling
-- Transparent background (no fill when collapsed)
-- Subtle tint when expanded (rgba of accent color at 0.03)
-- Border defined by accent color (amber/sage/slate at 0.14 opacity)
-- Border radius: 16px
-- Padding: 18px inner content
-
----
-
-## Home Screen — Spec
-
-### Layout (top to bottom)
-```
-Good morning, [child]'s parent
-What's happening?
-
-┌─────────────────────────────────────┐
-│ Describe the moment                 │
-│ ┌─────────────────────────────────┐ │
-│ │ [textarea]                      │ │
-│ └─────────────────────────────────┘ │
-│                                     │
-│ What do you need right now?         │
-│ [ 🧘 Help us both calm down      ] │
-│ [ 🧭 Get through this together   ] │
-│ [ 💡 Help me understand why      ] │
-│ [ 🤝 Repair what just happened   ] │
-│                                     │
-│ Tone: [ Soft ] [ Gentle ] [ Direct ]│
-│                                     │
-│ [ Help me with this ]               │
-└─────────────────────────────────────┘
-
-── Your child ──
-[C] Claude · Age 10 · 7 interactions    ›
-
-┌ Weekly insight · Sunday ─────────────┐
-│ (locked preview, blurred)            │
-│       Unlock with Sturdy+ →         │
-└──────────────────────────────────────┘
-
-Free plan · Unlimited SOS        Upgrade →
-```
-
-### Outcome selector
-4 options, single select, vertical stack. Each has emoji + title + subtitle.
-Maps to internal mode:
-- "Help us both calm down" → SOS (regulate-heavy)
-- "Get through this together" → SOS (guide-heavy)
-- "Help me understand why" → Understand
-- "Repair what just happened" → Reconnect
-
-Conversation mode triggers when Sturdy detects the message is about a future conversation ("I need to tell her...", "How do I talk to him about...").
-
-### Tone selector
-3 options, horizontal row, single select. Saves to profile.
-- **Soft** — warm, spacious, feelings-first
-- **Gentle** — balanced, calm but clear
-- **Direct** — short, firm, no extras
-
-Tone is Sturdy+ only. Free users default to Gentle.
-
----
-
-## Your Child Screen — Spec
-
-### Empty state (< 5 interactions)
-```
-[Avatar C]
-Claude · Age 10
-2 interactions
-
-      🌱
-
-   Getting to know Claude
-   After a few more interactions,
-   Sturdy will show you patterns
-   and what works best.
-```
-
-### Active state (5+ interactions)
-```
-[Avatar C]
-Claude · Age 10
-7 interactions · 3 this week
-
-┌ This week's insight ─────────────────┐
-│ "Homework is the battleground —      │
-│  but it's not really about homework."│
-│                                      │
-│ [▶ Listen to this week's insight]    │
-└──────────────────────────────────────┘
-
-┌ Common triggers ─────────────────────┐
-│ Homework                ████████  4× │
-│ Screen time limits      ████     2× │
-│ Bedtime                 ██       1× │
-└──────────────────────────────────────┘
-
-┌ What works for Claude ───────────────┐
-│ One clear direction > choices (tired)│
-│ Sitting close calms him faster       │
-│ Needs 5-10 min before retrying       │
-└──────────────────────────────────────┘
-
-┌ Emerging patterns ───────────────────┐
-│ Worst moments: 4-6pm                 │
-│ Responds to repair quickly           │
-└──────────────────────────────────────┘
-
-┌──────────────────────────────────────┐
-│ Claude's profile is growing          │
-│ Unlock full profile with Sturdy+     │
-│                                      │
-│     [ Sturdy+ · $9.99/month ]       │
-└──────────────────────────────────────┘
-```
-
----
-
-## Welcome / Onboarding — Spec
-
-### Screen 1 — Welcome
-```
-[Sturdy logo or wordmark]
-
-"You don't need to be a perfect parent.
- You just need the right words
- at the right time."
-
-[Live preview of a Regulate card — real content, not mockup]
-
-        [ Get started ]
-```
-
-### Screen 2 — Add your child
-```
-"Who are you here for?"
-
-Name  [ Claude          ]
-Age   [ 10              ]  ← drum picker
-
-This helps Sturdy match their age exactly.
-Every year matters.
-
-        [ Continue ]
-        Skip for now
-```
-
-### Screen 3 — Account
-```
-"Save your scripts and build
- your child's profile."
-
-Email    [ ... ]
-Password [ ... ]
-
-        [ Create account ]
-        Continue as guest
-```
-
-3 screens. Under 60 seconds. First script by second minute.
-
----
-
-## Design System — Deep Warm (Locked)
-
-### Background
-`#1E1D25` — warm dark charcoal
-
-### Mesh gradient (3 layers)
-- Amber: `radial-gradient(ellipse 70% 50% at 10% 0%, rgba(212,148,74,0.07))`
-- Slate: `radial-gradient(ellipse 55% 55% at 90% 80%, rgba(130,170,196,0.06))`
-- Sage: `radial-gradient(ellipse 60% 40% at 50% 40%, rgba(141,184,154,0.04))`
-
-### Colors
-```
---amber: #D4944A
---amber-lt: #F4C06A
---sage: #8DB89A
---sage-lt: #A8D4B4
---slate: #82AAC4
---slate-lt: #A0C4DA
---text: rgba(255,255,255,0.93)
---text-sec: rgba(255,255,255,0.6)
---text-muted: rgba(255,255,255,0.36)
---text-faint: rgba(255,255,255,0.18)
---border: rgba(255,255,255,0.08)
---border-hi: rgba(255,255,255,0.13)
-```
-
-### Cards
-- Transparent background (no fill when collapsed)
-- Subtle accent tint when expanded (0.03 opacity)
-- Border: accent color at 0.14 opacity
-- Border radius: 16px (cards), 20px (main cards), 14px (buttons)
-- Backdrop blur: 30px on glass elements
-
-### Typography
-- Headlines: Fraunces italic (serif) — for situation summaries, insight titles, philosophy lines
-- Body: DM Sans — everything else
-- Script text: 17-18px, high contrast (0.93 white)
-- Labels: 10-12px, uppercase, letter-spacing 0.06-0.1em
-- "Say this" label above scripts
-
-### Animations
-- Child avatar: `breathe` — scale 1→1.04, 4s ease-in-out infinite
-- Voice button: `vpulse` — box-shadow glow, 3s ease-in-out infinite
-- Particles: 4 floating dots, 20-28s duration, barely visible
-- "Your Way" shimmer: background-position slide, 6s infinite
-- Card entrance: `fadeSlide` — translateY(18px)→0, staggered delays
-- Dropdown expand: max-height transition, 0.45s ease
-
-### Navigation
-- Active tab: amber (#D4944A)
-- Inactive: rgba(255,255,255,0.18)
-- Bottom nav background: gradient fade from bg color
-
----
-
-## Database Schema
-
-### Existing tables (NO CHANGES)
-```
-profiles           — authenticated parent accounts
-child_profiles     — child context (name, child_age, neurotype[])
-conversations      — hard moment threads
-messages           — individual turns (user + assistant)
-safety_events      — safety trigger logs
-usage_events       — script generation tracking
-```
-
-### New tables (v4 additions)
-```
-interaction_logs   — every script result logged for child profile
-  - user_id, child_profile_id
-  - mode (sos / reconnect / understand / conversation)
-  - outcome_selected (text)
-  - tone_selected (soft / gentle / direct)
-  - trigger_category (homework / bedtime / screen_time / etc.)
-  - intensity_inferred (1-4)
-  - followup_type (refused / escalated / helped / other / null)
-  - created_at
-
-child_insights     — aggregated patterns per child
-  - child_profile_id
-  - insight_type (trigger_pattern / what_works / emerging)
-  - content (jsonb)
-  - generated_at
-  - week_of (date)
-
-user_preferences   — tone, notification settings
-  - user_id
-  - tone_default (soft / gentle / direct)
-  - weekly_insight_enabled (boolean)
-  - push_enabled (boolean)
-```
-
----
-
-## Build Order
-
-### Phase 1 — Theme (Day 1)
-Update `src/theme/` to Deep Warm palette. All existing screens inherit dark theme.
-
-### Phase 2 — Result Screen (Days 2-3)
-Rebuild `result.tsx`. Create new collapsible `ScriptCard` component. Voice bar component. Avoid dropdown. "Your Way" section. Follow-up buttons with profile nudge.
-
-### Phase 3 — Home Screen (Days 4-5)
-Rebuild `(tabs)/index.tsx`. Single input. Outcome selector. Tone selector (Sturdy+ gated). Child card. Insight preview. Free plan bar.
-
-### Phase 4 — Navigation (Day 5)
-Update `(tabs)/_layout.tsx`. Three tabs: Home / Your Child / You. Update routing.
-
-### Phase 5 — Your Child Tab (Days 6-7)
-New screen `(tabs)/your-child.tsx`. Empty state. Profile cards (triggers, what works, patterns). Paywall prompt.
-
-### Phase 6 — Welcome & Onboarding (Days 8-9)
-Rebuild `welcome/index.tsx`. Three screens. Child setup with skip. Guest flow.
-
-### Phase 7 — Interaction Logging (Day 10)
-Add `interaction_logs` table migration. Log every script result. This powers the child profile.
-
-### Phase 8 — Edge Function Updates (Future)
-Update `buildPrompt.ts` to accept outcome + tone params. Add mode classifier. Update output schema for coaching fields. NOT part of UI rebuild.
-
----
-
-## Environment Variables
-
-```
-EXPO_PUBLIC_SUPABASE_URL         — Supabase project URL
-EXPO_PUBLIC_SUPABASE_ANON_KEY    — Supabase anon key
-ANTHROPIC_API_KEY                — Claude API key (Edge Function)
-```
-
----
-
-## Git
-
-- Active branch: `v4-rebuild` (create from v3-ui)
-- Previous branch: `v3-ui`
-- Run: `cd apps/mobile && npx expo start -c --tunnel`
-- Deploy edge functions: `npx supabase functions deploy chat-parenting-assistant`
-
----
-
-## The Standard
-
+The Standard
 If a stressed parent opens Sturdy in a hard moment, the product should feel:
-
-**Fast. Calm. Clear. Human. Useful within seconds.**
+Fast. Calm. Clear. Human. Useful within seconds.
 
 If a returning parent opens Sturdy on a calm evening, the product should feel:
-
-**Warm. Knowing. Personal. Worth keeping.**
-
-That is the standard everything else must serve.
-
+Warm. Knowing. Personal. Worth keeping.
