@@ -113,6 +113,23 @@ function isHubMode(v: unknown): v is HubMode {
 // SCREEN
 // ═══════════════════════════════════════════════
 
+function Background() {
+  return (
+    <LinearGradient
+      colors={[
+        C.gradientTop,
+        C.gradientMid1,
+        C.gradientMid2,
+        C.gradientMid3,
+        C.gradientMid4,
+        C.gradientBottom,
+      ]}
+      locations={[0, 0.14, 0.28, 0.42, 0.58, 1]}
+      style={StyleSheet.absoluteFill}
+    />
+  );
+}
+
 export default function ChildHubScreen() {
   const navigation = useRouter();
   const params = useLocalSearchParams<{ id?: string; mode?: string }>();
@@ -327,6 +344,10 @@ export default function ChildHubScreen() {
     router.back();
   };
 
+  const handleEditProfile = () => {
+    router.push(`/child/${child?.id}?edit=1` as any);
+  };
+
   // ─── Helpers ───
   const initial = (child?.name?.trim()?.[0] ?? '?').toUpperCase();
   const canSubmit = situation.trim().length > 0 && !!child;
@@ -343,21 +364,6 @@ export default function ChildHubScreen() {
     return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
 
-  // ─── Background — single C-2 gradient ───
-  const Background = () => (
-    <LinearGradient
-      colors={[
-        C.gradientTop,
-        C.gradientMid1,
-        C.gradientMid2,
-        C.gradientMid3,
-        C.gradientMid4,
-        C.gradientBottom,
-      ]}
-      locations={[0, 0.14, 0.28, 0.42, 0.58, 1]}
-      style={StyleSheet.absoluteFill}
-    />
-  );
 
   // ─── Loading gate (child profile not yet resolved) ───
   if (!child) {
@@ -601,10 +607,7 @@ export default function ChildHubScreen() {
             </Pressable>
 
             {/* ─── Edit profile link ─── */}
-            <Pressable
-              onPress={() => router.push(`/child/${child.id}?edit=1` as any)}
-              style={s.editBtn}
-            >
+            <Pressable onPress={handleEditProfile} style={s.editBtn}>
               <Text style={s.editText}>Edit {child.name}'s profile</Text>
             </Pressable>
 

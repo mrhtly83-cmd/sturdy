@@ -277,6 +277,63 @@ function detectChildFromMessage(
 // SCREEN
 // ═══════════════════════════════════════════════
 
+function Background() {
+  const moveAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(moveAnim, {
+          toValue: 1,
+          duration: 25000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(moveAnim, {
+          toValue: 0,
+          duration: 25000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [moveAnim]);
+
+  const translateY = moveAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -40],
+  });
+
+  const scale = moveAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.1],
+  });
+
+  return (
+    <>
+      <Animated.Image
+        source={require('../../assets/golden-particles-bg.png')}
+        style={[
+          StyleSheet.absoluteFill,
+          { width: '100%', height: '100%', transform: [{ translateY }, { scale }] },
+        ]}
+        resizeMode="cover"
+      />
+      <LinearGradient
+        colors={[
+          'rgba(0,0,0,0.50)',
+          'rgba(0,0,0,0.65)',
+          'rgba(0,0,0,0.80)',
+          'rgba(0,0,0,0.90)',
+          'rgba(0,0,0,0.95)',
+        ]}
+        locations={[0, 0.25, 0.50, 0.72, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+    </>
+  );
+}
+
 export default function HomeScreen() {
   const { session } = useAuth();
   const { children, isLoadingChild } = useChildProfile() as any;
@@ -437,81 +494,6 @@ export default function HomeScreen() {
   const displayName = firstName ?? 'there';
   const kidList = Array.isArray(children) ? children : [];
   const canSend = question.trim().length > 0 && !sending;
-
-  // ═══════════════════════════════════════════════
-  // BACKGROUND — matches sturdy-home-final.html exactly
-  // ═══════════════════════════════════════════════
-
-  // FIND the entire Background component (const Background = () => ( ... ))
-// REPLACE with:
-
-const Background = () => {
-  // Setup the animation value
-  const moveAnim = useRef(new Animated.Value(0)).current;
-
-  // Start a continuous, slow loop when the component mounts
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(moveAnim, {
-          toValue: 1,
-          duration: 25000, // 25 seconds for a very slow, premium drift
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(moveAnim, {
-          toValue: 0,
-          duration: 25000,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        })
-      ])
-    ).start();
-  }, [moveAnim]);
-
-  // Translate the animation value into actual movement
-  const translateY = moveAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -40] // Drifts up by 40 pixels
-  });
-
-  const scale = moveAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1.1] // Very subtle zoom in
-  });
-
-  return (
-    <>
-      <Animated.Image
-        source={require('../../assets/golden-particles-bg.png')}
-        style={[
-          StyleSheet.absoluteFill,
-          { 
-            width: '100%', 
-            height: '100%', 
-            transform: [{ translateY }, { scale }] // Applies the moving particle effect
-          }
-        ]}
-        resizeMode="cover"
-      />
-      {/* The "Sunglasses" Overlay:
-        We darkened these rgba values significantly from your original 
-        so the bright text will pop flawlessly.
-      */}
-      <LinearGradient
-        colors={[
-          'rgba(0,0,0,0.50)', 
-          'rgba(0,0,0,0.65)', 
-          'rgba(0,0,0,0.80)', 
-          'rgba(0,0,0,0.90)', 
-          'rgba(0,0,0,0.95)', 
-        ]}
-        locations={[0, 0.25, 0.50, 0.72, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-    </>
-  );
-};
 
   // ─── Loading ───
   if (isLoadingChild) {
@@ -676,7 +658,10 @@ return (
               </View>
               {/* ─── Children row ─── */}
               <View style={s.childrenSection}>
-                <View style={s.childrenRow}>
+                <Pressable
+                  onPress={handleManageChildren}
+                  style={({ pressed }) => [s.childrenRow, pressed && { opacity: 0.85 }]}
+                >
                   <View style={s.avatarStack}>
                     {kidList.map((kid: any, index: number) => {
                       const grad = CHILD_GRADIENTS[index % CHILD_GRADIENTS.length];
@@ -714,10 +699,7 @@ return (
                   <Text style={s.childrenNames}>
                     {kidList.map((kid: any) => `${kid.name}, ${kid.childAge}`).join(' · ')}
                   </Text>
-                  <Pressable onPress={handleManageChildren} style={({ pressed }) => [pressed && { opacity: 0.7 }]}>
-                    <Text style={s.childrenManage}>manage</Text>
-                  </Pressable>
-                </View>
+                </Pressable>
               </View>
             </Animated.View>
             <View style={{ height: 40 }} />
