@@ -1,4 +1,6 @@
--- 20260506_005a_fix_pause_cleanup_cron_auth.sql
+-- 20260516_001_fix_pause_cleanup_cron_auth.sql
+-- (originally 20260506_005a — renamed to give it a unique date-based version key;
+--  the old filename shared date "20260506" with 005 and collided in schema_migrations)
 --
 -- Corrective migration for 20260506_005_schedule_pause_cleanup_cron.sql.
 --
