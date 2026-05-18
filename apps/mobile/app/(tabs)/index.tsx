@@ -546,208 +546,158 @@ return (
     <Background />
     <StatusBar style="light" />
     <SafeAreaView style={s.safe} edges={['top']}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={{ flex: 1 }}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          keyboardDismissMode="interactive"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <ScrollView
-            contentContainerStyle={s.scroll}
-            keyboardDismissMode="interactive"
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-              {/* ─── Greeting ─── */}
-              <View style={s.greetingWrap}>
-                <Text style={s.greetingText}>{greeting}, {displayName}.</Text>
-                <Text style={s.subGreeting}>What's happening right now?</Text>
-              </View>
-              {/* ─── Input ─── */}
-<View style={[s.inputArea, inputFocused && s.inputAreaFocused]}>
-  <TextInput
-    multiline
-    numberOfLines={4}
-    placeholder="She won't put her shoes on and we're already late..."
-    placeholderTextColor="rgba(255, 248, 231, 0.75)" // 👈 HIGH CONTRAST PLACEHOLDER
-    value={question}
-    onChangeText={(t) => { setQuestion(t); if (error) setError(''); }}
-    onFocus={() => setInputFocused(true)}
-    onBlur={() => setInputFocused(false)}
-    style={s.textarea}
-    textAlignVertical="top"
-    editable={!sending}
-  />
-  <Text style={s.inputHint}>A snapshot is enough.</Text>
-</View>
-{error ? <Text style={s.errorText}>{error}</Text> : null}
+          <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
-{/* ─── CTA: "Get words to say" ─── */}
-<Pressable
-  onPress={handleSend}
-  disabled={!canSend}
-  style={({ pressed }) => [
-    s.ctaBtnWrap,
-    pressed && canSend && { transform: [{ scale: 0.98 }] },
-  ]}
->
-  {canSend ? (
-    <LinearGradient
-      colors={[C.amber, C.amberMid]}
-      start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-      style={s.ctaBtnActive}
-    >
-      <Text style={s.ctaBtnTextActive}>
-        {sending ? 'Getting words…' : 'Get words to say'}
-      </Text>
-    </LinearGradient>
-  ) : (
-    <LinearGradient
-      colors={[C.amber, C.amberMid]}
-      start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-      style={[s.ctaBtnActive, { opacity: 0.35 }]}
-    >
-      <Text style={s.ctaBtnTextActive}>Get words to say</Text>
-    </LinearGradient>
-  )}
-</Pressable>
-
-              {/* ─── Mode selector (horizontal swipe) ─── */}
-
-              {/* ─── Mode selector (horizontal swipe) ─── */}
-              <View style={s.modesSection}>
-                <Text style={s.modesLabel}>OR CHOOSE A MODE</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  snapToInterval={MODE_CARD_WIDTH}
-                  decelerationRate="fast"
-                  contentContainerStyle={s.modesCarousel}
-                  onScroll={handleModeScroll}
-                  scrollEventThrottle={16}
-                >
-                  {OUTCOMES.map((o) => (
-                    <Pressable
-                      key={o.mode}
-                      onPress={() => handleSelectOutcome(o.mode)}
-                      style={({ pressed }) => [
-                        s.modeCard,
-                        { backgroundColor: o.bgColor, borderColor: o.borderColor },
-                        pressed && { opacity: 0.92, transform: [{ scale: 0.97 }] },
-                      ]}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${o.title} — ${o.desc}`}
-                    >
-                      <View style={[s.modeDot, {
-                        backgroundColor: o.color,
-                        shadowColor: o.color,
-                        shadowOffset: { width: 0, height: 0 },
-                        shadowOpacity: 0.5,
-                        shadowRadius: 6,
-                        elevation: 3,
-                      }]} />
-                      <Text style={[s.modeName, { color: o.color }]}>{o.title}</Text>
-                      <Text style={s.modeDesc}>{o.desc}</Text>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-                <View style={s.scrollDots}>
-                  {OUTCOMES.map((_, i) => (
-                    <View key={i} style={[s.scrollDot, activeScrollIndex === i && s.scrollDotActive]} />
-                  ))}
-                </View>
-              </View>
-              {/* ─── Children row ─── */}
-              <View style={s.childrenSection}>
-                <Pressable
-                  onPress={handleManageChildren}
-                  style={({ pressed }) => [s.childrenRow, pressed && { opacity: 0.85 }]}
-                >
-                  <View style={s.avatarStack}>
-                    {kidList.map((kid: any, index: number) => {
-                      const grad = CHILD_GRADIENTS[index % CHILD_GRADIENTS.length];
-                      const initial = (kid?.name?.trim()?.[0] ?? '?').toUpperCase();
-                      return (
-                        <Pressable
-                          key={kid.id}
-                          onPress={() => handleOpenChild(kid.id)}
-                          style={({ pressed }) => [
-                            index > 0 && { marginLeft: -8 },
-                            pressed && { opacity: 0.85 },
-                          ]}
-                        >
-                          <LinearGradient
-                            colors={[`${grad[0]}66`, `${grad[0]}2E`]}
-                            style={s.avatarCircle}
-                          >
-                            <Text style={[s.avatarText, { color: grad[0] }]}>{initial}</Text>
-                          </LinearGradient>
-                        </Pressable>
-                      );
-                    })}
-                    <Pressable
-                      onPress={handleAddChild}
-                      style={({ pressed }) => [
-                        kidList.length > 0 && { marginLeft: -8 },
-                        pressed && { opacity: 0.7 },
-                      ]}
-                    >
-                      <View style={s.avatarAdd}>
-                        <Text style={s.avatarAddText}>+</Text>
-                      </View>
-                    </Pressable>
-                  </View>
-                  <Text style={s.childrenNames}>
-                    {kidList.map((kid: any) => `${kid.name}, ${kid.childAge}`).join(' · ')}
-                  </Text>
-                </Pressable>
-              </View>
-            </Animated.View>
-            <View style={{ height: 40 }} />
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-      {/* ─── Multi-child picker modal ─── */}
-      <Modal visible={pickerMode !== null} animationType="fade" transparent onRequestClose={handlePickerCancel}>
-        <Pressable style={s.pickerBackdrop} onPress={handlePickerCancel}>
-          <Pressable style={s.pickerSheet} onPress={() => {}}>
-            <Text style={s.pickerTitle}>Which child?</Text>
-            <Text style={s.pickerSub}>
-              {pickerMode ? OUTCOMES.find((o) => o.mode === pickerMode)?.desc : ''}
-            </Text>
-            <View style={s.pickerRow}>
-              {kidList.map((kid: any, index: number) => {
-                const grad = CHILD_GRADIENTS[index % CHILD_GRADIENTS.length];
-                const initial = (kid?.name?.trim()?.[0] ?? '?').toUpperCase();
-                return (
-                  <Pressable
-                    key={kid.id}
-                    onPress={() => handlePickerSelectChild(kid.id)}
-                    style={({ pressed }) => [
-                      s.pickerChild,
-                      pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] },
-                    ]}
-                  >
-                    <LinearGradient
-                      colors={grad}
-                      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                      style={s.pickerAvatar}
-                    >
-                      <Text style={s.pickerAvatarText}>{initial}</Text>
-                    </LinearGradient>
-                    <Text style={s.pickerChildName} numberOfLines={1}>{kid.name}</Text>
-                    <Text style={s.pickerChildAge}>Age {kid.childAge}</Text>
-                  </Pressable>
-                );
-              })}
+            {/* ─── Greeting ─── */}
+            <View style={s.greetingWrap}>
+              <Text style={s.greetingText}>{greeting}, {displayName}.</Text>
+              <Text style={s.subGreeting}>What's happening right now?</Text>
             </View>
-            <Pressable onPress={handlePickerCancel} style={s.pickerCancel}>
-              <Text style={s.pickerCancelText}>Cancel</Text>
+
+            {/* ─── Ask Sturdy pill ─── */}
+            <View style={[s.inputPill, inputFocused && s.inputPillFocused]}>
+              <TextInput
+                multiline
+                numberOfLines={2}
+                placeholder="Ask Sturdy anything…"
+                placeholderTextColor="rgba(255,248,231,0.38)"
+                value={question}
+                onChangeText={(t) => { setQuestion(t); if (error) setError(''); }}
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
+                style={s.pillInput}
+                textAlignVertical="top"
+                editable={!sending}
+              />
+              <Pressable
+                onPress={handleSend}
+                disabled={!canSend}
+                style={({ pressed }) => [
+                  s.pillSendBtn,
+                  !canSend && { opacity: 0.32 },
+                  pressed && canSend && { transform: [{ scale: 0.94 }] },
+                ]}
+              >
+                <LinearGradient
+                  colors={[C.amber, C.amberMid]}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                  style={s.pillSendGradient}
+                >
+                  <Text style={s.pillSendArrow}>{sending ? '…' : '→'}</Text>
+                </LinearGradient>
+              </Pressable>
+            </View>
+            {error ? <Text style={s.errorText}>{error}</Text> : null}
+
+            {/* ─── SOS Hero Card ─── */}
+            <Pressable
+              onPress={() => handleSelectOutcome('sos')}
+              style={({ pressed }) => [
+                pressed && { opacity: 0.93, transform: [{ scale: 0.99 }] },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Right now (SOS) — It's happening. Help me through it."
+            >
+              <LinearGradient
+                colors={['rgba(232,116,97,0.20)', 'rgba(248,140,70,0.10)', 'rgba(232,116,97,0.06)']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={s.sosHeroCard}
+              >
+                <View style={s.sosHeroDot} />
+                <Text style={s.sosHeroLabel}>SOS</Text>
+                <Text style={s.sosHeroTitle}>Right now</Text>
+                <Text style={s.sosHeroDesc}>It's happening. Help me through it.</Text>
+              </LinearGradient>
             </Pressable>
+
+            {/* ─── Strategy Stack ─── */}
+            <View style={s.strategyStack}>
+              {OUTCOMES.filter((o) => o.mode !== 'sos').map((o) => (
+                <Pressable
+                  key={o.mode}
+                  onPress={() => handleSelectOutcome(o.mode)}
+                  style={({ pressed }) => [
+                    s.strategyCard,
+                    { backgroundColor: o.bgColor, borderColor: o.borderColor },
+                    pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${o.title} — ${o.desc}`}
+                >
+                  <View style={[s.strategyDot, {
+                    backgroundColor: o.color,
+                    shadowColor: o.color,
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.55,
+                    shadowRadius: 7,
+                    elevation: 3,
+                  }]} />
+                  <View style={s.strategyTextGroup}>
+                    <Text style={[s.strategyName, { color: o.color }]}>{o.title}</Text>
+                    <Text style={s.strategyDesc}>{o.desc}</Text>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+
+          </Animated.View>
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+
+    {/* ─── Multi-child picker modal ─── */}
+    <Modal visible={pickerMode !== null} animationType="fade" transparent onRequestClose={handlePickerCancel}>
+      <Pressable style={s.pickerBackdrop} onPress={handlePickerCancel}>
+        <Pressable style={s.pickerSheet} onPress={() => {}}>
+          <Text style={s.pickerTitle}>Which child?</Text>
+          <Text style={s.pickerSub}>
+            {pickerMode ? OUTCOMES.find((o) => o.mode === pickerMode)?.desc : ''}
+          </Text>
+          <View style={s.pickerRow}>
+            {kidList.map((kid: any, index: number) => {
+              const grad = CHILD_GRADIENTS[index % CHILD_GRADIENTS.length];
+              const initial = (kid?.name?.trim()?.[0] ?? '?').toUpperCase();
+              return (
+                <Pressable
+                  key={kid.id}
+                  onPress={() => handlePickerSelectChild(kid.id)}
+                  style={({ pressed }) => [
+                    s.pickerChild,
+                    pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] },
+                  ]}
+                >
+                  <LinearGradient
+                    colors={grad}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                    style={s.pickerAvatar}
+                  >
+                    <Text style={s.pickerAvatarText}>{initial}</Text>
+                  </LinearGradient>
+                  <Text style={s.pickerChildName} numberOfLines={1}>{kid.name}</Text>
+                  <Text style={s.pickerChildAge}>Age {kid.childAge}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Pressable onPress={handlePickerCancel} style={s.pickerCancel}>
+            <Text style={s.pickerCancelText}>Cancel</Text>
           </Pressable>
         </Pressable>
-      </Modal>
-    </View>
-  );
+      </Pressable>
+    </Modal>
+  </View>
+);
 }
 
 // ═══════════════════════════════════════════════
@@ -817,183 +767,130 @@ const s = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // ─── Input ───
-  inputArea: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)', // More solid frost
+  // ─── Ask Sturdy pill ───
+  inputPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(14,10,6,0.72)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 248, 231, 0.3)', // Soft cream outline
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    borderColor: 'rgba(255,248,231,0.12)',
+    borderRadius: 30,
+    paddingLeft: 20,
+    paddingRight: 6,
+    paddingVertical: 6,
+    marginBottom: 24,
+    gap: 10,
   },
-  inputAreaFocused: {
-    backgroundColor: 'rgba(255, 255, 255, 0.20)', // Brightens slightly when typing
-    borderColor: 'rgba(255, 248, 231, 0.8)', // Outline gets solid cream when active
+  inputPillFocused: {
+    borderColor: 'rgba(232,168,85,0.55)',
+    backgroundColor: 'rgba(14,10,6,0.88)',
   },
-  textarea: {
-    color: '#FFF8E7', // High contrast cream text
-    fontSize: 16,
-    fontWeight: '500',
-    minHeight: 80, // Ensures the 4 lines of space exist
-    textShadowColor: 'rgba(0, 0, 0, 0.8)', // Lifts text off the background
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+  pillInput: {
+    flex: 1,
+    color: '#FFF8E7',
+    fontSize: 15,
+    fontFamily: F.body,
+    maxHeight: 44,
+    paddingVertical: 8,
   },
-  inputHint: {
-    color: 'rgba(255, 248, 231, 0.8)', // Bright cream for the hint
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 8,
-    textAlign: 'right', // Looks good tucked in the corner
+  pillSendBtn: {
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+  pillSendGradient: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pillSendArrow: {
+    color: '#140f0a',
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 22,
   },
   errorText: {
     color: '#FF8A7D',
     fontSize: 13,
-    marginTop: 8,
-  },
-  
-  // ─── CTA ───
-  ctaBtnWrap: { marginBottom: 36 },
-  ctaBtnActive: {
-    minHeight: 52,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#F4C878', // Amber glow when active
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-  },
-  ctaBtnDisabled: {
-    minHeight: 52,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)', // Frosted glass look
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  ctaBtnTextActive: {
-    fontFamily: F.subheading,
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#140f0a',
-    letterSpacing: 0.3,
-  },
-  ctaBtnTextDisabled: {
-    fontFamily: F.subheading,
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'rgba(255, 248, 231, 0.5)', // Highly legible even when disabled
-    letterSpacing: 0.3,
+    marginTop: -16,
+    marginBottom: 16,
+    paddingHorizontal: 4,
   },
 
-  // ─── Mode cards ───
- modesSection: { marginBottom: 32 },
-  modesLabel: {
-    fontFamily: F.label,
-    fontSize: 11, // Bumped up slightly
-    fontWeight: '800', // Made bold
-    letterSpacing: 1.5,
-    color: '#FFFFFF', // Pure white for max contrast
-    textShadowColor: 'rgba(0, 0, 0, 0.8)', // Strong drop shadow
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-    marginBottom: 14,
-  },
-  modesCarousel: { paddingRight: 24, gap: 10 },
-  modeCard: {
-    width: 140,
-    borderRadius: 16,
-    padding: 16,
+  // ─── SOS Hero Card ───
+  sosHeroCard: {
+    borderRadius: 20,
+    padding: 24,
+    paddingTop: 20,
+    marginBottom: 10,
     borderWidth: 1,
+    borderColor: 'rgba(232,116,97,0.24)',
+    minHeight: 148,
+    justifyContent: 'flex-end',
   },
-  modeDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginBottom: 12,
+  sosHeroDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#E87461',
+    marginBottom: 10,
+    shadowColor: '#E87461',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.80,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  modeName: {
-    fontFamily: F.bodySemi,
-    fontSize: 14,
+  sosHeroLabel: {
+    fontFamily: F.label,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 2.2,
+    color: 'rgba(232,116,97,0.72)',
     marginBottom: 4,
   },
-  modeDesc: {
+  sosHeroTitle: {
+    fontFamily: F.heading,
+    fontSize: 32,
+    color: 'rgba(255,248,230,0.94)',
+    letterSpacing: -0.6,
+    lineHeight: 38,
+    marginBottom: 6,
+  },
+  sosHeroDesc: {
     fontFamily: F.body,
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.55)',      // bumped from 0.32
-    lineHeight: 14,
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.58)',
+    lineHeight: 20,
   },
 
-  // ─── Scroll dots ───
-  scrollDots: {
-    flexDirection: 'row',
-    gap: 5,
-    justifyContent: 'center',
-    marginTop: 12,
-  },
-  scrollDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.10)',
-  },
-  scrollDotActive: {
-    backgroundColor: 'rgba(244,200,120,0.45)',
-    width: 16,
-  },
-
-  // ─── Children ───
-  childrenSection: {
-    paddingTop: 20,
-    borderTopWidth: 0.5,
-    borderTopColor: 'rgba(244,200,120,0.07)',
-  },
-  childrenRow: {
+  // ─── Strategy Stack ───
+  strategyStack: { gap: 10, marginTop: 2 },
+  strategyCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    gap: 16,
   },
-  avatarStack: { flexDirection: 'row' },
-  avatarCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 248, 231, 0.3)', // Brightens the ring around avatars
+  strategyDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    flexShrink: 0,
   },
-  avatarText: {
-    fontSize: 12,
+  strategyTextGroup: { flex: 1, gap: 3 },
+  strategyName: {
     fontFamily: F.bodySemi,
+    fontSize: 15,
   },
-  avatarAdd: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: 'rgba(255,255,255,0.10)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarAddText: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.14)',
-  },
- childrenNames: {
+  strategyDesc: {
     fontFamily: F.body,
-    fontSize: 13, 
-    color: 'rgba(255, 248, 231, 0.85)', // Bumped opacity heavily
-    flex: 1,
-  },
-  childrenManage: {
-    fontFamily: F.bodyMedium,
-    fontSize: 12,
-    color: 'rgba(244, 200, 120, 0.90)', // Made bright amber
-    textDecorationLine: 'underline', // Makes it obviously tappable
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.52)',
+    lineHeight: 18,
   },
   // ─── Empty state ───
   emptyWrap: { flex: 1, paddingHorizontal: 24, gap: 14, justifyContent: 'center' },
