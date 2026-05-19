@@ -385,6 +385,10 @@ export default function HomeScreen() {
   const [activeScrollIndex, setActiveScrollIndex] = useState(0);
   const [activeChildId, setActiveChildId] = useState<string | null>(null);
   const [recentLogs, setRecentLogs] = useState<RecentLog[]>([]);
+  const [recentLogsByChild, setRecentLogsByChild] = useState<Record<string, RecentLog>>({});
+const [activeSessionIndex, setActiveSessionIndex] = useState(0);
+const sessionAnim = useRef(new Animated.Value(1)).current;
+const autoSlideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Entry animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -427,17 +431,27 @@ export default function HomeScreen() {
 
   // ─── Fetch recent interaction logs ───
   const fetchRecentLogs = useCallback(async () => {
-    if (!session?.user?.id) return;
-    try {
-      const { data } = await supabase
-        .from('interaction_logs')
-        .select('id, mode, trigger_category, situation_summary, created_at, child_profile_id')
-        .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false })
-        .limit(3);
-      if (data) setRecentLogs(data);
-    } catch { /* non-blocking */ }
-  }, [session?.user?.id]);
+  if (!session?.user?.id) return;
+  try {
+    const { data } = await supabase
+      .from('interaction_logs')
+      .select('id, mode, trigger_category, situation_summary, created_at, child_profile_id')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (data && Array.isArray(data)) {
+      const byChild: Record<string, RecentLog> = {};
+      for (const log of data) {
+        if (log.child_profile_id && !byChild[log.child_profile_id]) {
+          byChild[log.child_profile_id] = log;
+        }
+      }
+      setRecentLogsByChild(byChild);
+      setRecentLogs(data.slice(0, 3));
+    }
+  } catch { }
+}, [session?.user?.id]);
 
   useFocusEffect(
     useCallback(() => {
@@ -547,6 +561,27 @@ export default function HomeScreen() {
   const displayName = firstName ?? 'there';
   const kidList = Array.isArray(children) ? children : [];
   const canSend = question.trim().length > 0 && !sending;
+  const handleSessionSwipe = (direction: 'left' | 'right') => {
+  if (autoSlideTimer.current) clearTimeout(autoSlideTimer.current);
+  Animated.timing(sessionAnim, {
+    toValue: 0,
+    duration: 250,
+    useNativeDriver: true,
+  }).start(() => {
+    setActiveSessionIndex(prev => {
+      if (direction === 'left') return prev >= kidList.length - 1 ? 0 : prev + 1;
+      return prev <= 0 ? kidList.length - 1 : prev - 1;
+    });
+    Animated.timing(sessionAnim, {
+      toValue: 1,
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
+  });
+  autoSlideTimer.current = setTimeout(() => {
+    autoSlideTimer.current = null;
+  }, 10000);
+};
 
   // Auto-select sole child so chips + routing work without manual tap
   useEffect(() => {
@@ -554,6 +589,35 @@ export default function HomeScreen() {
       setActiveChildId(kidList[0].id);
     }
   }, [kidList.length]);
+useEffect(() => {
+  if (kidList.length < 2) return;
+
+  const startTimer = () => {
+    autoSlideTimer.current = setTimeout(() => {
+      Animated.timing(sessionAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setActiveSessionIndex(prev =>
+          prev >= kidList.length - 1 ? 0 : prev + 1
+        );
+        Animated.timing(sessionAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+        startTimer();
+      });
+    }, 5000);
+  };
+
+  startTimer();
+
+  return () => {
+    if (autoSlideTimer.current) clearTimeout(autoSlideTimer.current);
+  };
+}, [kidList.length]);
 
   // ─── Loading ───
   if (isLoadingChild) {
@@ -577,7 +641,7 @@ export default function HomeScreen() {
       <StatusBar style="light" />
       <SafeAreaView style={s.safe} edges={['top']}>
         <View style={s.emptyWrap}>
-          <Text style={s.greetingText}>{greeting}, {displayName}.</Text>
+          <Text style={s.greetingText}>Good evening, {displayName}.</Text>
           <Text style={s.emptyTitle}>Let's add your first child.</Text>
           <Text style={s.emptyBody}>
             Sturdy tailors every response to your child's age and world.
@@ -620,8 +684,8 @@ return (
 
             {/* ─── Greeting ─── */}
             363:  <View style={s.greetingWrap}>
-364:    <Text style={s.greetingText}>{greeting}, {displayName}.</Text>
-365:    <Text style={s.subGreeting}>What's happening right now?</Text>
+364:    <Text style={s.greetingText}>Good evening, {displayName}.</Text>
+365:    <Text style={s.greetingSection}>What's on your mind?</Text>
 366:  </View>
 
             {/* ─── Child selector chips ─── */}
@@ -713,36 +777,48 @@ return (
             {/* ─── Dashboard hook cards ─── */}
             <View style={s.hookStack}>
 
-              {/* Card 1 — Last Session */}
-              <Text style={s.hookSubheader}>RECENT</Text>
-              <Pressable
-                onPress={() => {
-                  const sid = recentLogs[0]?.child_profile_id ?? null;
-                  const child = sid ? kidList.find((k: any) => k.id === sid) : null;
-                  if (child) router.push(`/child/${child.id}` as any);
-                }}
-                style={({ pressed }) => [s.hookCard, pressed && { opacity: 0.82 }]}
-                accessibilityRole="button"
-                accessibilityLabel="View last session"
-              >
-                <View style={s.hookCardRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.hookTitle} numberOfLines={1}>
-                      {recentLogs[0]
-                        ? (recentLogs[0].trigger_category
-                            ? (RECENT_TRIGGER_LABELS[recentLogs[0].trigger_category] ?? recentLogs[0].trigger_category)
-                            : (recentLogs[0].situation_summary ?? '').slice(0, 45))
-                        : 'Leaving the park — screaming'}
-                    </Text>
-                    <Text style={s.hookMeta}>
-                      {recentLogs[0]
-                        ? `${RECENT_MODE_LABELS[recentLogs[0].mode] ?? recentLogs[0].mode} · ${formatTimeAgo(recentLogs[0].created_at)}`
-                        : '2 hours ago'}
-                    </Text>
-                  </View>
-                  <Text style={s.hookArrow}>→</Text>
-                </View>
-              </Pressable>
+              {/* Card 1 — Last Session (animated, per child) */}
+<Text style={s.hookSubheader}>LAST SESSION</Text>
+{(() => {
+  const activeKid = kidList[activeSessionIndex];
+  const log = activeKid ? recentLogsByChild[activeKid.id] : null;
+  const summary = log?.situation_summary ?? 'Leaving the park — screaming';
+  const truncated = summary.length > 60 ? summary.slice(0, 60) + '...' : summary;
+  const timestamp = log ? formatTimeAgo(log.created_at) : '2 hours ago';
+
+  return (
+    <Animated.View
+      style={{ opacity: sessionAnim }}
+      onStartShouldSetResponder={() => true}
+      onResponderRelease={(e) => {
+        const dx = e.nativeEvent.locationX;
+        if (dx < 80) handleSessionSwipe('right');
+        else if (dx > 260) handleSessionSwipe('left');
+      }}
+    >
+      <View style={s.sessionCard}>
+        <View style={s.sessionCardHeader}>
+          <Text style={s.sessionChildName}>
+            {activeKid?.name ?? 'Emma'}
+          </Text>
+          <View style={s.sessionModeBadge}>
+            <Text style={s.sessionModeBadgeText}>SOS</Text>
+          </View>
+        </View>
+        <Text style={s.sessionTimestamp}>{timestamp}</Text>
+        <Text style={s.sessionQuote}>"{truncated}"</Text>
+        <Pressable
+          onPress={() => {
+            if (activeKid) router.push(`/child/${activeKid.id}` as any);
+          }}
+          style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
+        >
+          <Text style={s.sessionCta}>View full script →</Text>
+        </Pressable>
+      </View>
+    </Animated.View>
+  );
+})()}
 
               {/* Card 2 — Common Triggers */}
               <Text style={[s.hookSubheader, { marginTop: 22 }]}>PATTERNS</Text>
@@ -1225,5 +1301,67 @@ avatarAddPlus: {
   color: 'rgba(255,255,255,0.20)',
   fontWeight: '300',
   lineHeight: 26,
+},
+greetingSection: {
+  fontFamily: F.label,
+  fontSize: 10,
+  fontWeight: '700',
+  letterSpacing: 0.1,
+  color: 'rgba(255,255,255,0.22)',
+  textTransform: 'uppercase',
+  marginTop: 6,
+},
+sessionCard: {
+  backgroundColor: 'rgba(255,255,255,0.04)',
+  borderWidth: 1,
+  borderColor: 'rgba(255,255,255,0.07)',
+  borderRadius: 14,
+  paddingVertical: 16,
+  paddingHorizontal: 16,
+  gap: 8,
+},
+sessionCardHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+},
+sessionChildName: {
+  fontFamily: F.bodySemi,
+  fontSize: 14,
+  color: 'rgba(255,248,230,0.90)',
+},
+sessionModeBadge: {
+  backgroundColor: 'rgba(232,116,97,0.15)',
+  borderWidth: 1,
+  borderColor: 'rgba(232,116,97,0.30)',
+  borderRadius: 6,
+  paddingHorizontal: 8,
+  paddingVertical: 3,
+},
+sessionModeBadgeText: {
+  fontFamily: F.label,
+  fontSize: 10,
+  fontWeight: '700',
+  letterSpacing: 0.8,
+  color: '#E87461',
+},
+sessionTimestamp: {
+  fontFamily: F.body,
+  fontSize: 12,
+  color: 'rgba(255,255,255,0.35)',
+},
+sessionQuote: {
+  fontFamily: F.heading,
+  fontStyle: 'italic',
+  fontSize: 14,
+  color: 'rgba(255,248,230,0.78)',
+  lineHeight: 21,
+  letterSpacing: 0.1,
+},
+sessionCta: {
+  fontFamily: F.bodyMedium,
+  fontSize: 13,
+  color: '#D4944A',
+  marginTop: 4,
 },
 });
