@@ -1,1 +1,12 @@
+# dependencies
+node_modules/
+
+# env files
 .env.local
+.env
+
+# macOS
+.DS_Store
+
+# TypeScript
+*.tsbuildinfo
