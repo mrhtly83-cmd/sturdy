@@ -619,41 +619,61 @@ return (
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
             {/* ─── Greeting ─── */}
-            <View style={s.greetingWrap}>
-              <Text style={s.greetingText}>{greeting}, {displayName}.</Text>
-              <Text style={s.subGreeting}>What's happening right now?</Text>
-            </View>
+            363:  <View style={s.greetingWrap}>
+364:    <Text style={s.greetingText}>{greeting}, {displayName}.</Text>
+365:    <Text style={s.subGreeting}>What's happening right now?</Text>
+366:  </View>
 
             {/* ─── Child selector chips ─── */}
             {kidList.length > 0 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={s.chipsRow}
-                style={s.chipsScroll}
-              >
-                {kidList.map((kid: any) => {
-                  const isActive = activeChildId === kid.id;
-                  return (
-                    <Pressable
-                      key={kid.id}
-                      onPress={() => {
-                        Haptics.selectionAsync();
-                        setActiveChildId(isActive ? null : kid.id);
-                      }}
-                      style={[s.childChip, isActive && s.childChipActive]}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Select ${kid.name}`}
-                    >
-                      <View style={[s.chipDot, { backgroundColor: isActive ? C.amber : 'rgba(255,255,255,0.22)' }]} />
-                      <Text style={[s.chipLabel, isActive && s.chipLabelActive]}>
-                        {kid.name} · {kid.childAge}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            )}
+  <View style={s.avatarSection}>
+    <View style={s.avatarDivider}>
+      <Text style={s.avatarDividerLabel}>Your children</Text>
+      <View style={s.avatarDividerLine} />
+    </View>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={s.avatarRow}
+    >
+      {kidList.map((kid: any, index: number) => {
+        const isActive = activeChildId === kid.id;
+        const grad = CHILD_GRADIENTS[index % CHILD_GRADIENTS.length];
+        const initial = (kid?.name?.trim()?.[0] ?? '?').toUpperCase();
+        return (
+          <Pressable
+            key={kid.id}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setActiveChildId(isActive ? null : kid.id);
+            }}
+            style={s.avatarChip}
+            accessibilityRole="button"
+            accessibilityLabel={`Select ${kid.name}`}
+          >
+            <LinearGradient
+              colors={grad}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              style={[s.avatarCircle, isActive && s.avatarCircleActive]}
+            >
+              <Text style={s.avatarInitial}>{initial}</Text>
+              {isActive && <View style={s.avatarActiveDot} />}
+            </LinearGradient>
+            <Text style={[s.avatarName, isActive && s.avatarNameActive]}>
+              {kid.name} · {kid.childAge}
+            </Text>
+          </Pressable>
+        );
+      })}
+      <Pressable onPress={handleAddChild} style={s.avatarChip}>
+        <View style={s.avatarAdd}>
+          <Text style={s.avatarAddPlus}>+</Text>
+        </View>
+        <Text style={s.avatarName}>Add</Text>
+      </Pressable>
+    </ScrollView>
+  </View>
+)}
 
             {/* ─── Ask Sturdy pill ─── */}
             <View style={[s.inputPill, inputFocused && s.inputPillFocused]}>
@@ -1116,4 +1136,94 @@ const s = StyleSheet.create({
     fontSize: 15,
     color: 'rgba(255,255,255,0.30)',
   },
+  avatarSection: { marginBottom: 20 },
+avatarDivider: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 10,
+  marginBottom: 14,
+},
+avatarDividerLabel: {
+  fontFamily: F.label,
+  fontSize: 10,
+  fontWeight: '700',
+  letterSpacing: 0.09,
+  textTransform: 'uppercase',
+  color: 'rgba(255,255,255,0.22)',
+},
+avatarDividerLine: {
+  flex: 1,
+  height: 1,
+  backgroundColor: 'rgba(255,255,255,0.06)',
+},
+avatarRow: {
+  flexDirection: 'row',
+  gap: 18,
+  paddingRight: 4,
+  paddingBottom: 4,
+},
+avatarChip: {
+  alignItems: 'center',
+  gap: 7,
+},
+avatarCircle: {
+  width: 54,
+  height: 54,
+  borderRadius: 27,
+  alignItems: 'center',
+  justifyContent: 'center',
+  position: 'relative',
+},
+avatarCircleActive: {
+  shadowColor: '#D4944A',
+  shadowOffset: { width: 0, height: 0 },
+  shadowOpacity: 0.5,
+  shadowRadius: 10,
+  borderWidth: 2.5,
+  borderColor: '#D4944A',
+},
+avatarInitial: {
+  fontFamily: F.heading,
+  fontSize: 18,
+  color: '#FFFFFF',
+  fontWeight: '600',
+},
+avatarActiveDot: {
+  position: 'absolute',
+  bottom: 1,
+  right: 1,
+  width: 10,
+  height: 10,
+  borderRadius: 5,
+  backgroundColor: '#D4944A',
+  borderWidth: 2,
+  borderColor: '#0d0b08',
+},
+avatarName: {
+  fontFamily: F.bodyMedium,
+  fontSize: 11,
+  color: 'rgba(255,255,255,0.28)',
+  textAlign: 'center',
+},
+avatarNameActive: {
+  color: '#D4944A',
+  fontWeight: '700',
+},
+avatarAdd: {
+  width: 54,
+  height: 54,
+  borderRadius: 27,
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: 'rgba(255,255,255,0.04)',
+  borderWidth: 1.5,
+  borderColor: 'rgba(255,255,255,0.12)',
+  borderStyle: 'dashed',
+},
+avatarAddPlus: {
+  fontSize: 22,
+  color: 'rgba(255,255,255,0.20)',
+  fontWeight: '300',
+  lineHeight: 26,
+},
 });
