@@ -244,6 +244,13 @@ const OUTCOMES: Outcome[] = [
   },
 ];
 
+const MODE_CHIPS: Array<{ mode: OutcomeMode; emoji: string; label: string }> = [
+  { mode: 'sos',          emoji: '🧘', label: 'Calm down'   },
+  { mode: 'reconnect',    emoji: '🎯', label: 'Get through' },
+  { mode: 'understand',   emoji: '💡', label: 'Understand'  },
+  { mode: 'conversation', emoji: '💬', label: 'Plan a talk' },
+];
+
 // Rotating gradient pairs for child avatars
 const CHILD_GRADIENTS: Array<[string, string]> = [
   [C.iconTalkStart, C.iconTalkEnd],
@@ -620,8 +627,24 @@ return (
 
             {/* ─── Greeting ─── */}
             <View style={s.greetingWrap}>
-              <Text style={s.greetingText}>{greeting}, {displayName}.</Text>
-              <Text style={s.subGreeting}>What's happening right now?</Text>
+              <View style={s.greetingRow}>
+                <View>
+                  <Text style={s.greetingLine1}>{greeting},</Text>
+                  <Text style={s.greetingLine2}>
+                    {activeChildId
+                      ? `${kidList.find((k: any) => k.id === activeChildId)?.name ?? displayName}'s parent`
+                      : `${displayName}.`}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => router.push('/upgrade' as any)}
+                  style={({ pressed }) => [s.proBtn, pressed && { opacity: 0.75 }]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Upgrade to Pro"
+                >
+                  <Text style={s.proBtnText}>Pro →</Text>
+                </Pressable>
+              </View>
             </View>
 
             {/* ─── Child selector chips ─── */}
@@ -632,20 +655,25 @@ return (
                 contentContainerStyle={s.chipsRow}
                 style={s.chipsScroll}
               >
-                {kidList.map((kid: any) => {
+                {kidList.map((kid: any, index: number) => {
                   const isActive = activeChildId === kid.id;
+                  const grad = CHILD_GRADIENTS[index % CHILD_GRADIENTS.length];
+                  const initial = (kid?.name?.trim()?.[0] ?? '?').toUpperCase();
                   return (
                     <Pressable
                       key={kid.id}
-                      onPress={() => {
-                        Haptics.selectionAsync();
-                        setActiveChildId(isActive ? null : kid.id);
-                      }}
+                      onPress={() => { Haptics.selectionAsync(); setActiveChildId(isActive ? null : kid.id); }}
                       style={[s.childChip, isActive && s.childChipActive]}
                       accessibilityRole="button"
                       accessibilityLabel={`Select ${kid.name}`}
                     >
-                      <View style={[s.chipDot, { backgroundColor: isActive ? C.amber : 'rgba(255,255,255,0.22)' }]} />
+                      <LinearGradient
+                        colors={[`${grad[0]}99`, `${grad[1]}66`]}
+                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                        style={s.chipAvatar}
+                      >
+                        <Text style={[s.chipAvatarText, { color: '#fff' }]}>{initial}</Text>
+                      </LinearGradient>
                       <Text style={[s.chipLabel, isActive && s.chipLabelActive]}>
                         {kid.name} · {kid.childAge}
                       </Text>
@@ -655,90 +683,78 @@ return (
               </ScrollView>
             )}
 
-            {/* ─── Ask Sturdy pill ─── */}
-            <View style={[s.inputPill, inputFocused && s.inputPillFocused]}>
-              <TextInput
-                multiline
-                numberOfLines={2}
-                placeholder="Ask Sturdy anything…"
-                placeholderTextColor="rgba(255,248,231,0.38)"
-                value={question}
-                onChangeText={(t) => { setQuestion(t); if (error) setError(''); }}
-                onFocus={() => setInputFocused(true)}
-                onBlur={() => setInputFocused(false)}
-                style={s.pillInput}
-                textAlignVertical="top"
-                editable={!sending}
-              />
+            {/* ─── Main input card ─── */}
+            <View style={[s.inputCard, inputFocused && s.inputCardFocused]}>
+              <Text style={s.inputQuote}>"Your calm is your child's anchor."</Text>
+              <View style={s.inputInner}>
+                <TextInput
+                  multiline
+                  numberOfLines={4}
+                  placeholder="What's happening right now?"
+                  placeholderTextColor="rgba(255,248,231,0.28)"
+                  value={question}
+                  onChangeText={(t) => { setQuestion(t); if (error) setError(''); }}
+                  onFocus={() => setInputFocused(true)}
+                  onBlur={() => setInputFocused(false)}
+                  style={s.inputTextarea}
+                  textAlignVertical="top"
+                  editable={!sending}
+                />
+              </View>
+              {/* Tone row */}
+              <View style={s.toneRow}>
+                <Text style={s.toneLabel}>TONE</Text>
+                <Text style={s.toneGentle}>Gentle 🔒</Text>
+                <View style={s.toneTrack}>
+                  <View style={s.toneTrackFill} />
+                </View>
+                <Pressable onPress={() => router.push('/upgrade' as any)}>
+                  <Text style={s.toneDirect}>Direct</Text>
+                </Pressable>
+              </View>
+              {/* CTA */}
               <Pressable
                 onPress={handleSend}
                 disabled={!canSend}
-                style={({ pressed }) => [
-                  s.pillSendBtn,
-                  !canSend && { opacity: 0.32 },
-                  pressed && canSend && { transform: [{ scale: 0.94 }] },
-                ]}
+                style={({ pressed }) => [pressed && canSend && { transform: [{ scale: 0.98 }] }]}
               >
                 <LinearGradient
                   colors={[C.amber, C.amberMid]}
                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                  style={s.pillSendGradient}
+                  style={[s.ctaBtn, !canSend && { opacity: 0.36 }]}
                 >
-                  <Text style={s.pillSendArrow}>{sending ? '…' : '→'}</Text>
+                  <Text style={s.ctaBtnText}>
+                    {sending ? 'Getting words…' : 'Help me with this'}
+                  </Text>
                 </LinearGradient>
               </Pressable>
             </View>
             {error ? <Text style={s.errorText}>{error}</Text> : null}
 
-            {/* ─── SOS Hero Card ─── */}
-            <Pressable
-              onPress={() => handleSelectOutcome('sos')}
-              style={({ pressed }) => [
-                pressed && { opacity: 0.93, transform: [{ scale: 0.99 }] },
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Right now (SOS) — It's happening. Help me through it."
-            >
-              <LinearGradient
-                colors={['rgba(232,116,97,0.20)', 'rgba(248,140,70,0.10)', 'rgba(232,116,97,0.06)']}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={s.sosHeroCard}
+            {/* ─── WHAT DO YOU NEED chips ─── */}
+            <View style={s.needSection}>
+              <Text style={s.sectionLabel}>WHAT DO YOU NEED</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={s.needChipsRow}
               >
-                <View style={s.sosHeroDot} />
-                <Text style={s.sosHeroLabel}>SOS</Text>
-                <Text style={s.sosHeroTitle}>Right now</Text>
-                <Text style={s.sosHeroDesc}>It's happening. Help me through it.</Text>
-              </LinearGradient>
-            </Pressable>
-
-            {/* ─── Strategy Stack ─── */}
-            <View style={s.strategyStack}>
-              {OUTCOMES.filter((o) => o.mode !== 'sos').map((o) => (
-                <Pressable
-                  key={o.mode}
-                  onPress={() => handleSelectOutcome(o.mode)}
-                  style={({ pressed }) => [
-                    s.strategyCard,
-                    { backgroundColor: o.bgColor, borderColor: o.borderColor },
-                    pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] },
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${o.title} — ${o.desc}`}
-                >
-                  <View style={[s.strategyDot, {
-                    backgroundColor: o.color,
-                    shadowColor: o.color,
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 0.55,
-                    shadowRadius: 7,
-                    elevation: 3,
-                  }]} />
-                  <View style={s.strategyTextGroup}>
-                    <Text style={[s.strategyName, { color: o.color }]}>{o.title}</Text>
-                    <Text style={s.strategyDesc}>{o.desc}</Text>
-                  </View>
-                </Pressable>
-              ))}
+                {MODE_CHIPS.map((chip) => (
+                  <Pressable
+                    key={chip.mode}
+                    onPress={() => handleSelectOutcome(chip.mode)}
+                    style={({ pressed }) => [
+                      s.needChip,
+                      pressed && { opacity: 0.80, transform: [{ scale: 0.96 }] },
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={chip.label}
+                  >
+                    <Text style={s.needChipEmoji}>{chip.emoji}</Text>
+                    <Text style={s.needChipLabel}>{chip.label}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
             </View>
 
             {/* ─── Recent section ─── */}
@@ -896,7 +912,22 @@ const s = StyleSheet.create({
   },
 
   // ─── Greeting ───
-  greetingWrap: { gap: 6, marginTop: 8, marginBottom: 32 },
+  greetingWrap: { marginTop: 8, marginBottom: 20 },
+  greetingRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  greetingLine1: {
+    fontFamily: F.heading,
+    fontSize: 30,
+    color: 'rgba(255,248,230,0.92)',
+    letterSpacing: -0.5,
+    lineHeight: 36,
+  },
+  greetingLine2: {
+    fontFamily: F.heading,
+    fontSize: 26,
+    color: C.amber,
+    letterSpacing: -0.4,
+    lineHeight: 32,
+  },
   greetingText: {
     fontFamily: F.heading,
     fontSize: 28,
@@ -904,138 +935,129 @@ const s = StyleSheet.create({
     letterSpacing: -0.5,
     lineHeight: 34,
   },
-  subGreeting: {
-    fontFamily: F.body,
-    fontSize: 14,
-    color: 'rgba(244,200,120,0.62)',      // bumped from 0.50
-    letterSpacing: 0.2,
+  proBtn: {
+    backgroundColor: 'rgba(200,136,58,0.12)',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(200,136,58,0.25)',
+    marginTop: 4,
+  },
+  proBtnText: {
+    fontFamily: F.bodySemi,
+    fontSize: 13,
+    color: C.amber,
   },
 
-  // ─── Ask Sturdy pill ───
-  inputPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(14,10,6,0.72)',
+  // ─── Main input card ───
+  inputCard: {
+    backgroundColor: 'rgba(16,12,8,0.70)',
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,248,231,0.12)',
-    borderRadius: 30,
-    paddingLeft: 20,
-    paddingRight: 6,
-    paddingVertical: 6,
-    marginBottom: 24,
-    gap: 10,
+    borderColor: 'rgba(255,255,255,0.07)',
+    padding: 16,
+    gap: 12,
+    marginBottom: 8,
   },
-  inputPillFocused: {
-    borderColor: 'rgba(232,168,85,0.55)',
-    backgroundColor: 'rgba(14,10,6,0.88)',
+  inputCardFocused: {
+    borderColor: 'rgba(200,136,58,0.30)',
   },
-  pillInput: {
-    flex: 1,
+  inputQuote: {
+    fontFamily: F.body,
+    fontSize: 13,
+    fontStyle: 'italic',
+    color: 'rgba(255,248,230,0.35)',
+    textAlign: 'center',
+  },
+  inputInner: {
+    backgroundColor: 'rgba(0,0,0,0.28)',
+    borderRadius: 12,
+    padding: 14,
+    minHeight: 92,
+  },
+  inputTextarea: {
     color: '#FFF8E7',
     fontSize: 15,
     fontFamily: F.body,
-    maxHeight: 44,
-    paddingVertical: 8,
+    minHeight: 68,
   },
-  pillSendBtn: {
-    borderRadius: 24,
+  toneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  toneLabel: {
+    fontFamily: F.label,
+    fontSize: 10,
+    letterSpacing: 1.2,
+    color: 'rgba(255,255,255,0.26)',
+  },
+  toneGentle: {
+    fontFamily: F.bodySemi,
+    fontSize: 12,
+    color: 'rgba(255,248,230,0.65)',
+  },
+  toneTrack: {
+    flex: 1,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     overflow: 'hidden',
   },
-  pillSendGradient: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+  toneTrackFill: {
+    width: '22%',
+    height: '100%',
+    backgroundColor: C.amber,
+    borderRadius: 2,
+  },
+  toneDirect: {
+    fontFamily: F.bodyMedium,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.26)',
+  },
+  ctaBtn: {
+    minHeight: 52,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pillSendArrow: {
-    color: '#140f0a',
-    fontSize: 18,
+  ctaBtnText: {
+    fontFamily: F.subheading,
+    fontSize: 16,
     fontWeight: '700',
-    lineHeight: 22,
+    color: '#140f0a',
+    letterSpacing: 0.2,
   },
   errorText: {
     color: '#FF8A7D',
     fontSize: 13,
-    marginTop: -16,
-    marginBottom: 16,
+    marginTop: 0,
+    marginBottom: 12,
     paddingHorizontal: 4,
   },
 
-  // ─── SOS Hero Card ───
-  sosHeroCard: {
-    borderRadius: 20,
-    padding: 24,
-    paddingTop: 20,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(232,116,97,0.24)',
-    minHeight: 148,
-    justifyContent: 'flex-end',
-  },
-  sosHeroDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#E87461',
-    marginBottom: 10,
-    shadowColor: '#E87461',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.80,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  sosHeroLabel: {
-    fontFamily: F.label,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 2.2,
-    color: 'rgba(232,116,97,0.72)',
-    marginBottom: 4,
-  },
-  sosHeroTitle: {
-    fontFamily: F.heading,
-    fontSize: 32,
-    color: 'rgba(255,248,230,0.94)',
-    letterSpacing: -0.6,
-    lineHeight: 38,
-    marginBottom: 6,
-  },
-  sosHeroDesc: {
-    fontFamily: F.body,
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.58)',
-    lineHeight: 20,
-  },
-
-  // ─── Strategy Stack ───
-  strategyStack: { gap: 10, marginTop: 2 },
-  strategyCard: {
+  // ─── WHAT DO YOU NEED chips ───
+  needSection: { marginBottom: 28 },
+  needChipsRow: { gap: 10, paddingRight: 4 },
+  needChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 20,
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 22,
     borderWidth: 1,
-    gap: 16,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.10)',
   },
-  strategyDot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    flexShrink: 0,
-  },
-  strategyTextGroup: { flex: 1, gap: 3 },
-  strategyName: {
+  needChipEmoji: { fontSize: 16 },
+  needChipLabel: {
     fontFamily: F.bodySemi,
-    fontSize: 15,
+    fontSize: 14,
+    color: 'rgba(255,248,230,0.78)',
   },
-  strategyDesc: {
-    fontFamily: F.body,
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.52)',
-    lineHeight: 18,
-  },
+
   // ─── Child chips ───
   chipsScroll: { marginBottom: 20 },
   chipsRow: { flexDirection: 'row', gap: 8, paddingRight: 4 },
@@ -1054,7 +1076,17 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(200,136,58,0.14)',
     borderColor: 'rgba(200,136,58,0.40)',
   },
-  chipDot: { width: 7, height: 7, borderRadius: 4 },
+  chipAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipAvatarText: {
+    fontFamily: F.bodySemi,
+    fontSize: 13,
+  },
   chipLabel: {
     fontFamily: F.bodyMedium,
     fontSize: 13,
