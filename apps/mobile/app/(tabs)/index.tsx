@@ -690,109 +690,67 @@ return (
             </View>
             {error ? <Text style={s.errorText}>{error}</Text> : null}
 
-            {/* ─── SOS Hero Card ─── */}
-            <Pressable
-              onPress={() => handleSelectOutcome('sos')}
-              style={({ pressed }) => [
-                pressed && { opacity: 0.93, transform: [{ scale: 0.99 }] },
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Right now (SOS) — It's happening. Help me through it."
-            >
-              <LinearGradient
-                colors={['rgba(232,116,97,0.20)', 'rgba(248,140,70,0.10)', 'rgba(232,116,97,0.06)']}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={s.sosHeroCard}
+            {/* ─── Dashboard hook cards ─── */}
+            <View style={s.hookStack}>
+
+              {/* Card 1 — Last Session */}
+              <Text style={s.hookSubheader}>RECENT</Text>
+              <Pressable
+                onPress={() => {
+                  const sid = recentLogs[0]?.child_profile_id ?? null;
+                  const child = sid ? kidList.find((k: any) => k.id === sid) : null;
+                  if (child) router.push(`/child/${child.id}` as any);
+                }}
+                style={({ pressed }) => [s.hookCard, pressed && { opacity: 0.82 }]}
+                accessibilityRole="button"
+                accessibilityLabel="View last session"
               >
-                <View style={s.sosHeroDot} />
-                <Text style={s.sosHeroLabel}>SOS</Text>
-                <Text style={s.sosHeroTitle}>Right now</Text>
-                <Text style={s.sosHeroDesc}>It's happening. Help me through it.</Text>
-              </LinearGradient>
-            </Pressable>
-
-            {/* ─── Strategy Stack ─── */}
-            <View style={s.strategyStack}>
-              {OUTCOMES.filter((o) => o.mode !== 'sos').map((o) => (
-                <Pressable
-                  key={o.mode}
-                  onPress={() => handleSelectOutcome(o.mode)}
-                  style={({ pressed }) => [
-                    s.strategyCard,
-                    { backgroundColor: o.bgColor, borderColor: o.borderColor },
-                    pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] },
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${o.title} — ${o.desc}`}
-                >
-                  <View style={[s.strategyDot, {
-                    backgroundColor: o.color,
-                    shadowColor: o.color,
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 0.55,
-                    shadowRadius: 7,
-                    elevation: 3,
-                  }]} />
-                  <View style={s.strategyTextGroup}>
-                    <Text style={[s.strategyName, { color: o.color }]}>{o.title}</Text>
-                    <Text style={s.strategyDesc}>{o.desc}</Text>
+                <View style={s.hookCardRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.hookTitle} numberOfLines={1}>
+                      {recentLogs[0]
+                        ? (recentLogs[0].trigger_category
+                            ? (RECENT_TRIGGER_LABELS[recentLogs[0].trigger_category] ?? recentLogs[0].trigger_category)
+                            : (recentLogs[0].situation_summary ?? '').slice(0, 45))
+                        : 'Leaving the park — screaming'}
+                    </Text>
+                    <Text style={s.hookMeta}>
+                      {recentLogs[0]
+                        ? `${RECENT_MODE_LABELS[recentLogs[0].mode] ?? recentLogs[0].mode} · ${formatTimeAgo(recentLogs[0].created_at)}`
+                        : '2 hours ago'}
+                    </Text>
                   </View>
-                </Pressable>
-              ))}
-            </View>
-
-            {/* ─── Recent section ─── */}
-            {recentLogs.length > 0 && (
-              <View style={s.recentSection}>
-                <Text style={s.sectionLabel}>RECENT</Text>
-                {recentLogs.map((log) => {
-                  const child = kidList.find((k: any) => k.id === log.child_profile_id);
-                  const title = log.trigger_category
-                    ? (RECENT_TRIGGER_LABELS[log.trigger_category] ?? log.trigger_category)
-                    : (log.situation_summary ?? '').slice(0, 42);
-                  const modeLabel = RECENT_MODE_LABELS[log.mode] ?? log.mode;
-                  return (
-                    <Pressable
-                      key={log.id}
-                      onPress={() => child && router.push(`/child/${child.id}` as any)}
-                      style={({ pressed }) => [s.recentCard, pressed && { opacity: 0.82 }]}
-                      accessibilityRole="button"
-                    >
-                      <View style={s.recentCardInner}>
-                        <Text style={s.recentTitle} numberOfLines={1}>{title}</Text>
-                        <Text style={s.recentMeta}>
-                          {modeLabel}{child ? ` · ${child.name}` : ''} · {formatTimeAgo(log.created_at)}
-                        </Text>
-                      </View>
-                      <Text style={s.recentArrow}>→</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            )}
-
-            {/* ─── Weekly Insight Pro card ─── */}
-            <Pressable
-              onPress={() => {
-                Haptics.selectionAsync();
-                router.push('/upgrade' as any);
-              }}
-              style={({ pressed }) => [s.insightCard, pressed && { opacity: 0.88 }]}
-              accessibilityRole="button"
-              accessibilityLabel="Weekly Insight — Sturdy+ feature"
-            >
-              <View style={s.insightHeader}>
-                <Text style={s.insightLabel}>WEEKLY INSIGHT</Text>
-                <View style={s.insightBadge}>
-                  <Text style={s.insightBadgeText}>🔒 Pro</Text>
+                  <Text style={s.hookArrow}>→</Text>
                 </View>
+              </Pressable>
+
+              {/* Card 2 — Common Triggers */}
+              <Text style={[s.hookSubheader, { marginTop: 22 }]}>PATTERNS</Text>
+              <View style={s.hookCard}>
+                <Text style={s.hookTitle}>Transitions, Hunger</Text>
+                <Text style={s.hookMeta}>Most common triggers this week</Text>
               </View>
-              <Text style={s.insightBody} numberOfLines={2}>
-                {activeChildId
-                  ? `A weekly pattern read for ${kidList.find((k: any) => k.id === activeChildId)?.name ?? 'your child'} — what keeps showing up and one thing to try.`
-                  : 'A weekly pattern read for your child — what keeps showing up and one thing to try.'}
-              </Text>
-            </Pressable>
+
+              {/* Card 3 — Sturdy+ Locked Insight */}
+              <Text style={[s.hookSubheader, { marginTop: 22, color: 'rgba(200,136,58,0.55)' }]}>STURDY+</Text>
+              <Pressable
+                onPress={() => { Haptics.selectionAsync(); router.push('/upgrade' as any); }}
+                style={({ pressed }) => [s.hookCardLocked, pressed && { opacity: 0.85 }]}
+                accessibilityRole="button"
+                accessibilityLabel="Unlock weekly insight with Sturdy+"
+              >
+                <View style={s.hookCardRow}>
+                  <Text style={s.hookLockedIcon}>🔒</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.hookLockedTitle} numberOfLines={2}>
+                      Bedtime is the pattern — but it's not really about bedtime...
+                    </Text>
+                    <Text style={s.hookLockedMeta}>Unlock weekly insight with Sturdy+</Text>
+                  </View>
+                </View>
+              </Pressable>
+
+            </View>
 
           </Animated.View>
           <View style={{ height: 40 }} />
@@ -911,40 +869,45 @@ const s = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // ─── Ask Sturdy pill ───
+  // ─── Ask Sturdy pill (prominent premium search bar) ───
   inputPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(14,10,6,0.72)',
+    backgroundColor: 'rgba(14,10,6,0.78)',
     borderWidth: 1,
-    borderColor: 'rgba(255,248,231,0.12)',
-    borderRadius: 30,
+    borderColor: 'rgba(255,248,231,0.14)',
+    borderRadius: 22,
     paddingLeft: 20,
-    paddingRight: 6,
-    paddingVertical: 6,
+    paddingRight: 8,
+    paddingVertical: 10,
     marginBottom: 24,
     gap: 10,
+    shadowColor: '#F4C878',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
   },
   inputPillFocused: {
-    borderColor: 'rgba(232,168,85,0.55)',
-    backgroundColor: 'rgba(14,10,6,0.88)',
+    borderColor: 'rgba(232,168,85,0.60)',
+    backgroundColor: 'rgba(14,10,6,0.92)',
+    shadowOpacity: 0.14,
   },
   pillInput: {
     flex: 1,
     color: '#FFF8E7',
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: F.body,
-    maxHeight: 44,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    lineHeight: 22,
   },
   pillSendBtn: {
-    borderRadius: 24,
+    borderRadius: 18,
     overflow: 'hidden',
   },
   pillSendGradient: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 46,
+    height: 46,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -962,185 +925,92 @@ const s = StyleSheet.create({
     paddingHorizontal: 4,
   },
 
-  // ─── SOS Hero Card ───
-  sosHeroCard: {
-    borderRadius: 20,
-    padding: 24,
-    paddingTop: 20,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(232,116,97,0.24)',
-    minHeight: 148,
-    justifyContent: 'flex-end',
-  },
-  sosHeroDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#E87461',
-    marginBottom: 10,
-    shadowColor: '#E87461',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.80,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  sosHeroLabel: {
-    fontFamily: F.label,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 2.2,
-    color: 'rgba(232,116,97,0.72)',
-    marginBottom: 4,
-  },
-  sosHeroTitle: {
-    fontFamily: F.heading,
-    fontSize: 32,
-    color: 'rgba(255,248,230,0.94)',
-    letterSpacing: -0.6,
-    lineHeight: 38,
-    marginBottom: 6,
-  },
-  sosHeroDesc: {
-    fontFamily: F.body,
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.58)',
-    lineHeight: 20,
-  },
-
-  // ─── Strategy Stack ───
-  strategyStack: { gap: 10, marginTop: 2 },
-  strategyCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    borderWidth: 1,
-    gap: 16,
-  },
-  strategyDot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    flexShrink: 0,
-  },
-  strategyTextGroup: { flex: 1, gap: 3 },
-  strategyName: {
-    fontFamily: F.bodySemi,
-    fontSize: 15,
-  },
-  strategyDesc: {
-    fontFamily: F.body,
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.52)',
-    lineHeight: 18,
-  },
-  // ─── Child chips ───
-  chipsScroll: { marginBottom: 20 },
-  chipsRow: { flexDirection: 'row', gap: 8, paddingRight: 4 },
-  childChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderColor: 'rgba(255,255,255,0.10)',
-  },
-  childChipActive: {
-    backgroundColor: 'rgba(200,136,58,0.14)',
-    borderColor: 'rgba(200,136,58,0.40)',
-  },
-  chipDot: { width: 7, height: 7, borderRadius: 4 },
-  chipLabel: {
-    fontFamily: F.bodyMedium,
-    fontSize: 13,
-    color: 'rgba(255,248,230,0.50)',
-  },
-  chipLabelActive: { color: 'rgba(255,248,230,0.92)' },
-
-  // ─── Shared section label ───
-  sectionLabel: {
+  // ─── Dashboard hook cards ───
+  hookStack: { gap: 0 },
+  hookSubheader: {
     fontFamily: F.label,
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 1.4,
     color: 'rgba(255,255,255,0.28)',
-    marginBottom: 10,
+    marginBottom: 8,
   },
-
-  // ─── Recent section ───
-  recentSection: { marginTop: 28 },
-  recentCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  hookCard: {
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.07)',
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 16,
-    marginBottom: 8,
   },
-  recentCardInner: { flex: 1, gap: 3 },
-  recentTitle: {
+  hookCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  hookTitle: {
     fontFamily: F.bodySemi,
     fontSize: 14,
-    color: 'rgba(255,248,230,0.86)',
+    color: 'rgba(255,248,230,0.88)',
+    marginBottom: 3,
   },
-  recentMeta: {
+  hookMeta: {
     fontFamily: F.body,
     fontSize: 12,
     color: 'rgba(255,255,255,0.36)',
   },
-  recentArrow: {
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.20)',
-    marginLeft: 8,
+  hookArrow: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.22)',
+    marginLeft: 4,
   },
-
-  // ─── Weekly Insight Pro card ───
-  insightCard: {
-    marginTop: 10,
+  hookCardLocked: {
     backgroundColor: 'rgba(200,136,58,0.07)',
     borderWidth: 1,
-    borderColor: 'rgba(200,136,58,0.18)',
-    borderRadius: 16,
-    padding: 18,
-    gap: 8,
+    borderColor: 'rgba(200,136,58,0.20)',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
-  insightHeader: {
+  hookLockedIcon: { fontSize: 16, marginRight: 2 },
+  hookLockedTitle: {
+    fontFamily: F.body,
+    fontStyle: 'italic',
+    fontSize: 13,
+    color: 'rgba(200,136,58,0.68)',
+    lineHeight: 19,
+    marginBottom: 4,
+  },
+  hookLockedMeta: {
+    fontFamily: F.body,
+    fontSize: 11,
+    color: 'rgba(200,136,58,0.40)',
+  },
+  // ─── Child chips (sleek, scaled) ───
+  chipsScroll: { marginBottom: 16 },
+  chipsRow: { flexDirection: 'row', gap: 6, paddingRight: 4 },
+  childChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.09)',
   },
-  insightLabel: {
-    fontFamily: F.label,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.4,
-    color: 'rgba(244,192,106,0.52)',
+  childChipActive: {
+    backgroundColor: 'rgba(200,136,58,0.13)',
+    borderColor: 'rgba(200,136,58,0.38)',
   },
-  insightBadge: {
-    backgroundColor: 'rgba(200,136,58,0.22)',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+  chipDot: { width: 6, height: 6, borderRadius: 3 },
+  chipLabel: {
+    fontFamily: F.bodyMedium,
+    fontSize: 11,
+    color: 'rgba(255,248,230,0.48)',
   },
-  insightBadgeText: {
-    fontFamily: F.label,
-    fontSize: 10,
-    color: C.amber,
-  },
-  insightBody: {
-    fontFamily: F.body,
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.38)',
-    lineHeight: 19,
-  },
+  chipLabelActive: { color: 'rgba(255,248,230,0.90)' },
 
   // ─── Empty state ───
   emptyWrap: { flex: 1, paddingHorizontal: 24, gap: 14, justifyContent: 'center' },
