@@ -253,6 +253,41 @@ const CHILD_GRADIENTS: Array<[string, string]> = [
 ];
 
 // ═══════════════════════════════════════════════
+// RECENT LOGS
+// ═══════════════════════════════════════════════
+
+type RecentLog = {
+  id: string;
+  mode: string;
+  trigger_category: string | null;
+  situation_summary: string | null;
+  created_at: string;
+  child_profile_id: string | null;
+};
+
+function formatTimeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const h = Math.floor(diff / 3_600_000);
+  const d = Math.floor(diff / 86_400_000);
+  if (h < 1) return 'Just now';
+  if (h < 24) return `${h}h ago`;
+  if (d === 1) return 'Yesterday';
+  if (d < 7) return `${d}d ago`;
+  return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+const RECENT_MODE_LABELS: Record<string, string> = {
+  sos: 'SOS', reconnect: 'Repair', understand: 'Understand', conversation: 'Plan a talk',
+};
+
+const RECENT_TRIGGER_LABELS: Record<string, string> = {
+  leaving_places: 'Leaving places', bedtime: 'Bedtime', homework: 'Homework',
+  screen_time: 'Screen time', mealtime: 'Mealtime', sharing: 'Sharing',
+  sibling: 'Sibling conflict', morning_routine: 'Morning routine',
+  public_meltdown: 'Public meltdown', separation: 'Separation',
+};
+
+// ═══════════════════════════════════════════════
 // CHILD AUTO-DETECTION
 // ═══════════════════════════════════════════════
 
@@ -348,6 +383,8 @@ export default function HomeScreen() {
 
   const [pickerMode, setPickerMode] = useState<OutcomeMode | null>(null);
   const [activeScrollIndex, setActiveScrollIndex] = useState(0);
+  const [activeChildId, setActiveChildId] = useState<string | null>(null);
+  const [recentLogs, setRecentLogs] = useState<RecentLog[]>([]);
 
   // Entry animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -388,11 +425,26 @@ export default function HomeScreen() {
     } catch { /* non-blocking */ }
   }, [session?.user?.id, session?.user?.email]);
 
+  // ─── Fetch recent interaction logs ───
+  const fetchRecentLogs = useCallback(async () => {
+    if (!session?.user?.id) return;
+    try {
+      const { data } = await supabase
+        .from('interaction_logs')
+        .select('id, mode, trigger_category, situation_summary, created_at, child_profile_id')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false })
+        .limit(3);
+      if (data) setRecentLogs(data);
+    } catch { /* non-blocking */ }
+  }, [session?.user?.id]);
+
   useFocusEffect(
     useCallback(() => {
       setGreeting(GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
       fetchName();
-    }, [fetchName]),
+      fetchRecentLogs();
+    }, [fetchName, fetchRecentLogs]),
   );
 
   // ─── Handlers ───
@@ -418,8 +470,9 @@ export default function HomeScreen() {
   const handleSelectOutcome = (mode: OutcomeMode) => {
     Haptics.selectionAsync();
     if (kidList.length === 0) { router.push('/child/new'); return; }
-    if (kidList.length === 1) {
-      router.push({ pathname: `/child/${kidList[0].id}` as any, params: { mode } });
+    const targetId = activeChildId ?? (kidList.length === 1 ? kidList[0].id : null);
+    if (targetId) {
+      router.push({ pathname: `/child/${targetId}` as any, params: { mode } });
       return;
     }
     setPickerMode(mode);
@@ -495,6 +548,13 @@ export default function HomeScreen() {
   const kidList = Array.isArray(children) ? children : [];
   const canSend = question.trim().length > 0 && !sending;
 
+  // Auto-select sole child so chips + routing work without manual tap
+  useEffect(() => {
+    if (kidList.length === 1 && activeChildId === null) {
+      setActiveChildId(kidList[0].id);
+    }
+  }, [kidList.length]);
+
   // ─── Loading ───
   if (isLoadingChild) {
   return (
@@ -563,6 +623,37 @@ return (
               <Text style={s.greetingText}>{greeting}, {displayName}.</Text>
               <Text style={s.subGreeting}>What's happening right now?</Text>
             </View>
+
+            {/* ─── Child selector chips ─── */}
+            {kidList.length > 0 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={s.chipsRow}
+                style={s.chipsScroll}
+              >
+                {kidList.map((kid: any) => {
+                  const isActive = activeChildId === kid.id;
+                  return (
+                    <Pressable
+                      key={kid.id}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setActiveChildId(isActive ? null : kid.id);
+                      }}
+                      style={[s.childChip, isActive && s.childChipActive]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Select ${kid.name}`}
+                    >
+                      <View style={[s.chipDot, { backgroundColor: isActive ? C.amber : 'rgba(255,255,255,0.22)' }]} />
+                      <Text style={[s.chipLabel, isActive && s.chipLabelActive]}>
+                        {kid.name} · {kid.childAge}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            )}
 
             {/* ─── Ask Sturdy pill ─── */}
             <View style={[s.inputPill, inputFocused && s.inputPillFocused]}>
@@ -649,6 +740,59 @@ return (
                 </Pressable>
               ))}
             </View>
+
+            {/* ─── Recent section ─── */}
+            {recentLogs.length > 0 && (
+              <View style={s.recentSection}>
+                <Text style={s.sectionLabel}>RECENT</Text>
+                {recentLogs.map((log) => {
+                  const child = kidList.find((k: any) => k.id === log.child_profile_id);
+                  const title = log.trigger_category
+                    ? (RECENT_TRIGGER_LABELS[log.trigger_category] ?? log.trigger_category)
+                    : (log.situation_summary ?? '').slice(0, 42);
+                  const modeLabel = RECENT_MODE_LABELS[log.mode] ?? log.mode;
+                  return (
+                    <Pressable
+                      key={log.id}
+                      onPress={() => child && router.push(`/child/${child.id}` as any)}
+                      style={({ pressed }) => [s.recentCard, pressed && { opacity: 0.82 }]}
+                      accessibilityRole="button"
+                    >
+                      <View style={s.recentCardInner}>
+                        <Text style={s.recentTitle} numberOfLines={1}>{title}</Text>
+                        <Text style={s.recentMeta}>
+                          {modeLabel}{child ? ` · ${child.name}` : ''} · {formatTimeAgo(log.created_at)}
+                        </Text>
+                      </View>
+                      <Text style={s.recentArrow}>→</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+
+            {/* ─── Weekly Insight Pro card ─── */}
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push('/upgrade' as any);
+              }}
+              style={({ pressed }) => [s.insightCard, pressed && { opacity: 0.88 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Weekly Insight — Sturdy+ feature"
+            >
+              <View style={s.insightHeader}>
+                <Text style={s.insightLabel}>WEEKLY INSIGHT</Text>
+                <View style={s.insightBadge}>
+                  <Text style={s.insightBadgeText}>🔒 Pro</Text>
+                </View>
+              </View>
+              <Text style={s.insightBody} numberOfLines={2}>
+                {activeChildId
+                  ? `A weekly pattern read for ${kidList.find((k: any) => k.id === activeChildId)?.name ?? 'your child'} — what keeps showing up and one thing to try.`
+                  : 'A weekly pattern read for your child — what keeps showing up and one thing to try.'}
+              </Text>
+            </Pressable>
 
           </Animated.View>
           <View style={{ height: 40 }} />
@@ -892,6 +1036,112 @@ const s = StyleSheet.create({
     color: 'rgba(255,255,255,0.52)',
     lineHeight: 18,
   },
+  // ─── Child chips ───
+  chipsScroll: { marginBottom: 20 },
+  chipsRow: { flexDirection: 'row', gap: 8, paddingRight: 4 },
+  childChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.10)',
+  },
+  childChipActive: {
+    backgroundColor: 'rgba(200,136,58,0.14)',
+    borderColor: 'rgba(200,136,58,0.40)',
+  },
+  chipDot: { width: 7, height: 7, borderRadius: 4 },
+  chipLabel: {
+    fontFamily: F.bodyMedium,
+    fontSize: 13,
+    color: 'rgba(255,248,230,0.50)',
+  },
+  chipLabelActive: { color: 'rgba(255,248,230,0.92)' },
+
+  // ─── Shared section label ───
+  sectionLabel: {
+    fontFamily: F.label,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.4,
+    color: 'rgba(255,255,255,0.28)',
+    marginBottom: 10,
+  },
+
+  // ─── Recent section ───
+  recentSection: { marginTop: 28 },
+  recentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  recentCardInner: { flex: 1, gap: 3 },
+  recentTitle: {
+    fontFamily: F.bodySemi,
+    fontSize: 14,
+    color: 'rgba(255,248,230,0.86)',
+  },
+  recentMeta: {
+    fontFamily: F.body,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.36)',
+  },
+  recentArrow: {
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.20)',
+    marginLeft: 8,
+  },
+
+  // ─── Weekly Insight Pro card ───
+  insightCard: {
+    marginTop: 10,
+    backgroundColor: 'rgba(200,136,58,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(200,136,58,0.18)',
+    borderRadius: 16,
+    padding: 18,
+    gap: 8,
+  },
+  insightHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  insightLabel: {
+    fontFamily: F.label,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.4,
+    color: 'rgba(244,192,106,0.52)',
+  },
+  insightBadge: {
+    backgroundColor: 'rgba(200,136,58,0.22)',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  insightBadgeText: {
+    fontFamily: F.label,
+    fontSize: 10,
+    color: C.amber,
+  },
+  insightBody: {
+    fontFamily: F.body,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.38)',
+    lineHeight: 19,
+  },
+
   // ─── Empty state ───
   emptyWrap: { flex: 1, paddingHorizontal: 24, gap: 14, justifyContent: 'center' },
   emptyTitle: {
