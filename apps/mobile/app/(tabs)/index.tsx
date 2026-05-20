@@ -294,6 +294,10 @@ const RECENT_TRIGGER_LABELS: Record<string, string> = {
   public_meltdown: 'Public meltdown', separation: 'Separation',
 };
 
+const FEEDBACK_OUTCOME_LABELS: Record<string, string> = {
+  calmed: 'Calmed down', escalated: 'Escalated', ignored: 'Ignored', ongoing: 'Still going',
+};
+
 // ═══════════════════════════════════════════════
 // CHILD AUTO-DETECTION
 // ═══════════════════════════════════════════════
@@ -392,6 +396,7 @@ export default function HomeScreen() {
   const [activeScrollIndex, setActiveScrollIndex] = useState(0);
   const [activeChildId, setActiveChildId] = useState<string | null>(null);
   const [recentLogs, setRecentLogs] = useState<RecentLog[]>([]);
+  const [childFeedback, setChildFeedback] = useState<Record<string, { helpful: string; outcome: string | null }>>({});
 
   // Entry animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -446,12 +451,36 @@ export default function HomeScreen() {
     } catch { /* non-blocking */ }
   }, [session?.user?.id]);
 
+  // ─── Fetch most recent feedback per child ───
+  const fetchChildFeedback = useCallback(async () => {
+    if (!session?.user?.id) return;
+    try {
+      const { data } = await supabase
+        .from('script_feedback')
+        .select('child_profile_id, helpful, outcome, created_at')
+        .eq('user_id', session.user.id)
+        .not('child_profile_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (data) {
+        const byChild: Record<string, { helpful: string; outcome: string | null }> = {};
+        for (const row of data) {
+          if (row.child_profile_id && !byChild[row.child_profile_id]) {
+            byChild[row.child_profile_id] = { helpful: row.helpful, outcome: row.outcome ?? null };
+          }
+        }
+        setChildFeedback(byChild);
+      }
+    } catch { /* non-blocking */ }
+  }, [session?.user?.id]);
+
   useFocusEffect(
     useCallback(() => {
       setGreeting(GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
       fetchName();
       fetchRecentLogs();
-    }, [fetchName, fetchRecentLogs]),
+      fetchChildFeedback();
+    }, [fetchName, fetchRecentLogs, fetchChildFeedback]),
   );
 
   // ─── Handlers ───
@@ -779,6 +808,25 @@ return (
                         <Text style={s.recentMeta}>
                           {modeLabel}{child ? ` · ${child.name}` : ''} · {formatTimeAgo(log.created_at)}
                         </Text>
+                        {(() => {
+                          const fb = log.child_profile_id ? childFeedback[log.child_profile_id] : undefined;
+                          if (!fb) return null;
+                          const isYes = fb.helpful === 'yes';
+                          const isSomewhat = fb.helpful === 'somewhat';
+                          const pillColor = isYes ? 'rgba(141,184,154,0.18)' : isSomewhat ? 'rgba(200,136,58,0.16)' : 'rgba(232,116,97,0.16)';
+                          const pillBorder = isYes ? 'rgba(141,184,154,0.32)' : isSomewhat ? 'rgba(200,136,58,0.30)' : 'rgba(232,116,97,0.30)';
+                          const textColor = isYes ? '#8DB89A' : isSomewhat ? C.amber : '#E87461';
+                          const label = isYes ? '✓ Helped' : isSomewhat ? '~ Somewhat' : '✕ Didn\'t help';
+                          const outcomeLabel = fb.outcome ? FEEDBACK_OUTCOME_LABELS[fb.outcome] : null;
+                          return (
+                            <View style={[s.feedbackPill, { backgroundColor: pillColor, borderColor: pillBorder }]}>
+                              <Text style={[s.feedbackPillText, { color: textColor }]}>{label}</Text>
+                              {outcomeLabel ? (
+                                <Text style={[s.feedbackOutcomeText, { color: textColor }]}>→ {outcomeLabel}</Text>
+                              ) : null}
+                            </View>
+                          );
+                        })()}
                       </View>
                       <Text style={s.recentArrow}>→</Text>
                     </Pressable>
@@ -1172,6 +1220,29 @@ const s = StyleSheet.create({
     fontSize: 13,
     color: 'rgba(255,255,255,0.38)',
     lineHeight: 19,
+  },
+
+  // ─── Feedback pill (recent cards) ───
+  feedbackPill: {
+    flexDirection: 'row',
+    alignSelf: 'flex-start',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 7,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  feedbackPillText: {
+    fontFamily: F.bodyMedium,
+    fontSize: 11,
+    letterSpacing: 0.1,
+  },
+  feedbackOutcomeText: {
+    fontFamily: F.body,
+    fontSize: 10,
+    opacity: 0.75,
   },
 
   // ─── Empty state ───
