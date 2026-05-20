@@ -84,11 +84,10 @@ async function logInteractionEvent(data: {
   conversationId?:  string | null;
   mode:             string | null;
   triggerCategory:  string | null;
-  intensityInferred: number | null;
+  intensity:        number | null;
   isFollowup:       boolean;
   followupType?:    string | null;
   situationSummary: string;
-  messageLength:    number;
 }) {
   if (!SUPABASE_URL || !SUPABASE_KEY || !data.userId) return;
   try {
@@ -106,11 +105,10 @@ async function logInteractionEvent(data: {
         conversation_id:   data.conversationId ?? null,
         mode:              data.mode ?? "sos",
         trigger_category:  data.triggerCategory,
-        intensity_inferred: data.intensityInferred,
+        intensity:         data.intensity,
         is_followup:       data.isFollowup,
         followup_type:     data.followupType ?? null,
         situation_summary: data.situationSummary,
-        message_length:    data.messageLength,
       }),
     });
   } catch { console.warn("[STURDY_INTERACTION] Failed to log"); }
@@ -349,9 +347,6 @@ serve(async (req) => {
     // Detect trigger category from message
     const triggerCategory = classifyTrigger(input.message);
 
-    // Word count — no content stored
-    const messageLength = input.message.trim().split(/\s+/).length;
-
     // Log usage event (quota tracking)
     logUsageEvent({
       userId:         input.userId,
@@ -362,15 +357,14 @@ serve(async (req) => {
 
     // Log interaction event (child profile + triggers)
     logInteractionEvent({
-      userId:            input.userId,
-      childProfileId:    input.childProfileId,
-      mode:              input.mode,
+      userId:           input.userId,
+      childProfileId:   input.childProfileId,
+      mode:             input.mode,
       triggerCategory,
-      intensityInferred: input.intensity,
-      isFollowup:        input.isFollowUp ?? false,
-      followupType:      input.followUpType,
-      situationSummary:  (result as any).situation_summary ?? "",
-      messageLength,
+      intensity:        input.intensity,
+      isFollowup:       input.isFollowUp ?? false,
+      followupType:     input.followUpType,
+      situationSummary: (result as any).situation_summary ?? "",
     });
 
     return jsonRes({ response_type: "normal", ...result as object }, 200);
