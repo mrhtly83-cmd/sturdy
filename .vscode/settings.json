@@ -1,0 +1,4 @@
+{
+    "chat.editor.fontSize": 12,
+    "chat.planAgent.defaultModel": "Claude Haiku 4.5 (claude-code)"
+}
