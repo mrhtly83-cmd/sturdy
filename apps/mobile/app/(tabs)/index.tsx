@@ -440,18 +440,21 @@ const fetchRecentLogs = useCallback(async () => {
       .order('created_at', { ascending: false })
       .limit(20);
     if (data && Array.isArray(data)) {
-      const byChild: Record<string, RecentLog> = {};
+  const byChild: Record<string, RecentLog> = {};
       for (const log of data) {
         if (log.child_profile_id && !byChild[log.child_profile_id]) {
           byChild[log.child_profile_id] = log;
         }
       }
-      setRecentLogsByChild(byChild);
+     setRecentLogsByChild(byChild);
       setRecentLogs(data.slice(0, 3));
+    } else {
+      alert('No data returned from interaction_logs');
     }
-  } catch { }
+  } catch (e: any) {
+    alert('Fetch error: ' + e.message);
+  }
 }, [session?.user?.id]);
-
 
 // ─── Helpers ───
 const displayName = firstName ?? 'there';
@@ -893,24 +896,41 @@ return (
   );
 })()}
 
-              {/* Card 3 — Sturdy+ Locked Insight */}
-              <Text style={[s.hookSubheader, { marginTop: 22, color: 'rgba(200,136,58,0.55)' }]}>STURDY+</Text>
-              <Pressable
-                onPress={() => { Haptics.selectionAsync(); router.push('/upgrade' as any); }}
-                style={({ pressed }) => [s.hookCardLocked, pressed && { opacity: 0.85 }]}
-                accessibilityRole="button"
-                accessibilityLabel="Unlock weekly insight with Sturdy+"
-              >
-                <View style={s.hookCardRow}>
-                  <Text style={s.hookLockedIcon}>🔒</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.hookLockedTitle} numberOfLines={2}>
-                      Bedtime is the pattern — but it's not really about bedtime...
-                    </Text>
-                    <Text style={s.hookLockedMeta}>Unlock weekly insight with Sturdy+</Text>
-                  </View>
-                </View>
-              </Pressable>
+              {/* Card 3 — Sturdy+ Locked Insight (per child) */}
+<Text style={[s.hookSubheader, { marginTop: 22, color: 'rgba(200,136,58,0.55)' }]}>STURDY+</Text>
+{(() => {
+  const activeKid = kidList[activeSessionIndex];
+  const mockInsights: Record<string, string> = {};
+  kidList.forEach((kid: any) => {
+    const triggers = childInsights[kid.id]?.topTriggers ?? [];
+    if (triggers.length > 0) {
+      mockInsights[kid.id] = `${triggers[0].label} is the pattern — but it's not really about ${triggers[0].label.toLowerCase()}...`;
+    } else {
+      mockInsights[kid.id] = 'A weekly pattern insight will appear here soon...';
+    }
+  });
+  const quote = activeKid ? (mockInsights[activeKid.id] ?? 'A weekly pattern insight will appear here soon...') : 'A weekly pattern insight will appear here soon...';
+
+  return (
+    <Pressable
+      onPress={() => { Haptics.selectionAsync(); router.push('/upgrade' as any); }}
+      style={({ pressed }) => [s.hookCardLocked, pressed && { opacity: 0.85 }]}
+      accessibilityRole="button"
+      accessibilityLabel={`Unlock weekly insight for ${activeKid?.name ?? 'your child'}`}
+    >
+      <View style={s.hookCardRow}>
+        <Text style={s.hookLockedIcon}>🔒</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={s.hookLockedMeta}>Weekly insight for {activeKid?.name ?? 'your child'}</Text>
+          <Text style={s.hookLockedTitle} numberOfLines={2}>
+            "{quote}"
+          </Text>
+          <Text style={[s.hookLockedMeta, { marginTop: 4 }]}>Unlock full insight with Sturdy+ →</Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+})()}
 
             </View>
 
