@@ -112,7 +112,7 @@ export default function ChildProfileScreen() {
   const initial = (child?.name?.trim()?.[0] ?? '?').toUpperCase();
   const totalInteractions = insights?.totalInteractions ?? 0;
   const topTriggers = insights?.topTriggers ?? [];
-  const isNewProfile = totalInteractions < 3 && !isLoading;
+  const isNewProfile = totalInteractions < 0 && !isLoading;
 
   return (
     <View style={s.root}>

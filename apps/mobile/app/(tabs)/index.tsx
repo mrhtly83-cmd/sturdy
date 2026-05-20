@@ -41,6 +41,7 @@ import { ImageBackground } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
 import { useChildProfile } from '../../src/context/ChildProfileContext';
 import { supabase } from '../../src/lib/supabase';
+import { loadChildInsights, type ChildInsights } from '../../src/lib/loadChildInsights';
 import { getQuestionResponse, CrisisDetectedError, RateLimitError } from '../../src/lib/api';
 import { colors as C, fonts as F } from '../../src/theme';
 
@@ -48,7 +49,7 @@ import { colors as C, fonts as F } from '../../src/theme';
 // CONSTANTS
 // ═══════════════════════════════════════════════
 
-const GREETINGS = ['Hi', 'Hello', 'Hey'];
+export const GREETINGS = ['Hi', 'Hello', 'Hey'];
 const MODE_CARD_WIDTH = 150; // 140 card + 10 gap
 
 // ═══════════════════════════════════════════════
@@ -141,8 +142,8 @@ function FloatingParticle({ config }: { config: ParticleConfig }) {
     };
     startLoop();
     return () => anim.stopAnimation();
-  }, []);
-
+  }, []); 
+   
   const particleOpacity = anim.interpolate({
     inputRange: [0, 0.12, 0.88, 1],
     outputRange: [0, config.opacity, config.opacity, 0],
@@ -386,51 +387,50 @@ export default function HomeScreen() {
   const [activeChildId, setActiveChildId] = useState<string | null>(null);
   const [recentLogs, setRecentLogs] = useState<RecentLog[]>([]);
   const [recentLogsByChild, setRecentLogsByChild] = useState<Record<string, RecentLog>>({});
+  const [childInsights, setChildInsights] = useState<Record<string, ChildInsights>>({});
 const [activeSessionIndex, setActiveSessionIndex] = useState(0);
 const sessionAnim = useRef(new Animated.Value(1)).current;
 const autoSlideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Entry animations
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(20)).current;
+const fadeAnim = useRef(new Animated.Value(0)).current;
+const slideAnim = useRef(new Animated.Value(20)).current;
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1, duration: 600, useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0, duration: 600, useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
+useEffect(() => {
+  Animated.parallel([
+    Animated.timing(fadeAnim, {
+      toValue: 1, duration: 600, useNativeDriver: true,
+    }),
+    Animated.timing(slideAnim, {
+      toValue: 0, duration: 600, useNativeDriver: true,
+    }),
+  ]).start();
+}, []);
 
-  // ─── Fetch parent's name ───
-  const fetchName = useCallback(async () => {
-    if (!session?.user?.id) return;
-    try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', session.user.id)
-        .single();
-
-      if (data?.full_name) {
-        const first = String(data.full_name).trim().split(/\s+/)[0];
-        if (first) { setFirstName(first); return; }
-      }
-
-      const email = session.user.email ?? '';
-      const local = email.split('@')[0] ?? '';
-      const cleaned = local.split(/[._+-]/)[0] ?? '';
-      if (cleaned) {
-        setFirstName(cleaned.charAt(0).toUpperCase() + cleaned.slice(1));
-      }
-    } catch { /* non-blocking */ }
-  }, [session?.user?.id, session?.user?.email]);
+ // ─── Fetch parent's name ───
+const fetchName = useCallback(async () => {
+  if (!session?.user?.id) return;
+  try {
+    const { data } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', session.user.id)
+      .single();
+    if (data?.full_name) {
+      const first = String(data.full_name).trim().split(/\s+/)[0];
+      if (first) { setFirstName(first); return; }
+    }
+    const email = session.user.email ?? '';
+    const local = email.split('@')[0] ?? '';
+    const cleaned = local.split(/[._+-]/)[0] ?? '';
+    if (cleaned) {
+      setFirstName(cleaned.charAt(0).toUpperCase() + cleaned.slice(1));
+    }
+  } catch { }
+}, [session?.user?.id, session?.user?.email]);
 
   // ─── Fetch recent interaction logs ───
-  const fetchRecentLogs = useCallback(async () => {
+const fetchRecentLogs = useCallback(async () => {
   if (!session?.user?.id) return;
   try {
     const { data } = await supabase
@@ -439,7 +439,6 @@ const autoSlideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
       .eq('user_id', session.user.id)
       .order('created_at', { ascending: false })
       .limit(20);
-
     if (data && Array.isArray(data)) {
       const byChild: Record<string, RecentLog> = {};
       for (const log of data) {
@@ -453,115 +452,131 @@ const autoSlideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   } catch { }
 }, [session?.user?.id]);
 
-  useFocusEffect(
-    useCallback(() => {
-      setGreeting(GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
-      fetchName();
-      fetchRecentLogs();
-    }, [fetchName, fetchRecentLogs]),
+
+// ─── Helpers ───
+const displayName = firstName ?? 'there';
+const kidList = Array.isArray(children) ? children : [];
+const canSend = question.trim().length > 0 && !sending;
+
+// ─── Fetch child insights (triggers) ───
+const fetchChildInsights = useCallback(async () => {
+  if (!kidList.length) return;
+  const results: Record<string, ChildInsights> = {};
+  await Promise.all(
+    kidList.map(async (kid: any) => {
+      const insights = await loadChildInsights(kid.id);
+      results[kid.id] = insights;
+    })
   );
+  setChildInsights(results);
+}, [kidList.length]);
 
-  // ─── Handlers ───
-  const handleOpenChild = (childId: string) => {
-    Haptics.selectionAsync();
-    router.push(`/child/${childId}` as any);
-  };
+// ─── Focus effect ───
+useFocusEffect(
+  useCallback(() => {
+    fetchName();
+    fetchRecentLogs();
+    fetchChildInsights();
+  }, [fetchName, fetchRecentLogs, fetchChildInsights]),
+);
 
-  const handleAddChild = () => {
-    Haptics.selectionAsync();
-    router.push('/child/new');
-  };
+// ─── Handlers ───
+const handleOpenChild = (childId: string) => {
+  Haptics.selectionAsync();
+  router.push(`/child/${childId}` as any);
+};
 
-  const handleManageChildren = () => {
-    Haptics.selectionAsync();
-    if (kidList.length === 1 && kidList[0].id) {
-      router.push(`/child/${kidList[0].id}` as any);
-    } else if (kidList.length > 1) {
-      setPickerMode('sos');
+const handleAddChild = () => {
+  Haptics.selectionAsync();
+  router.push('/child/new');
+};
+
+const handleManageChildren = () => {
+  Haptics.selectionAsync();
+  if (kidList.length === 1 && kidList[0].id) {
+    router.push(`/child/${kidList[0].id}` as any);
+  } else if (kidList.length > 1) {
+    setPickerMode('sos');
+  }
+};
+
+const handleSelectOutcome = (mode: OutcomeMode) => {
+  Haptics.selectionAsync();
+  if (kidList.length === 0) { router.push('/child/new'); return; }
+  const targetId = activeChildId ?? (kidList.length === 1 ? kidList[0].id : null);
+  if (targetId) {
+    router.push({ pathname: `/child/${targetId}` as any, params: { mode } });
+    return;
+  }
+  setPickerMode(mode);
+};
+
+const handlePickerSelectChild = (childId: string) => {
+  if (!pickerMode) return;
+  Haptics.selectionAsync();
+  const mode = pickerMode;
+  setPickerMode(null);
+  router.push({ pathname: `/child/${childId}` as any, params: { mode } });
+};
+
+const handlePickerCancel = () => setPickerMode(null);
+
+const handleModeScroll = (event: any) => {
+  const x = event.nativeEvent.contentOffset.x;
+  setActiveScrollIndex(Math.min(Math.round(x / MODE_CARD_WIDTH), OUTCOMES.length - 1));
+};
+
+const handleSend = async () => {
+  const msg = question.trim();
+  if (!msg || sending) return;
+  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  setError('');
+  setSending(true);
+
+  try {
+    const detectedChild = detectChildFromMessage(msg, kidList)
+      ? kidList.find((k: any) => k.id === detectChildFromMessage(msg, kidList))
+      : kidList.length === 1 ? kidList[0] : null;
+
+    const result = await getQuestionResponse({
+      message:        msg,
+      userId:         session?.user?.id,
+      childName:      detectedChild?.name ?? null,
+      childAge:       detectedChild?.childAge ?? null,
+      childProfileId: detectedChild?.id ?? null,
+    });
+
+    setQuestion('');
+
+    const responsePayload = result.response ?? '';
+    const thoughtId = result.thought_id ?? null;
+    if (thoughtId) {
+      router.push({
+        pathname: `/thought/${thoughtId}` as any,
+        params: { fallbackResponse: responsePayload, prompt: msg },
+      });
+    } else {
+      router.push({
+        pathname: '/thought/inline' as any,
+        params: { fallbackResponse: responsePayload, prompt: msg },
+      });
     }
-  };
-
-  const handleSelectOutcome = (mode: OutcomeMode) => {
-    Haptics.selectionAsync();
-    if (kidList.length === 0) { router.push('/child/new'); return; }
-    const targetId = activeChildId ?? (kidList.length === 1 ? kidList[0].id : null);
-    if (targetId) {
-      router.push({ pathname: `/child/${targetId}` as any, params: { mode } });
+  } catch (err) {
+    if (err instanceof CrisisDetectedError) {
+      router.push({
+        pathname: '/crisis',
+        params: { crisisType: err.crisisType, riskLevel: err.riskLevel },
+      });
       return;
     }
-    setPickerMode(mode);
-  };
+    if (err instanceof RateLimitError) { setError(err.message); return; }
+    setError("Couldn't get a response right now. Please try again.");
+  } finally {
+    setSending(false);
+  }
+};
 
-  const handlePickerSelectChild = (childId: string) => {
-    if (!pickerMode) return;
-    Haptics.selectionAsync();
-    const mode = pickerMode;
-    setPickerMode(null);
-    router.push({ pathname: `/child/${childId}` as any, params: { mode } });
-  };
-
-  const handlePickerCancel = () => setPickerMode(null);
-
-  const handleModeScroll = (event: any) => {
-    const x = event.nativeEvent.contentOffset.x;
-    setActiveScrollIndex(Math.min(Math.round(x / MODE_CARD_WIDTH), OUTCOMES.length - 1));
-  };
-
-  const handleSend = async () => {
-    const msg = question.trim();
-    if (!msg || sending) return;
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setError('');
-    setSending(true);
-
-    try {
-      const detectedChild = detectChildFromMessage(msg, kidList)
-        ? kidList.find((k: any) => k.id === detectChildFromMessage(msg, kidList))
-        : kidList.length === 1 ? kidList[0] : null;
-
-      const result = await getQuestionResponse({
-        message:        msg,
-        userId:         session?.user?.id,
-        childName:      detectedChild?.name ?? null,
-        childAge:       detectedChild?.childAge ?? null,
-        childProfileId: detectedChild?.id ?? null,
-      });
-
-      setQuestion('');
-
-      const responsePayload = result.response ?? '';
-      const thoughtId = result.thought_id ?? null;
-      if (thoughtId) {
-        router.push({
-          pathname: `/thought/${thoughtId}` as any,
-          params: { fallbackResponse: responsePayload, prompt: msg },
-        });
-      } else {
-        router.push({
-          pathname: '/thought/inline' as any,
-          params: { fallbackResponse: responsePayload, prompt: msg },
-        });
-      }
-    } catch (err) {
-      if (err instanceof CrisisDetectedError) {
-        router.push({
-          pathname: '/crisis',
-          params: { crisisType: err.crisisType, riskLevel: err.riskLevel },
-        });
-        return;
-      }
-      if (err instanceof RateLimitError) { setError(err.message); return; }
-      setError("Couldn't get a response right now. Please try again.");
-    } finally {
-      setSending(false);
-    }
-  };
-
-  // ─── Helpers ───
-  const displayName = firstName ?? 'there';
-  const kidList = Array.isArray(children) ? children : [];
-  const canSend = question.trim().length > 0 && !sending;
-  const handleSessionSwipe = (direction: 'left' | 'right') => {
+const handleSessionSwipe = (direction: 'left' | 'right') => {
   if (autoSlideTimer.current) clearTimeout(autoSlideTimer.current);
   Animated.timing(sessionAnim, {
     toValue: 0,
@@ -583,12 +598,14 @@ const autoSlideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   }, 10000);
 };
 
-  // Auto-select sole child so chips + routing work without manual tap
-  useEffect(() => {
-    if (kidList.length === 1 && activeChildId === null) {
-      setActiveChildId(kidList[0].id);
-    }
-  }, [kidList.length]);
+// ─── Auto-select sole child ───
+useEffect(() => {
+  if (kidList.length === 1 && activeChildId === null) {
+    setActiveChildId(kidList[0].id);
+  }
+}, [kidList.length]);
+
+// ─── Auto-cycle session card ───
 useEffect(() => {
   if (kidList.length < 2) return;
 
@@ -619,11 +636,11 @@ useEffect(() => {
   };
 }, [kidList.length]);
 
-  // ─── Loading ───
-  if (isLoadingChild) {
+// ─── Loading ───
+if (isLoadingChild) {
   return (
     <View style={s.root}>
-      <Background /> 
+      <Background />
       <StatusBar style="light" />
       <SafeAreaView style={s.centerGate}>
         <ActivityIndicator color={C.amber} />
@@ -631,8 +648,6 @@ useEffect(() => {
     </View>
   );
 }
-
-
   // ─── Empty: 0 children ───
   if (kidList.length === 0) {
   return (
@@ -683,10 +698,10 @@ return (
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
             {/* ─── Greeting ─── */}
-            363:  <View style={s.greetingWrap}>
-364:    <Text style={s.greetingText}>Good evening, {displayName}.</Text>
-365:    <Text style={s.greetingSection}>What's on your mind?</Text>
-366:  </View>
+<View style={s.greetingWrap}>
+  <Text style={s.greetingText}>Good evening, {displayName}.</Text>
+  <Text style={s.greetingSection}>What's on your mind?</Text>
+</View>
 
             {/* ─── Child selector chips ─── */}
             {kidList.length > 0 && (
@@ -821,11 +836,62 @@ return (
 })()}
 
               {/* Card 2 — Common Triggers */}
-              <Text style={[s.hookSubheader, { marginTop: 22 }]}>PATTERNS</Text>
-              <View style={s.hookCard}>
-                <Text style={s.hookTitle}>Transitions, Hunger</Text>
-                <Text style={s.hookMeta}>Most common triggers this week</Text>
+<Text style={[s.hookSubheader, { marginTop: 22 }]}>PATTERNS</Text>
+{(() => {
+  const activeKid = kidList[activeSessionIndex];
+  const insights = activeKid ? childInsights[activeKid.id] : null;
+  const triggers = insights?.topTriggers?.slice(0, 3).length
+  ? insights.topTriggers.slice(0, 3)
+  : [
+      { category: 'leaving_places', label: 'Leaving places', count: 4 },
+      { category: 'bedtime', label: 'Bedtime', count: 2 },
+      { category: 'screen_time', label: 'Screen time', count: 1 },
+    ];
+  const maxCount = triggers[0]?.count ?? 1;
+  const showEmpty = triggers.length === 0;
+
+  const barColors = ['#D4944A', '#8DB89A', '#82AAC4'];
+
+  return (
+    <View style={s.triggersCard}>
+      <View style={s.triggersCardHeader}>
+        <Text style={s.sessionChildName}>
+          {activeKid?.name ?? 'Emma'}
+        </Text>
+        <Text style={s.triggersWeekLabel}>this week</Text>
+      </View>
+
+      {showEmpty ? (
+        <Text style={s.triggersEmpty}>
+          Patterns will appear here after a few sessions
+        </Text>
+      ) : (
+        <View style={s.triggersList}>
+          {triggers.map((trigger, index) => {
+            const barWidth = `${Math.round((trigger.count / maxCount) * 100)}%`;
+            const barColor = barColors[index] ?? '#D4944A';
+            return (
+              <View key={trigger.category} style={s.triggerRow}>
+                <Text style={s.triggerLabel} numberOfLines={1}>
+                  {trigger.label}
+                </Text>
+                <View style={s.triggerBarWrap}>
+                  <View
+                    style={[
+                      s.triggerBar,
+                      { width: barWidth as any, backgroundColor: barColor },
+                    ]}
+                  />
+                </View>
+                <Text style={s.triggerCount}>{trigger.count}×</Text>
               </View>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+})()}
 
               {/* Card 3 — Sturdy+ Locked Insight */}
               <Text style={[s.hookSubheader, { marginTop: 22, color: 'rgba(200,136,58,0.55)' }]}>STURDY+</Text>
@@ -1363,5 +1429,63 @@ sessionCta: {
   fontSize: 13,
   color: '#D4944A',
   marginTop: 4,
+},
+triggersCard: {
+  backgroundColor: 'rgba(255,255,255,0.04)',
+  borderWidth: 1,
+  borderColor: 'rgba(255,255,255,0.07)',
+  borderRadius: 14,
+  paddingVertical: 16,
+  paddingHorizontal: 16,
+  gap: 12,
+},
+triggersCardHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+},
+triggersWeekLabel: {
+  fontFamily: F.body,
+  fontSize: 11,
+  color: 'rgba(255,255,255,0.28)',
+},
+triggersList: {
+  gap: 10,
+},
+triggerRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 10,
+},
+triggerLabel: {
+  fontFamily: F.body,
+  fontSize: 12,
+  color: 'rgba(255,248,230,0.70)',
+  width: 100,
+},
+triggerBarWrap: {
+  flex: 1,
+  height: 4,
+  backgroundColor: 'rgba(255,255,255,0.06)',
+  borderRadius: 2,
+  overflow: 'hidden',
+},
+triggerBar: {
+  height: 4,
+  borderRadius: 2,
+},
+triggerCount: {
+  fontFamily: F.bodyMedium,
+  fontSize: 11,
+  color: 'rgba(255,255,255,0.35)',
+  width: 24,
+  textAlign: 'right',
+},
+triggersEmpty: {
+  fontFamily: F.body,
+  fontSize: 12,
+  color: 'rgba(255,255,255,0.25)',
+  fontStyle: 'italic',
+  lineHeight: 18,
 },
 });
