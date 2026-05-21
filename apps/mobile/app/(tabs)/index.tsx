@@ -472,7 +472,7 @@ const fetchChildInsights = useCallback(async () => {
     })
   );
   setChildInsights(results);
-}, [kidList.length]);
+}, [kidList]);
 
 // ─── Focus effect ───
 useFocusEffect(
@@ -800,7 +800,8 @@ return (
 {(() => {
   const activeKid = kidList[activeSessionIndex];
   const log = activeKid ? recentLogsByChild[activeKid.id] : null;
-  const summary = log?.situation_summary ?? 'Leaving the park — screaming';
+  const triggerLabel = log?.trigger_category ? (RECENT_TRIGGER_LABELS[log.trigger_category] ?? log.trigger_category) : null;
+  const summary = log?.situation_summary ?? triggerLabel ?? 'No recent sessions yet';
   const truncated = summary.length > 60 ? summary.slice(0, 60) + '...' : summary;
   const timestamp = log ? formatTimeAgo(log.created_at) : '2 hours ago';
 
@@ -900,16 +901,13 @@ return (
 <Text style={[s.hookSubheader, { marginTop: 22, color: 'rgba(200,136,58,0.55)' }]}>STURDY+</Text>
 {(() => {
   const activeKid = kidList[activeSessionIndex];
-  const mockInsights: Record<string, string> = {};
-  kidList.forEach((kid: any) => {
-    const triggers = childInsights[kid.id]?.topTriggers ?? [];
-    if (triggers.length > 0) {
-      mockInsights[kid.id] = `${triggers[0].label} is the pattern — but it's not really about ${triggers[0].label.toLowerCase()}...`;
-    } else {
-      mockInsights[kid.id] = 'A weekly pattern insight will appear here soon...';
-    }
-  });
-  const quote = activeKid ? (mockInsights[activeKid.id] ?? 'A weekly pattern insight will appear here soon...') : 'A weekly pattern insight will appear here soon...';
+  const triggers = activeKid ? (childInsights[activeKid.id]?.topTriggers ?? []) : [];
+  let quote: string;
+  if (triggers.length > 0) {
+    quote = `${triggers[0].label} keeps coming up for ${activeKid?.name ?? 'your child'} — unlock the full pattern read.`;
+  } else {
+    quote = 'Patterns are building — check back after a few more sessions.';
+  }
 
   return (
     <Pressable
