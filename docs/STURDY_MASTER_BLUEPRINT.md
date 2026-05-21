@@ -62,23 +62,28 @@ Conversation: Set up a talk (Set up / Curiosity / State clearly)
 Output: Structured JSON translated into collapsible, interactive UI cards.
 
 4. Navigation & Screen Architecture
-Tab Bar (Strictly 2 Tabs)
-🏠 Home (/(tabs)/index.tsx) — The Parent Hub / Distribution Center.
+Tab Bar (3 Tabs)
+🏠 Home (/(tabs)/index.tsx) — Dashboard + Ask Sturdy input. Shows child avatars, 3 cycling dashboard cards (Last Session, Patterns, Sturdy+ Insight), and question input pill.
 
-⚙️ Settings (/(tabs)/settings.tsx) — Account, subscription, and data deletion.
+❤️ Family (/(tabs)/family.tsx) — Placeholder. Planned for co-parent sharing, family member management, shared script library.
+
+⚙️ Settings (/(tabs)/settings.tsx) — Account, subscription, children, tone, legal, account lifecycle.
 
 Home = The Parent Hub
 State of Mind Header: Rotating greeting using the parent's real first name.
 
-Question Mode Input: Big text area ready to type with a mic button.
+Question Mode Input: "Ask Sturdy anything…" pill with amber send button.
 
-The Gateways (Child Roster): Horizontal or vertical stack of glass cards. Each represents a child profile. Tapping routes directly to /child/[id].
+The Gateways (Child Roster): Horizontal scroll of child avatar chips with amber glow on active selection. Tapping routes to /child/[id].
 
-Action Grid: Quick routing to specific modes (SOS, Understand, Reconnect).
+Dashboard Cards (3 cards, cycling per child):
+- Last Session: Most recent interaction_log per child — child name, mode badge, timestamp, situation summary, "View full script →"
+- Patterns: Top 3 trigger categories from loadChildInsights — colored bar chart (amber / sage / steel)
+- Sturdy+ Insight: Locked weekly insight teaser, personalized to child's top trigger, taps to /upgrade
 
-Quota Counter: A subtle "X / 50 scripts remaining this month" for free users.
+Cards auto-cycle across children every 5 seconds (crossfade animation). Swipeable left/right. Amber indicator dots for 2+ children.
 
-Recent Thoughts: Strip showing the last 3-5 Q&A entries.
+Quota Counter: Tracked server-side via check_monthly_quota RPC — not displayed on home screen UI.
 
 The Child Hub (/child/[id].tsx)
 Personalized Dashboard: Header shows the specific child's name and age.
@@ -102,16 +107,18 @@ Input (v1): Speech-to-text populates the input fields.
 
 Output (v2): expo-speech device TTS reads responses aloud. Unlocked for SOS for all users; Sturdy+ gated for other modes.
 
-6. Design System: Deep Warm
-Background: #1E1D25 (warm dark charcoal)
+6. Design System: Golden Beam (v6)
+Background: #0d0b08 (warm near-black) with golden-particles-bg.png parallax + dark gradient overlay.
 
-Gradients: Transparent radial meshes using Amber (#D4944A), Sage (#8DB89A), and Slate (#82AAC4).
+Particles: 40 animated floating golden particles across 4 distribution zones (top-right cluster densest, fading to floor).
 
-Glass Cards: Transparent backgrounds, 0.03 accent tint when expanded, 0.14 opacity borders, 30px backdrop blur, 16px/20px border radii.
+Gradients: Amber CTA gradient (#C8883A → #E8A855). SOS coral (#E87461) reserved for crisis only.
 
-Typography: Fraunces italic (serif) for situational summaries and philosophy; DM Sans for body and UI.
+Glass Cards: Transparent backgrounds (rgba(255,255,255,0.04)), 0.07 opacity borders, 14px border radii. Dashboard cards cycle across children.
 
-Animations: Subtle, organic. Avatars 'breathe' (4s scale cycle). Buttons pulse with soft glows.
+Typography: Fraunces italic (serif) for situational summaries and greetings; DM Sans for body and UI.
+
+Animations: Particle float (4.5–10.5s loops), card crossfade (250ms), parallax background drift (25s). Haptic feedback on interactions.
 
 7. Database Architecture
 Core Tables

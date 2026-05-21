@@ -98,30 +98,48 @@ Sturdy is a parenting support tool. It is not therapy, medical advice, or crisis
 ## Repository Structure
 
 ```
+CLAUDE.md                       # Canonical repo guide for Claude Code
 apps/
   mobile/               # React Native / Expo app
     app/                # Expo Router screens
+      (tabs)/           # 3-tab bar: Home, Family, Settings
+      auth/             # Sign in, sign up, forgot password, reset
+      child/            # Per-child hub [id].tsx, new.tsx
+      child-profile/    # Your Child screen [id].tsx
+      welcome/          # v12 onboarding flow
+      legal/            # Privacy, ToS, AI limitations, medical safety
+      account/          # Pause, delete, export
     src/
-      components/       # UI components
-      context/          # Auth, child profile contexts
-      lib/              # API, Supabase, utilities
-      theme/            # Design tokens
-      types/            # TypeScript types
+      components/       # UI components (Card, PaywallSheet, etc.)
+      context/          # Auth, ChildProfile contexts
+      hooks/            # useSubscription (RevenueCat), useCrisisMode
+      lib/              # api.ts, supabase.ts, loadChildInsights.ts
+      theme/            # Design tokens (colors.ts, fonts)
+      utils/            # tone, analytics, onboarding, profileNudge
+    assets/             # Images (golden-particles-bg.png, welcome photos)
+
+  web/                  # Next.js marketing/landing site
 
 supabase/
-  migrations/           # Database schema
+  migrations/           # Database schema (timestamped SQL)
   functions/
     chat-parenting-assistant/   # Main AI Edge Function
-    _shared/                    # buildPrompt, validateResponse, safetyFilter
+    account-export/             # Data export
+    account-pause/              # Account pause
+    account-delete/             # Account deletion
+    scheduled-pause-cleanup/    # Daily cron for auto-deleting paused accounts
+    _shared/                    # buildPrompt, validateResponse, safetyFilter,
+                                # rateLimit, triggerClassifier, requestHelpers
 
 docs/
-  README.md                     # This file
-  MASTER_BLUEPRINT.md           # Full product architecture
-  AI_PROMPT_SYSTEM.md           # How scripts are generated
-  SAFETY_SYSTEM.md              # Safety architecture
-  DATABASE_SCHEMA.md            # Schema reference
+  OPERATIONS.md                 # Append-only decision log
   ROADMAP.md                    # Product roadmap
-  SCRIPT_QUALITY_STANDARDS.md  # What good output looks like
+  FEATURE_INVENTORY.md          # Ground-truth feature audit
+  PRODUCT_PRINCIPLES.md         # 8 locked product principles
+  SCRIPT_QUALITY_STANDARDS.md   # SOS output quality bar
+  QUESTION_MODE_QUALITY_STANDARDS.md  # Question mode voice reference
+  SESSION_END_CHECKLIST.md      # Mandatory end-of-session doc update checklist
+  master/STURDY_MASTER_BLUEPRINT.md   # Canonical product spec
 ```
 
 ---
@@ -144,7 +162,7 @@ npx supabase functions deploy chat-parenting-assistant
 
 ## Active Branch
 
-`v3-ui` — current development branch
+`main` — default integration branch. Feature work on `claude/<topic>` branches, merged via squash PR.
 
 ---
 
@@ -155,4 +173,3 @@ If a stressed parent opens Sturdy in a hard moment, the product should feel:
 **Fast. Calm. Clear. Human. Useful within seconds.**
 
 That is the standard everything else must serve.
-

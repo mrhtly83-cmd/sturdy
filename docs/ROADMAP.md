@@ -1,8 +1,8 @@
 # Sturdy Roadmap
 
-**Last updated: 2026-05-16**
+**Last updated: 2026-05-21**
 
-> Phase 1 section reflects actual shipped state as of May 2026. See `docs/FEATURE_INVENTORY.md` for the full ground-truth audit (last run 2026-04-30).
+> Phase 1 section reflects actual shipped state as of May 2026. See `docs/FEATURE_INVENTORY.md` for the full ground-truth audit (last run 2026-05-21).
 
 ## Vision
 
@@ -69,11 +69,12 @@ Every decision should serve at least one of these:
 - `_shared/triggerClassifier.ts` — 15 categories (homework, bedtime, screen_time, leaving_places, mealtime, morning_routine, sharing, sibling, separation, public_meltdown, getting_dressed, bath_time, sport_activity, social_conflict, + fallback)
 - Logged silently to `interaction_logs.trigger_category` — feeds child profile screen
 
-**Subscription / billing (SDK installed, not activated)**
+**Subscription / billing (SDK wired, not yet activated)**
 - `react-native-purchases` installed and `Purchases.configure()` called in `_layout.tsx`
-- `useSubscription.ts` has real purchase / restore / entitlement logic
-- **Behaves as a mock** — `EXPO_PUBLIC_REVENUECAT_API_KEY` is not set, so RevenueCat never initializes and `isPremium` is always `false`
-- Entitlement ID: `sturdy_plus`; to activate: set API key + create products in App Store Connect / Google Play + configure RevenueCat dashboard
+- `useSubscription.ts` has real RevenueCat purchase / restore / entitlement logic
+- `Purchases.logIn(session.user.id)` syncs Supabase user to RevenueCat
+- **Not yet activated** — `EXPO_PUBLIC_REVENUECAT_API_KEY` is set to test key; products not created in App Store Connect / Google Play
+- Entitlement ID: `sturdy_plus`; to activate: set production API key + create products + configure RevenueCat dashboard
 
 **Paywall + gating**
 - `upgrade.tsx` — Monthly $9.99 (3-day trial) / Annual $69.99 (7-day trial)
@@ -91,6 +92,24 @@ Every decision should serve at least one of these:
 - Interaction history (`history.tsx`) — filterable by mode + trigger category
 - Child profile / "Your Child" (`child-profile/[id].tsx`) — common triggers, what works, patterns teaser, weekly insight teaser
 - Settings — real wiring: RevenueCat status, tone, legal, account lifecycle, sign out
+
+**Home screen dashboard (v6 — Golden Beam)**
+- 3 dashboard cards: Last Session (per-child recent `interaction_logs`), Patterns (trigger frequency from `loadChildInsights`), Sturdy+ Insight (locked teaser)
+- Cards auto-cycle across children (5s crossfade, swipeable, indicator dots for 2+ children)
+- `golden-particles-bg.png` parallax background with 40 animated floating particles
+- Child avatar selector chips with amber active glow
+- "Ask Sturdy anything…" pill input for Question mode
+
+**Navigation (3-tab structure)**
+- Tab bar: Home (`index.tsx`), Family (`family.tsx` — placeholder), Settings (`settings.tsx`)
+- Family tab is empty — planned for co-parent/sharing features
+
+**Rate limiting**
+- `_shared/rateLimit.ts` — per-user abuse prevention (10 events/60s burst, 100 events/24h daily)
+- Counted from `usage_events` table, single PostgREST round-trip
+- Crisis paths bypass entirely (Principle 4)
+- Fails open on DB error — never blocks a real parent
+- `RateLimitError` surfaced in mobile app with server-supplied message
 
 **Welcome / onboarding**
 - v12 native flow (`welcome/index.tsx`) — 5-page paged ScrollView, photo-identity (`welcome-family.jpg`, `welcome-horizon.jpg`), spring animations, haptics
@@ -111,17 +130,18 @@ Every decision should serve at least one of these:
 
 | Area | What exists | What's missing |
 |---|---|---|
-| Subscription / billing | SDK installed, purchase/restore logic written | `EXPO_PUBLIC_REVENUECAT_API_KEY` not set — always `isPremium: false`; products not in App Store Connect / Google Play |
-| Restore purchase | `restore()` in `useSubscription.ts` + Settings row | SDK not activated; Settings row does nothing |
+| Subscription / billing | RevenueCat SDK wired, purchase/restore logic real | Test API key only — products not in App Store Connect / Google Play; `isPremium` always `false` until store products configured |
+| Restore purchase | `restore()` in `useSubscription.ts` + Settings row | SDK wired but no store products to restore against |
 | Push notifications | Toggle in Settings (React state only) | Not persisted to DB; no APNs/FCM wiring; no Expo push token |
 | Research consent | Toggle in Settings (React state only) | Not persisted to DB |
 | Help & FAQ / Contact us | Settings rows exist | Tap targets are empty handlers; no FAQ content; no contact form |
-| Weekly insight | Locked teaser UI on child-profile screen | No generation code; `child_insights` table exists but unpopulated |
+| Weekly insight | Locked teaser UI on child-profile screen + home Sturdy+ card | No generation code; `child_insights` table exists but unpopulated |
 | Emerging patterns | Placeholder + lock UI | No detection logic; `incident_events` table exists but unused |
 | Legal docs (long-form) | Short placeholder text in legal screens | Long-form drafts not yet committed or wired |
 | Analytics backend | `analytics.ts` event stubs (logs in dev, no-op in prod) | No backend wired; no funnel visibility |
 | Error monitoring | Nothing | No Sentry / Bugsnag; production crashes invisible |
 | Welcome dead code | `welcome/` has orphaned files: `trial.tsx`, `trial-result.tsx`, `child-setup.tsx`, `signup.tsx` | These are unreachable from v12 but not deleted; `OnboardingProvider` is vestigial |
+| Family tab | Tab exists in 3-tab bar (`family.tsx`) | Empty placeholder — no content, no co-parent sharing built |
 
 ---
 
@@ -131,8 +151,9 @@ Every decision should serve at least one of these:
 2. **Privacy policy public URL** — App Store listing requires a live public URL (`apps/web/` exists, needs `/privacy` route)
 3. **App Store assets** — screenshots, listing copy, age rating, content advisory
 4. **Error monitoring** — Sentry or equivalent before going live
-5. **Email verification flow** — Supabase supports it; app needs a "check your inbox" state post-sign-up (partially done: confirm-email state added, but email confirmation not yet enabled on Supabase project)
-6. **RevenueCat products config** — SDK is wired; products must be created in App Store Connect / Google Play and added to RevenueCat dashboard before billing works in production
+5. **RevenueCat products config** — SDK is wired with test key; products must be created in App Store Connect / Google Play and added to RevenueCat dashboard before billing works in production
+6. ~~**Email verification flow**~~ — Confirm-email state added; email confirmation not yet enabled on Supabase project
+7. ~~**Forgot password / password reset**~~ — ✅ SHIPPED (`auth/forgot-password.tsx`, `auth/reset-password.tsx`)
 
 ---
 
@@ -248,4 +269,3 @@ Every decision should serve at least one of these:
 Every feature earns its place by answering yes to:
 
 > If a stressed parent opens Sturdy right now, does this make the experience faster, calmer, clearer, or more useful?
-

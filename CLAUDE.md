@@ -45,11 +45,23 @@ CI: `.github/workflows/test.yml` runs Deno tests (Edge Function) and Jest tests 
 ## Mobile app architecture
 
 Routing is Expo Router with the file tree under `apps/mobile/app/`:
-- `_layout.tsx` mounts `AuthProvider` → `ChildProfileProvider` → `<Stack>`. Loads Fraunces (4 weights) + DM Sans (4 weights). `AuthGate` routes:
+- `_layout.tsx` mounts `AuthProvider` → `ChildProfileProvider` → `<Stack>`. Loads Fraunces (4 weights) + DM Sans (4 weights). Initializes RevenueCat SDK. `AuthGate` routes:
   - signed in → `/(tabs)`
   - no session + onboarding-flag set in `AsyncStorage` (`@sturdy/onboarding-complete`) → `/auth/sign-in`
   - no session + first-time → `/welcome`
-- `(tabs)/` is a 2-tab structure: `index.tsx` (Home / child selector + outcome cards) and `settings.tsx`. The legacy `(tabs)/child.tsx` and root `now.tsx` were removed in the Phase 1 architecture shift — do not reintroduce a single shared SOS screen.
+- Auth screens: `auth/index.tsx` (sign-in/sign-up, unified with `?mode=` param), `auth/forgot-password.tsx` (email reset link + "check your inbox" confirm state), `auth/reset-password.tsx` (deep link handler for password reset). Confirm-email state shown after sign-up when Supabase requires email confirmation.
+- `(tabs)/` is a 3-tab structure: `index.tsx` (Home — dashboard cards + Ask Sturdy input), `family.tsx` (Family — placeholder, planned for co-parent/sharing features), and `settings.tsx`. The legacy `(tabs)/child.tsx` and root `now.tsx` were removed in the Phase 1 architecture shift — do not reintroduce a single shared SOS screen.
+- **Home screen (`(tabs)/index.tsx` v6 — "Golden Beam"):**
+  - Warm brown gradient background with `golden-particles-bg.png` parallax image + 40 animated floating golden particles across 4 distribution zones
+  - Greeting section + child avatar selector chips (horizontal scroll, amber glow on active, dashed "Add" button)
+  - "Ask Sturdy anything…" pill input → Question mode via `getQuestionResponse()`
+  - Three dashboard cards that auto-cycle together across children (crossfade animation, 5s auto-slide interval, swipeable left/right, amber indicator dots for 2+ children):
+    - **Last Session** — most recent `interaction_logs` entry per child (keyed on `child_profile_id`), shows child name, color-coded mode badge, timestamp via `formatTimeAgo()`, situation summary, "View full script →" link
+    - **Patterns** — top 3 trigger categories from `loadChildInsights()` (aggregates `interaction_logs.trigger_category` per child), colored horizontal bar chart (amber / sage / steel)
+    - **Sturdy+** — locked weekly insight teaser (personalized quote if triggers exist), taps to `/upgrade`
+  - All three cards show proper empty states when no data exists — no hardcoded fallback data
+  - `src/lib/loadChildInsights.ts` — aggregates `interaction_logs` by `child_profile_id` to produce `topTriggers[]` (category + label + count, sorted desc, top 5) and `totalInteractions` count. Used by both home screen and child-profile screen.
+  - Outcome mode cards removed from home — modes are accessed via child hub at `/child/[id]?mode=...`
 - `welcome/index.tsx` is the **v12 native photo-identity welcome flow** (the shipped onboarding):
   - 5-page horizontal paged `ScrollView` (real swipe + page dots)
   - Page 0: splash — full-bleed `welcome-family.jpg` + "Sturdy" wordmark + tagline *"The bridge between chaos and calm."* Auto-advances to page 1 after 3s.
@@ -68,17 +80,18 @@ State:
 - `src/context/OnboardingContext.tsx` exists but is **vestigial** — used by the orphaned welcome funnel files only.
 - `src/lib/supabase.ts` reads `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` and throws at import if missing.
 - `src/lib/api.ts` is the only call-site to the Edge Function. Exposes `getParentingScript()` (SOS-style flows) and `getQuestionResponse()` (Question mode). A `crisis` `response_type` becomes a thrown `CrisisDetectedError` so callers can route to `/crisis`.
-- `src/hooks/useSubscription.ts` — calls the RevenueCat SDK (`react-native-purchases`) but **behaves as a mock** because `EXPO_PUBLIC_REVENUECAT_API_KEY` is not configured. `initRevenueCat()` in `_layout.tsx` exits early when the key is missing, so `Purchases.getCustomerInfo()` throws and `isPremium` stays `false` for all users. Single activation point — set the API key and configure products in the RevenueCat dashboard to make billing live. Entitlement ID: `sturdy_plus`.
+- `src/hooks/useSubscription.ts` — real RevenueCat SDK integration (`react-native-purchases`). `initRevenueCat()` in `_layout.tsx` calls `Purchases.configure()` at module load and `Purchases.logIn(session.user.id)` on auth. Checks `sturdy_plus` entitlement via `getCustomerInfo()`, exposes `purchase()` / `restore()` / `isPremium` / `plan`. **Not yet activated in production** — `EXPO_PUBLIC_REVENUECAT_API_KEY` is set to a test key; products not yet created in App Store Connect / Google Play. To activate: set production API key, create subscription products (`sturdy_monthly_999`, `sturdy_annual_6999`), map to RevenueCat `sturdy_plus` entitlement.
 - `src/utils/onboarding.ts` — `hasCompletedOnboarding()` / `markOnboardingComplete()` / `resetOnboarding()` (dev-only) wrap `@sturdy/onboarding-complete`. v12 welcome uses a separate `sturdy_guest_seen_v1` key for the guest path.
 - `src/utils/profileNudge.ts` — per-child script counter + "shown" flag. The result screen surfaces a one-time-per-child profile nudge after the 3rd script.
 - `src/utils/tone.ts` — AsyncStorage-backed Sturdy+ tone preference (`soft` / `gentle` / `direct`). Default `gentle`.
 - `src/utils/analytics.ts` — `track(event, props)` stub. Logs in `__DEV__`, no-op in prod until a tracking backend is wired.
 
-Theme + fonts (v5 — partial, in transition):
+Theme + fonts (v6 — Golden Beam era):
 - `src/theme/colors.ts` is the single source of truth for tokens. Defines `background: '#1A1614'` (warm dark) plus brand: `coral #FF5C75`, `amber #F79566`, `steel #5778A3`, `sage #8AA060`, `sos #E87461`. Backwards-compat aliases (`rose`, `base`, `subtle`, `raised`, `peach`, `blue`, `textSub`, `cardGlass*`) retained because many screens still reference them.
 - **Reality check on backgrounds:** several screens deliberately override the theme's `background`:
   - `welcome/index.tsx` uses `welcome-family.jpg` and `welcome-horizon.jpg` photo backgrounds (asset path: `apps/mobile/assets/images/welcome/`).
-  - `(tabs)/index.tsx` and `child/[id].tsx` also use `welcome-horizon.jpg` with `rgba(15,10,18,0.45 → 0.82)` LinearGradient overlays.
+  - `(tabs)/index.tsx` uses `golden-particles-bg.png` with parallax animation + dark overlay gradient (`rgba(0,0,0,0.50 → 0.95)`). Root background: `#0d0b08`.
+  - `child/[id].tsx` uses the same `golden-particles-bg.png` background.
   - `upgrade.tsx` hardcodes a solid `#0e0a10` base (no photo) with the v3 dark identity tokens.
 - **Brand colours in shipped use today:**
   - Primary CTA gradient: `#C8883A → #E8A855` (left-to-right amber). Used on `upgrade.tsx`. Settings upgrade chip: `#C8883A`.

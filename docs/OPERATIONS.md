@@ -574,3 +574,29 @@ Sturdy+ billing was mocked (`useSubscription.ts` returned `isPremium: false` wit
 
 ### Reasoning
 Wiring the SDK before products exist lets us verify the code compiles, TypeScript is clean, and the hook interface is stable — without blocking on Google's verification timeline. The mock's interface (`{ isPremium, plan, purchase, restore }`) was preserved so zero call-site changes were needed.
+### 2026-05-21 — Home screen data pipeline fix + 3-tab navigation + dashboard card cycling
+
+**Context:** Home screen redesign introduced 3 dashboard cards (Last Session, Patterns, Sturdy+ Insight) and a new Family tab (empty placeholder). The cards displayed hardcoded fallback data instead of real data from the database, making them appear functional when they weren't.
+
+**Issues found and fixed:**
+
+1. **`child_profile_id` not passed to Edge Function** — `child/[id].tsx` called `getParentingScript()` without `childProfileId`, so `logInteractionEvent` wrote `null` to `interaction_logs.child_profile_id`. Home screen queries filter by `child_profile_id`, finding nothing. **Fix:** added `childProfileId: child.id` to the `getParentingScript` call.
+
+2. **Hardcoded fallback data in Patterns card** — when `topTriggers` was empty, the code fell back to fake data (`Leaving places 4×, Bedtime 2×, Screen time 1×`). **Fix:** removed hardcoded fallback; shows empty state message instead.
+
+3. **Hardcoded fallback in Last Session card** — timestamp defaulted to `'2 hours ago'` and child name to `'Emma'` when no log existed. **Fix:** proper empty state with guidance message.
+
+4. **Unstable `useCallback` dependency** — `fetchChildInsights` depended on `[kidList]`, which is a new array reference every render. **Fix:** replaced with stable `kidIds` string derived from child IDs.
+
+5. **Infinite render loop in `child/[id].tsx`** — `useEffect` at line 150 used `child` object and `activeChild` object as dependencies. `setActiveChild` triggered context re-render → new `child` reference from `useMemo` → effect re-fires → loop. **Fix:** extracted `childId` and `activeChildId` as stable string values for dependency comparison.
+
+6. **Dashboard cards now cycle together** — all 3 cards wrapped in single `Animated.View` driven by `sessionAnim`. Auto-slides every 5s across children, swipeable, with amber indicator dots for 2+ children. Haptic feedback on manual swipe.
+
+**Files changed:**
+- `apps/mobile/app/(tabs)/index.tsx` — dashboard cards, data pipeline, cycling animation
+- `apps/mobile/app/child/[id].tsx` — added `childProfileId` to API call, fixed infinite loop
+
+**Documentation update (same session):**
+- `CLAUDE.md` — updated to reflect 3-tab structure, home screen v6 Golden Beam layout, dashboard cards, `loadChildInsights.ts`, RevenueCat real SDK status, background/theme changes, auth screens
+- `README.md` — updated active branch, repository structure, running instructions
+- Created `docs/SESSION_END_CHECKLIST.md` — mandatory checklist for end of every dev session

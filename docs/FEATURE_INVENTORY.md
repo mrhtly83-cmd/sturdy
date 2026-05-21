@@ -1,7 +1,7 @@
 # Sturdy Feature Inventory
 
-**Last audited:** April 30, 2026
-**Audit basis:** Ground-truth read of `main` branch at commit `3da1fe7` (PR 20 merged)
+**Last audited:** May 21, 2026
+**Audit basis:** Ground-truth read of `main` branch — updated from April 30 audit to reflect home screen v6, 3-tab navigation, RevenueCat SDK wiring, auth improvements, rate limiting, and dashboard card data pipeline.
 **Method:** Cross-referenced Master Blueprint + ROADMAP + CLAUDE.md + PRODUCT_PRINCIPLES.md against actual codebase (`apps/mobile/`, `supabase/functions/`, `supabase/migrations/`)
 
 This document is the answer to: **what does Sturdy actually do today?** Not what we planned. Not what the docs say. What ships.
@@ -18,6 +18,9 @@ The four categories below are:
 
 ### Authentication
 - Sign up + sign in via Supabase Auth (`apps/mobile/app/auth/index.tsx`, unified screen with `?mode=` param)
+- Forgot password — email reset link, "check your inbox" confirm state (`app/auth/forgot-password.tsx`)
+- Password reset — deep link handler in `_layout.tsx`, new password screen (`app/auth/reset-password.tsx`)
+- Confirm-email state shown after sign-up when Supabase requires email confirmation
 - Session management via `AuthContext` (`apps/mobile/src/context/AuthContext.tsx`)
 - AuthGate routing: signed-in → `/(tabs)`, returning unauthenticated → `/auth?mode=signin`, first-time → `/welcome`
 - `handle_new_user()` Postgres trigger auto-creates `profiles` row on signup
@@ -125,12 +128,26 @@ The four categories below are:
 - Real wiring: child management, upgrade screen, legal docs, sign out, account lifecycle
 - Push notifications + research consent toggles are React state only (see Built but Partial)
 
-### Visual design system (v3 dark + photo-identity hybrid)
+### Visual design system (v6 — Golden Beam)
 - Theme tokens in `src/theme/colors.ts`: amber `#D4944A`, sage `#8DB89A`, steel `#5778A3`, coral `#E87461`
 - Fraunces (4 weights) + DM Sans (4 weights) loaded
-- v3 dark identity tokens (`#0e0a10` bg, glass cards, amber gradient CTAs) used in: upgrade, auth, account screens
-- Photo-identity backgrounds (welcome photos with gradient overlays) used in: welcome, home, child hub
+- Home screen + child hub use `golden-particles-bg.png` parallax background with dark gradient overlay and 40 animated floating particles
+- Welcome screens use photo-identity backgrounds (`welcome-family.jpg`, `welcome-horizon.jpg`)
 - `Card.tsx` (GlassCard), `Screen.tsx`, `PaywallSheet.tsx` reusable components
+
+### Home screen dashboard (v6)
+- 3 dashboard cards: Last Session, Patterns, Sturdy+ Insight
+- Cards auto-cycle across children (5s interval, crossfade animation)
+- Swipeable left/right with haptic feedback
+- Amber indicator dots for 2+ children (tappable to jump)
+- Data sourced from `interaction_logs` (per-child via `child_profile_id`) and `loadChildInsights.ts`
+- Proper empty states — no hardcoded fallback data
+- Child avatar selector chips with amber glow on active selection
+
+### Navigation (3-tab structure)
+- Tab bar: Home, Family, Settings
+- Family tab is empty placeholder (planned for co-parent/sharing features)
+- Outcome modes (SOS / Repair / Understand / Plan a talk) accessed via child hub, not home screen
 
 ### Sturdy+ paywall screen
 - `upgrade.tsx`
@@ -146,13 +163,13 @@ The four categories below are:
 
 ## 🟡 Built but partial / stubbed
 
-### Subscription / billing (NOT WIRED)
-- `useSubscription.ts` is a **mock** — always returns `{ isPremium: false, plan: 'free' }`
-- `purchase()` just logs `[BILLING] purchase()`
-- `restore()` just logs `[BILLING] restore()`
-- `subscriptions` table exists but is unused
-- Comment in code states: "single-file swap to wire RevenueCat"
-- **Result:** every "premium" gate in the app currently blocks all users equally
+### Subscription / billing (SDK WIRED, NOT YET ACTIVATED)
+- `useSubscription.ts` is a **real RevenueCat integration** — checks `sturdy_plus` entitlement, exposes `purchase()` / `restore()` / `isPremium`
+- `_layout.tsx` calls `Purchases.configure()` at module load, `Purchases.logIn(session.user.id)` on auth
+- `EXPO_PUBLIC_REVENUECAT_API_KEY` set to test key — SDK initializes but no products exist in stores yet
+- Entitlement ID: `sturdy_plus`
+- **Not yet activated in production:** products not created in App Store Connect / Google Play, service account not connected
+- **Result:** `isPremium` returns `false` for all users until store products are configured
 
 ### Free tier quota enforcement (DEAD CODE)
 - `getScriptUsage.ts` defines `FREE_TOTAL = 5` and reads from `usage_events`
@@ -290,10 +307,8 @@ The four categories below are:
 - App Store review may flag if account creation doesn't verify control of email
 - Privacy implications: someone could sign up with another person's email
 
-### Forgot password / password reset
-- No "forgot password" link in auth screen
-- No reset flow built
-- Users who forget can't recover account
+### ~~Forgot password / password reset~~ → SHIPPED
+- Moved to "Built and working" — `auth/forgot-password.tsx` (email reset link + confirm state) and `auth/reset-password.tsx` (deep link handler, new password screen).
 
 ### Email change / account email management
 - No way to change account email after signup
@@ -328,10 +343,8 @@ The four categories below are:
 - No mechanism to actually ban an account
 - No `is_banned` flag, no enforcement code
 
-### Rate limiting (per-user)
-- No rate limit on Edge Function calls
-- A single user could hammer the Anthropic API at full speed
-- Cost exposure is real — Anthropic API pricing applied at the user level via Supabase Edge Function
+### ~~Rate limiting (per-user)~~ → SHIPPED
+- Moved to "Built and working" — see `_shared/rateLimit.ts` (burst: 10/60s, daily: 100/24h). Crisis paths bypass. Fails open on DB error.
 
 ### Child age update flow
 - Once a child profile is created, can age be edited?
@@ -397,15 +410,15 @@ The four categories below are:
 
 These are the items that block App Store submission, not the items that would make Sturdy a more complete product:
 
-1. **Email verification flow** — App Store may flag account creation without email confirmation
-2. **Forgot password / password reset** — required UX baseline
-3. **Restore purchase wiring** — App Store §3.1.1 requires this for any subscription app
-4. **Real subscription via RevenueCat** — `useSubscription` mock blocks all premium UX testing
-5. **Wire long-form legal docs into in-app screens** — current short placeholders won't pass review when paired with the long-form public privacy policy
+1. ~~**Email verification flow**~~ — Confirm-email state added; Supabase email confirmation not yet enabled on project
+2. ~~**Forgot password / password reset**~~ — ✅ SHIPPED
+3. **Restore purchase wiring** — RevenueCat SDK wired, `restore()` implemented; needs store products to test
+4. **Real subscription via RevenueCat** — SDK wired with test key; needs production API key + store products
+5. **Wire long-form legal docs into in-app screens** — current short placeholders won't pass review
 6. **Privacy policy public URL** — App Store listing requires a privacy policy URL, currently no host
 7. **App Store assets** — screenshots, listing copy, age rating
 8. **Error monitoring** — production debugging without Sentry-equivalent is dangerous
-9. **Account ban / suspension mechanism** — ToS promises something the code can't deliver
+9. ~~**Account ban / suspension mechanism**~~ — ToS promises something the code can't deliver (low priority for launch)
 
 ## Highest-priority gaps for product completeness
 
@@ -423,11 +436,13 @@ If launch is the goal, these are nice-to-have. If long-term retention is the goa
 
 ## Architectural observations
 
-- **Documentation drift is significant.** Master Blueprint says 3 tabs, app has 2. Blueprint says external TTS, app uses local. Blueprint says single-input outcome selector flow, app uses card grid. Each divergence is intentional but not all are documented.
-- **Mock-driven gating throughout.** Every Sturdy+ feature is gated on `useSubscription().isPremium` which always returns `false`. This means premium UX is untested in practice — when RevenueCat lands and `isPremium` flips for real subscribers, multiple gating boundaries will be exercised for the first time.
-- **Welcome flow has dead code.** `welcome/` directory contains `trial.tsx`, `trial-result.tsx`, `child-setup.tsx`, `signup.tsx` that are unreachable from the v12 flow. CLAUDE.md acknowledges this. Worth a cleanup PR.
-- **`OnboardingProvider` context is vestigial.** Used only by the dead welcome files. Wraps the welcome stack but does nothing reachable.
-- **Settings screen has 3 dead tap targets** (Help & FAQ, Contact us, Restore purchase) plus 2 fake toggles (push, research consent). At App Store review, this risks "broken UI" rejection.
+- **Documentation drift was significant, now partially addressed.** CLAUDE.md, README.md, and OPERATIONS.md were updated May 21, 2026. MASTER_BLUEPRINT and ROADMAP still have drift (says 2 tabs, app has 3; says outcome cards on home, replaced by dashboard cards). FEATURE_INVENTORY updated same date.
+- **Subscription gating is real but inactive.** Every Sturdy+ feature is gated on `useSubscription().isPremium` which reads from RevenueCat. SDK is wired with test key but no store products exist — `isPremium` returns `false` for all users. When products are created and API key is set to production, gates will activate.
+- **Home screen data pipeline now works end-to-end.** `child/[id].tsx` passes `childProfileId` → Edge Function logs to `interaction_logs` with `child_profile_id` → home screen queries by child → dashboard cards show real data. Fixed May 21, 2026.
+- **Welcome flow has dead code.** `welcome/` directory contains `trial.tsx`, `trial-result.tsx`, `child-setup.tsx`, `signup.tsx` that are unreachable from the v12 flow. Worth a cleanup PR.
+- **`OnboardingProvider` context is vestigial.** Used only by the dead welcome files.
+- **Settings screen has dead tap targets** (Help & FAQ, Contact us) plus fake toggles (push, research consent). At App Store review, this risks "broken UI" rejection.
+- **Family tab is empty placeholder.** Added to tab bar but no content built yet. Planned for co-parent sharing features.
 
 ---
 
