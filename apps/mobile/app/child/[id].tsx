@@ -147,11 +147,13 @@ export default function ChildHubScreen() {
   }, [params.id, children]);
 
   // ─── Keep activeChild in sync with the URL ───
+  const childId = child?.id;
+  const activeChildId = activeChild?.id;
   useEffect(() => {
-    if (child && child.id !== activeChild?.id) {
+    if (childId && childId !== activeChildId) {
       setActiveChild(child);
     }
-  }, [child, activeChild, setActiveChild]);
+  }, [childId, activeChildId, setActiveChild]);
 
   // ─── If child not found (stale URL, deleted child), bounce home ───
   useEffect(() => {

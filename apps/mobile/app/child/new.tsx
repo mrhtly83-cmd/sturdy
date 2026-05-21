@@ -71,7 +71,7 @@ export default function NewChildScreen() {
 
     // Free-tier 1-child cap. First child setup goes through child-setup.tsx,
     // so reaching this screen with children.length >= 1 means an extra child.
-    if (!isPremium && children.length >= 1) {
+    if (!isPremium && children.length >= 3) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       router.replace('/upgrade');
       return;
