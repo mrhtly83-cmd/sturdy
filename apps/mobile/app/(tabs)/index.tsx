@@ -448,11 +448,9 @@ const fetchRecentLogs = useCallback(async () => {
       }
      setRecentLogsByChild(byChild);
       setRecentLogs(data.slice(0, 3));
-    } else {
-      alert('No data returned from interaction_logs');
     }
   } catch (e: any) {
-    alert('Fetch error: ' + e.message);
+    // Silently fail — empty state is the right UX
   }
 }, [session?.user?.id]);
 
@@ -461,18 +459,22 @@ const displayName = firstName ?? 'there';
 const kidList = Array.isArray(children) ? children : [];
 const canSend = question.trim().length > 0 && !sending;
 
+// Stable string key so useCallback doesn't re-create every render
+const kidIds = kidList.map((k: any) => k.id).join(',');
+
 // ─── Fetch child insights (triggers) ───
 const fetchChildInsights = useCallback(async () => {
-  if (!kidList.length) return;
+  if (!kidIds) return;
+  const ids = kidIds.split(',');
   const results: Record<string, ChildInsights> = {};
   await Promise.all(
-    kidList.map(async (kid: any) => {
-      const insights = await loadChildInsights(kid.id);
-      results[kid.id] = insights;
+    ids.map(async (id) => {
+      const insights = await loadChildInsights(id);
+      results[id] = insights;
     })
   );
   setChildInsights(results);
-}, [kidList]);
+}, [kidIds]);
 
 // ─── Focus effect ───
 useFocusEffect(
@@ -800,10 +802,28 @@ return (
 {(() => {
   const activeKid = kidList[activeSessionIndex];
   const log = activeKid ? recentLogsByChild[activeKid.id] : null;
-  const triggerLabel = log?.trigger_category ? (RECENT_TRIGGER_LABELS[log.trigger_category] ?? log.trigger_category) : null;
-  const summary = log?.situation_summary ?? triggerLabel ?? 'No recent sessions yet';
+
+  // No real session data — show empty state
+  if (!log) {
+    return (
+      <View style={s.sessionCard}>
+        <Text style={s.triggersEmpty}>
+          No sessions yet — use SOS or a mode to see your last session here.
+        </Text>
+      </View>
+    );
+  }
+
+  const triggerLabel = log.trigger_category ? (RECENT_TRIGGER_LABELS[log.trigger_category] ?? log.trigger_category) : null;
+  const summary = log.situation_summary ?? triggerLabel ?? 'Session recorded';
   const truncated = summary.length > 60 ? summary.slice(0, 60) + '...' : summary;
-  const timestamp = log ? formatTimeAgo(log.created_at) : '2 hours ago';
+  const timestamp = formatTimeAgo(log.created_at);
+  const modeLabel = RECENT_MODE_LABELS[log.mode] ?? log.mode ?? 'SOS';
+  const modeColor = log.mode === 'sos' ? '#E87461'
+    : log.mode === 'reconnect' ? '#E8A855'
+    : log.mode === 'understand' ? '#7BA4D0'
+    : log.mode === 'conversation' ? '#A0C068'
+    : '#E87461';
 
   return (
     <Animated.View
@@ -818,10 +838,10 @@ return (
       <View style={s.sessionCard}>
         <View style={s.sessionCardHeader}>
           <Text style={s.sessionChildName}>
-            {activeKid?.name ?? 'Emma'}
+            {activeKid?.name ?? 'Child'}
           </Text>
-          <View style={s.sessionModeBadge}>
-            <Text style={s.sessionModeBadgeText}>SOS</Text>
+          <View style={[s.sessionModeBadge, { backgroundColor: `${modeColor}15`, borderColor: `${modeColor}30` }]}>
+            <Text style={[s.sessionModeBadgeText, { color: modeColor }]}>{modeLabel}</Text>
           </View>
         </View>
         <Text style={s.sessionTimestamp}>{timestamp}</Text>
@@ -844,13 +864,7 @@ return (
 {(() => {
   const activeKid = kidList[activeSessionIndex];
   const insights = activeKid ? childInsights[activeKid.id] : null;
-  const triggers = insights?.topTriggers?.slice(0, 3).length
-  ? insights.topTriggers.slice(0, 3)
-  : [
-      { category: 'leaving_places', label: 'Leaving places', count: 4 },
-      { category: 'bedtime', label: 'Bedtime', count: 2 },
-      { category: 'screen_time', label: 'Screen time', count: 1 },
-    ];
+  const triggers = insights?.topTriggers?.slice(0, 3) ?? [];
   const maxCount = triggers[0]?.count ?? 1;
   const showEmpty = triggers.length === 0;
 
@@ -860,14 +874,14 @@ return (
     <View style={s.triggersCard}>
       <View style={s.triggersCardHeader}>
         <Text style={s.sessionChildName}>
-          {activeKid?.name ?? 'Emma'}
+          {activeKid?.name ?? 'Child'}
         </Text>
         <Text style={s.triggersWeekLabel}>this week</Text>
       </View>
 
       {showEmpty ? (
         <Text style={s.triggersEmpty}>
-          Patterns will appear here after a few sessions
+          Patterns will appear here after a few sessions.
         </Text>
       ) : (
         <View style={s.triggersList}>

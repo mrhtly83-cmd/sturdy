@@ -269,10 +269,11 @@ export default function ChildHubScreen() {
 
     try {
       const script = await getParentingScript({
-        childName: child.name || 'My child',
-        childAge:  child.childAge ?? 4,
-        message:   msg,
-        userId:    session?.user?.id,
+        childName:      child.name || 'My child',
+        childAge:       child.childAge ?? 4,
+        message:        msg,
+        userId:         session?.user?.id,
+        childProfileId: child.id,
         // Intensity is only meaningful for SOS — buildPrompt ignores it
         // for the other modes anyway, but keep the request body clean.
         intensity: mode === 'sos' ? intensity : null,
