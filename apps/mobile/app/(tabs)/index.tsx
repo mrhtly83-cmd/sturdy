@@ -29,6 +29,7 @@ import {
   TextInput,
   View,
   Image,
+  TouchableOpacity,
 } from 'react-native';
 
 import { router, useFocusEffect } from 'expo-router';
@@ -708,7 +709,12 @@ return (
 <View style={s.greetingWrap}>
   <Text style={s.greetingText}>Good evening, {displayName}.</Text>
   <Text style={s.greetingSection}>What's on your mind?</Text>
-</View>
+</View><TouchableOpacity 
+  onPress={() => router.push('/mockup')}
+  style={{ backgroundColor: '#C8883A', padding: 12, borderRadius: 8, marginVertical: 10 }}
+>
+  <Text style={{ color: 'white', textAlign: 'center' }}>Test New Input Mockup →</Text>
+</TouchableOpacity>
 
             {/* ─── Child selector chips ─── */}
             {kidList.length > 0 && (

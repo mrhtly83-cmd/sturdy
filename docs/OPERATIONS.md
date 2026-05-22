@@ -600,3 +600,15 @@ Wiring the SDK before products exist lets us verify the code compiles, TypeScrip
 - `CLAUDE.md` — updated to reflect 3-tab structure, home screen v6 Golden Beam layout, dashboard cards, `loadChildInsights.ts`, RevenueCat real SDK status, background/theme changes, auth screens
 - `README.md` — updated active branch, repository structure, running instructions
 - Created `docs/SESSION_END_CHECKLIST.md` — mandatory checklist for end of every dev session
+
+### 2026-05-22 — Question Mode input elevation (The "Thinking Space")
+
+**Context:** The "Ask Sturdy anything..." input on the Home screen was a single-line search pill. This visually contradicted the V1 pivot toward being a daily thinking partner, implying a short search query rather than a space to journal or explain complex context.
+
+**Decision:** Designed and verified a new multi-line "Thinking Space" in `app/mockup.tsx`. 
+- Switched to `multiline={true}` with a `minHeight` of 120 to physically resemble a journal.
+- Added dynamic, rotating placeholders (e.g., "Why is bedtime suddenly a battle?") to passively teach the user what the AI can handle.
+- Added a focused state that subtly brightens the glass card to ground the user during text entry.
+- Integrated the newly merged `QuotaBar` directly below it.
+
+**Reasoning:** A text box's affordance dictates how a user behaves. A large box invites a story; a small pill invites a command. Rotating placeholders remove the "blank canvas syndrome" without requiring a tutorial screen. This design is locked and ready to be ported to `(tabs)/index.tsx` in the next session.
