@@ -32,6 +32,7 @@ import { saveScript }     from '../src/lib/saveScript';
 import { detectCrisis } from '../src/hooks/useCrisisMode';
 import { shouldShowProfileNudge, markNudgeShown } from '../src/utils/profileNudge';
 import { useSubscription } from '../src/hooks/useSubscription';
+import { useQuota }        from '../src/hooks/useQuota';
 import { PaywallSheet } from '../src/components/ui/PaywallSheet';
 import { colors as C, fonts as F } from '../src/theme';
 
@@ -106,6 +107,59 @@ function PulsingDot() {
   return <Animated.View style={[{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.sos }, { opacity: anim }]} />;
 }
 
+// ─── Quota footer shown below footer action buttons ───
+function QuotaResultFooter({
+  mode, scriptsRemaining, questionsRemaining, isLow, resetDate,
+}: {
+  mode: string;
+  scriptsRemaining: number;
+  questionsRemaining: number;
+  isLow: boolean;
+  resetDate: string;
+}) {
+  const remaining = mode === 'question' ? questionsRemaining : scriptsRemaining;
+  const label     = mode === 'question' ? 'questions' : 'scripts';
+  const cap       = mode === 'question' ? 25 : 50;
+
+  if (!isLow && remaining > 10) {
+    return (
+      <View style={rf.root}>
+        <Text style={rf.quiet}>{remaining} {label} remaining this month</Text>
+      </View>
+    );
+  }
+
+  return (
+    <Pressable style={rf.card} onPress={() => router.push('/upgrade' as any)}>
+      <View style={rf.cardTop}>
+        <Text style={rf.cardCount}>{remaining} {label} left this month</Text>
+        <Text style={rf.cardReset}>Resets {resetDate}</Text>
+      </View>
+      <View style={rf.track}>
+        <View style={[rf.fill, { width: `${Math.round(Math.max(0, Math.min(1, remaining / cap)) * 100)}%` as any }]} />
+      </View>
+      <Text style={rf.cardCta}>
+        Unlimited scripts, more children, tone selector — <Text style={rf.ctaLink}>see Sturdy+ →</Text>
+      </Text>
+    </Pressable>
+  );
+}
+
+const rf = StyleSheet.create({
+  root:     { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4, alignItems: 'center' },
+  quiet:    { fontSize: 12, color: 'rgba(255,248,230,0.28)', fontFamily: 'DMSans_400Regular' },
+  card:     { marginHorizontal: 20, marginTop: 8, marginBottom: 4, backgroundColor: C.amberMuted,
+               borderWidth: 1, borderColor: 'rgba(200,136,58,0.15)', borderRadius: 12, padding: 14 },
+  cardTop:  { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  cardCount:{ fontSize: 13, color: C.amber, fontFamily: 'DMSans_600SemiBold' },
+  cardReset:{ fontSize: 11, color: 'rgba(200,136,58,0.5)', fontFamily: 'DMSans_400Regular' },
+  track:    { height: 3, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2,
+               overflow: 'hidden', marginBottom: 10 },
+  fill:     { height: '100%', backgroundColor: C.amber, borderRadius: 2 },
+  cardCta:  { fontSize: 12, color: 'rgba(200,136,58,0.7)', fontFamily: 'DMSans_400Regular', lineHeight: 18 },
+  ctaLink:  { color: C.amber, fontFamily: 'DMSans_600SemiBold' },
+});
+
 // ═══════════════════════════════════════════════
 // MAIN
 // ═══════════════════════════════════════════════
@@ -134,6 +188,12 @@ export default function ResultScreen() {
   // Voice playback gating — SOS is free for everyone; other modes
   // require Sturdy+. Free user tapping locked voice opens PaywallSheet.
   const { isPremium } = useSubscription();
+  const {
+    counts, refresh: refreshQuota,
+    scriptsRemaining, questionsRemaining,
+    isScriptsLow, isQuestionsLow,
+    loading: quotaLoading,
+  } = useQuota();
   const [voicePaywall, setVoicePaywall] = useState(false);
 
   const isFallback = !isValid(val(params.regulateScript));
@@ -169,6 +229,7 @@ export default function ResultScreen() {
     setSaved(false); setSaving(false); setSaveErr(''); setAvoidOpen(false);
     setCopied(false);
     setFeedbackGiven(false); setFeedbackStep('helpful'); setFeedbackHelpful(null);
+    refreshQuota();
     return () => { voice.stop(); };
   }, [params.regulateScript]);
 
@@ -374,6 +435,15 @@ const handleRetry = () => {
           pointerEvents="none"
         />
         <View style={s.footerContent}>
+          {!isPremium && !quotaLoading && session && (
+            <QuotaResultFooter
+              mode={mode}
+              scriptsRemaining={scriptsRemaining}
+              questionsRemaining={questionsRemaining}
+              isLow={mode === 'question' ? isQuestionsLow : isScriptsLow}
+              resetDate={counts.resetDate}
+            />
+          )}
           <View style={s.footerRow}>
             <Pressable onPress={handleSave} disabled={saved || saving} style={({ pressed }) => [s.footerGhost, pressed && { opacity: 0.7 }]}>
               <Text style={s.footerGhostText}>{saved ? '✓ Saved' : saving ? 'Saving…' : 'Save'}</Text>

@@ -34,12 +34,13 @@ function jsonRes(body: unknown, status = 200, extraHeaders: Record<string, strin
   });
 }
 
-const MONTHLY_SCRIPT_LIMIT = 50;
+const SCRIPT_QUOTA_LIMIT   = 50;
+const QUESTION_QUOTA_LIMIT = 25;
 
-async function checkQuota(userId: string): Promise<boolean> {
+async function checkScriptQuota(userId: string): Promise<boolean> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return false;
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/check_monthly_quota`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/check_script_quota`, {
       method:  "POST",
       headers: {
         "Content-Type":  "application/json",
@@ -48,9 +49,29 @@ async function checkQuota(userId: string): Promise<boolean> {
       },
       body: JSON.stringify({ target_user_id: userId }),
     });
-    if (!res.ok) return false; // fail open — never block on infra error
+    if (!res.ok) return false;
     const count = await res.json();
-    return typeof count === "number" && count >= MONTHLY_SCRIPT_LIMIT;
+    return typeof count === "number" && count >= SCRIPT_QUOTA_LIMIT;
+  } catch {
+    return false; // fail open
+  }
+}
+
+async function checkQuestionQuota(userId: string): Promise<boolean> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return false;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/check_question_quota`, {
+      method:  "POST",
+      headers: {
+        "Content-Type":  "application/json",
+        "apikey":        SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`,
+      },
+      body: JSON.stringify({ target_user_id: userId }),
+    });
+    if (!res.ok) return false;
+    const count = await res.json();
+    return typeof count === "number" && count >= QUESTION_QUOTA_LIMIT;
   } catch {
     return false; // fail open
   }
@@ -278,11 +299,19 @@ serve(async (req) => {
   //     never paywalled, regardless of how many scripts the user has used.
   //     Fails open (never blocks) on infra errors so a DB hiccup doesn't
   //     lock a parent out mid-moment.
+  //     Two buckets: 50 scripts/month (all directed modes) + 25 questions/month.
   //     TODO: skip for Sturdy+ users once RevenueCat billing is live. ───
   if (input.userId) {
-    const exceeded = await checkQuota(input.userId);
-    if (exceeded) {
-      return jsonRes({ error: "quota_exceeded" }, 402);
+    if (input.mode === 'question') {
+      const exceeded = await checkQuestionQuota(input.userId);
+      if (exceeded) {
+        return jsonRes({ error: "quota_exceeded", quota_type: "questions" }, 402);
+      }
+    } else {
+      const exceeded = await checkScriptQuota(input.userId);
+      if (exceeded) {
+        return jsonRes({ error: "quota_exceeded", quota_type: "scripts" }, 402);
+      }
     }
   }
 

@@ -24,7 +24,7 @@ import * as Haptics from 'expo-haptics';
 
 import { useAuth } from '../../src/context/AuthContext';
 import { useChildProfile } from '../../src/context/ChildProfileContext';
-import { getParentingScript, CrisisDetectedError, RateLimitError } from '../../src/lib/api';
+import { getParentingScript, CrisisDetectedError, RateLimitError, QuotaExceededError } from '../../src/lib/api';
 import { detectCrisis } from '../../src/hooks/useCrisisMode';
 import { loadSavedScripts, type SavedScriptRow } from '../../src/lib/loadSavedScripts';
 import { incrementScriptCount } from '../../src/utils/profileNudge';
@@ -323,6 +323,10 @@ export default function ChildHubScreen() {
           pathname: '/crisis',
           params: { crisisType: err.crisisType, riskLevel: err.riskLevel },
         });
+        return;
+      }
+      if (err instanceof QuotaExceededError) {
+        router.push('/upgrade' as any);
         return;
       }
       if (err instanceof RateLimitError) {

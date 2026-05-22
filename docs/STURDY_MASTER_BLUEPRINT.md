@@ -30,25 +30,27 @@ Sturdy is the go-to parenting companion for every parent at every level.
 
 ### The Metered Freemium Model
 
-**Free Tier:** 50 free script generations per calendar month across Question, Reconnect, Understand, and Conversation modes.
-
-**SOS is always unlimited and free.** SOS scripts are excluded from the monthly quota. The `check_monthly_quota` RPC filters on `event_meta->>'mode' != 'sos'` and only counts `script_generated`, `question_generated`, and `followup_generated` event types. This is non-negotiable per Principle 6.
+**Free Tier:**
+- Script quota: 50/month — SOS, Reconnect, Understand, Conversation, follow-ups
+- Question quota: 25/month — Question mode only
+- 1 child profile
+- Voice on SOS only
+- Crisis support: always free, never counted
 
 **Sturdy+ ($9.99/month or $69.99/year):**
-- Unlimited scripts across all modes (no monthly cap)
+- Unlimited scripts and questions (both quotas removed)
+- Unlimited child profiles
 - Tone selector (Soft / Direct)
 - Follow-up scripts
-- Saved script library (searchable)
 - Voice playback on all modes
 
 **V1 Sturdy+ does NOT include** (deferred to V2):
 - Weekly insights / reflections
 - Emerging pattern detection
-- "A Sturdy that knows your child" personalization
 
-**The Quota System:** Tracked server-side via `check_monthly_quota` RPC evaluating the `usage_events` table. Free users hit a hard paywall (`PaywallSheet.tsx`) when the non-SOS count reaches 50. Crisis paths and SOS are always exempt.
+**The Quota System:** Two separate RPCs in Supabase: `check_script_quota` (cap: 50) counts `script_generated` and `followup_generated` events where mode is not `question`. `check_question_quota` (cap: 25) counts `question_generated` events. A combined `get_quota_counts` RPC returns both buckets in one call for the mobile UI. The 402 response includes `quota_type: "scripts" | "questions"` so the client can distinguish which bucket ran out.
 
-**The Crisis Exemption:** We never paywall safety. If the safety filter returns `response_type: "crisis"`, it bypasses quota and rate limits and routes to the free `/crisis` support screen.
+**The Crisis Exemption:** We never paywall safety. If the safety filter returns `response_type: "crisis"`, it bypasses quota and rate limits entirely and routes to the free `/crisis` support screen.
 
 ### "Zero Trace" Data Safety
 
@@ -111,7 +113,7 @@ Sturdy is the go-to parenting companion for every parent at every level.
 
 Cards auto-cycle across children every 5 seconds (crossfade animation). Swipeable left/right. Amber indicator dots for 2+ children.
 
-**Quota Counter:** Tracked server-side via `check_monthly_quota` RPC — not displayed on home screen UI.
+**Quota Counter:** Displayed below the Ask Sturdy pill for free users via `QuotaBar` component. Shows two progress bars — scripts (X of 50) and questions (X of 25) — with reset date. Turns amber and shows "Unlock unlimited →" at 80%+ usage. Hidden for Sturdy+ users.
 
 ### The Child Hub (`/child/[id].tsx`)
 
@@ -163,13 +165,17 @@ Cards auto-cycle across children every 5 seconds (crossfade animation). Swipeabl
 - `child_profiles` — Child context: name, age, inferred neurotype array
 - `parent_thoughts` — Question mode Q&A, auto-tagged to children
 - `interaction_logs` — Logs R/C/G mode results, tone selected, and user follow-up
-- `usage_events` — Tracking for the freemium quota (SOS excluded from count)
+- `usage_events` — Tracking for the freemium quota (two buckets: scripts + questions)
 - `safety_events` — Logged triggers — `ON DELETE CASCADE` (no anonymized retention)
 - `child_insights` — Aggregated patterns, week_of dates, Sturdy+ content
 
 ### Key RPCs
 
-`check_monthly_quota`: Returns count of non-SOS `usage_events` for the given user in the current calendar month. Filters: `event_meta->>'mode' != 'sos'` and `event_type in ('script_generated', 'question_generated', 'followup_generated')`.
+`check_script_quota`: Returns count of script-mode `usage_events` for the given user in the current calendar month. Filters: `event_type in ('script_generated', 'followup_generated')` and `mode != 'question'`. Cap: 50.
+
+`check_question_quota`: Returns count of `question_generated` events for the given user in the current calendar month. Cap: 25.
+
+`get_quota_counts`: Returns both counts in one call as JSON `{ scripts_used, scripts_cap, questions_used, questions_cap }`. Used by the mobile `useQuota` hook for the home screen usage bars.
 
 ---
 
