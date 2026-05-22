@@ -105,7 +105,7 @@ The four categories below are:
 
 ### Child profile screen ("Your Child")
 - `child-profile/[id].tsx`
-- Sections: header / common triggers (from `interaction_logs.trigger_category`) / what works (saved scripts proxy) / emerging patterns (placeholder + lock) / weekly insight (locked teaser)
+- Sections: header / common triggers (from `interaction_logs.trigger_category`) / what works (saved scripts proxy) / profile basics
 - Empty state for < 5 interactions
 
 ### Account lifecycle (PR 18 + PR 20)
@@ -118,7 +118,7 @@ The four categories below are:
 
 ### Schema integrity
 - 14 tables, all user-scoped tables have FK to `auth.users(id)` with explicit ON DELETE behavior
-- `safety_events` uses SET NULL (preserves anonymized rows post-deletion per Principle 8)
+- `safety_events` uses CASCADE (Zero Trace — no anonymized retention per updated Principle 8)
 - All other user-scoped tables use CASCADE
 - Migration `20260428_004` fixed historical FK gaps
 - `enforce_conversation_child_ownership` trigger ensures cross-table user_id consistency
@@ -157,7 +157,7 @@ The four categories below are:
 
 ### Legal screens (in-app rendering)
 - Four screens at `apps/mobile/app/legal/` — privacy-policy, terms-of-service, ai-limitations, medical-safety
-- **Note:** All four hardcode short placeholder text (~50 lines each). Long-form drafts written this week are NOT yet wired.
+- Full legal content wired into all four screens (updated May 21, 2026).
 
 ---
 
@@ -170,12 +170,6 @@ The four categories below are:
 - Entitlement ID: `sturdy_plus`
 - **Not yet activated in production:** products not created in App Store Connect / Google Play, service account not connected
 - **Result:** `isPremium` returns `false` for all users until store products are configured
-
-### Free tier quota enforcement (DEAD CODE)
-- `getScriptUsage.ts` defines `FREE_TOTAL = 5` and reads from `usage_events`
-- **Function is never imported anywhere**
-- Free users have no enforced limit — the function is unreachable
-- Master Blueprint says "Free Tier (unlimited)" with "Unlimited SOS scripts" — so the dead code may be intentional residue from an older quota model
 
 ### Push notifications toggle
 - Settings screen `<Switch>` toggles local React state
@@ -214,13 +208,6 @@ The four categories below are:
 - Gating logic: `voiceLocked = mode !== 'sos' && !isPremium`
 - Since `isPremium` is always `false`, all non-SOS voice is locked
 - Tap-to-play opens PaywallSheet (which doesn't actually purchase)
-
-### Long-form legal docs
-- Drafts written this week (Privacy Policy 12 sections, ToS 14 sections, AI Limitations, Medical Safety)
-- Saved locally on Thai's Chromebook
-- Not committed to `docs/legal/*.md` (those still hold older versions)
-- Not wired into in-app screens (those still hardcode short placeholder text)
-- Awaiting lawyer review before commit + wiring
 
 ---
 
@@ -414,7 +401,7 @@ These are the items that block App Store submission, not the items that would ma
 2. ~~**Forgot password / password reset**~~ — ✅ SHIPPED
 3. **Restore purchase wiring** — RevenueCat SDK wired, `restore()` implemented; needs store products to test
 4. **Real subscription via RevenueCat** — SDK wired with test key; needs production API key + store products
-5. **Wire long-form legal docs into in-app screens** — current short placeholders won't pass review
+5. ~~**Wire long-form legal docs into in-app screens**~~ — ✅ DONE (May 21, 2026)
 6. **Privacy policy public URL** — App Store listing requires a privacy policy URL, currently no host
 7. **App Store assets** — screenshots, listing copy, age rating
 8. **Error monitoring** — production debugging without Sentry-equivalent is dangerous
@@ -424,7 +411,7 @@ These are the items that block App Store submission, not the items that would ma
 
 If launch is the goal, these are nice-to-have. If long-term retention is the goal, these become priority:
 
-1. **Real free-tier quota OR explicit removal of `getScriptUsage.ts` dead code**
+1. **Real free-tier quota** — server-side `check_monthly_quota` RPC enforces limits; client-side dead code removed
 2. **Push notifications wired end-to-end** — currently a UI lie
 3. **Research consent persistence** — UI lie
 4. **Child age update flow** — kids age every year
@@ -439,9 +426,8 @@ If launch is the goal, these are nice-to-have. If long-term retention is the goa
 - **Documentation drift was significant, now partially addressed.** CLAUDE.md, README.md, and OPERATIONS.md were updated May 21, 2026. MASTER_BLUEPRINT and ROADMAP still have drift (says 2 tabs, app has 3; says outcome cards on home, replaced by dashboard cards). FEATURE_INVENTORY updated same date.
 - **Subscription gating is real but inactive.** Every Sturdy+ feature is gated on `useSubscription().isPremium` which reads from RevenueCat. SDK is wired with test key but no store products exist — `isPremium` returns `false` for all users. When products are created and API key is set to production, gates will activate.
 - **Home screen data pipeline now works end-to-end.** `child/[id].tsx` passes `childProfileId` → Edge Function logs to `interaction_logs` with `child_profile_id` → home screen queries by child → dashboard cards show real data. Fixed May 21, 2026.
-- **Welcome flow has dead code.** `welcome/` directory contains `trial.tsx`, `trial-result.tsx`, `child-setup.tsx`, `signup.tsx` that are unreachable from the v12 flow. Worth a cleanup PR.
-- **`OnboardingProvider` context is vestigial.** Used only by the dead welcome files.
-- **Settings screen has dead tap targets** (Help & FAQ, Contact us) plus fake toggles (push, research consent). At App Store review, this risks "broken UI" rejection.
+- **Welcome flow is clean.** `welcome/` contains only `_layout.tsx` and `index.tsx` — both active. Dead trial/signup files removed. `OnboardingProvider` in `_layout.tsx` is vestigial but harmless (noted in comment).
+- **Settings screen has partially dead tap targets** (Help & FAQ removed; Contact us now opens email) plus fake toggles (push, research consent). Lying toggles removed May 21, 2026.
 - **Family tab is empty placeholder.** Added to tab bar but no content built yet. Planned for co-parent sharing features.
 
 ---
