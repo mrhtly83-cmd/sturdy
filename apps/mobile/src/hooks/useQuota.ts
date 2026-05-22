@@ -1,25 +1,27 @@
 // src/hooks/useQuota.ts
-// Fetches both quota counts in one RPC call (get_quota_counts).
-// Free users only — Sturdy+ users bypass quota entirely (returns zeroed counts).
+// Fetches both quota counts in one RPC call.
+// Returns counts, caps, percentages, and reset date.
+// Free users only — Sturdy+ users bypass quota entirely.
 
-import { useCallback, useEffect, useState } from 'react';
-import { supabase }       from '../lib/supabase';
-import { useAuth }        from '../context/AuthContext';
+import { useEffect, useState, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 import { useSubscription } from './useSubscription';
 
 export interface QuotaCounts {
-  scriptsUsed:   number;
-  scriptsCap:    number;
-  questionsUsed: number;
-  questionsCap:  number;
-  resetDate:     string; // "Jun 1" format
+  scriptsUsed:    number;
+  scriptsCap:     number;
+  questionsUsed:  number;
+  questionsCap:   number;
+  resetDate:      string; // "Jun 1" format
 }
 
-const EMPTY: Omit<QuotaCounts, 'resetDate'> = {
+const EMPTY: QuotaCounts = {
   scriptsUsed:   0,
   scriptsCap:    50,
   questionsUsed: 0,
   questionsCap:  25,
+  resetDate:     '',
 };
 
 function getResetDate(): string {
@@ -31,9 +33,8 @@ function getResetDate(): string {
 export function useQuota() {
   const { session }   = useAuth();
   const { isPremium } = useSubscription();
-
-  const [counts, setCounts]   = useState<QuotaCounts>({ ...EMPTY, resetDate: getResetDate() });
-  const [loading, setLoading] = useState(true);
+  const [counts, setCounts]     = useState<QuotaCounts>({ ...EMPTY, resetDate: getResetDate() });
+  const [loading, setLoading]   = useState(true);
 
   const refresh = useCallback(async () => {
     if (!session?.user?.id || isPremium) {
@@ -44,12 +45,12 @@ export function useQuota() {
     try {
       const { data, error } = await supabase
         .rpc('get_quota_counts', { target_user_id: session.user.id });
-      if (error || !data) throw error ?? new Error('empty response');
+      if (error || !data) throw error;
       setCounts({
-        scriptsUsed:   (data as any).scripts_used   ?? 0,
-        scriptsCap:    (data as any).scripts_cap    ?? 50,
-        questionsUsed: (data as any).questions_used ?? 0,
-        questionsCap:  (data as any).questions_cap  ?? 25,
+        scriptsUsed:   data.scripts_used   ?? 0,
+        scriptsCap:    data.scripts_cap    ?? 50,
+        questionsUsed: data.questions_used ?? 0,
+        questionsCap:  data.questions_cap  ?? 25,
         resetDate:     getResetDate(),
       });
     } catch (err) {
@@ -63,8 +64,8 @@ export function useQuota() {
 
   const scriptsRemaining   = Math.max(0, counts.scriptsCap   - counts.scriptsUsed);
   const questionsRemaining = Math.max(0, counts.questionsCap - counts.questionsUsed);
-  const scriptsPct         = counts.scriptsCap   > 0 ? Math.min(1, counts.scriptsUsed   / counts.scriptsCap)   : 0;
-  const questionsPct       = counts.questionsCap > 0 ? Math.min(1, counts.questionsUsed / counts.questionsCap) : 0;
+  const scriptsPct         = Math.min(1, counts.scriptsUsed   / counts.scriptsCap);
+  const questionsPct       = Math.min(1, counts.questionsUsed / counts.questionsCap);
 
   return {
     counts,
@@ -74,9 +75,9 @@ export function useQuota() {
     questionsRemaining,
     scriptsPct,
     questionsPct,
-    isScriptsLow:    !isPremium && scriptsPct   >= 0.8,
-    isQuestionsLow:  !isPremium && questionsPct >= 0.8,
-    isScriptsGone:   !isPremium && scriptsRemaining   === 0,
-    isQuestionsGone: !isPremium && questionsRemaining === 0,
+    isScriptsLow:    scriptsPct   >= 0.8,   // 80%+ — show amber + CTA
+    isQuestionsLow:  questionsPct >= 0.8,
+    isScriptsGone:   scriptsRemaining   === 0,
+    isQuestionsGone: questionsRemaining === 0,
   };
 }
