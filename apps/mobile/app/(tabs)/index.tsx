@@ -911,33 +911,30 @@ return (
   );
 })()}
 
-              {/* Card 3 — Sturdy+ Locked Insight (per child) */}
+              {/* Card 3 — Sturdy+ upsell */}
 <Text style={[s.hookSubheader, { marginTop: 22, color: 'rgba(200,136,58,0.55)' }]}>STURDY+</Text>
 {(() => {
   const activeKid = kidList[activeSessionIndex];
-  const triggers = activeKid ? (childInsights[activeKid.id]?.topTriggers ?? []) : [];
-  let quote: string;
-  if (triggers.length > 0) {
-    quote = `${triggers[0].label} keeps coming up for ${activeKid?.name ?? 'your child'} — unlock the full pattern read.`;
-  } else {
-    quote = 'Patterns are building — check back after a few more sessions.';
-  }
+  const insights = activeKid ? childInsights[activeKid.id] : null;
+  const hasTriggers = (insights?.topTriggers?.length ?? 0) > 0;
+  const blurb = hasTriggers
+    ? `${activeKid?.name ?? 'Your child'} has used ${insights?.totalInteractions ?? 0} sessions — unlock unlimited scripts and tone selector.`
+    : 'Unlimited scripts, tone selector, and more.';
 
   return (
     <Pressable
       onPress={() => { Haptics.selectionAsync(); router.push('/upgrade' as any); }}
       style={({ pressed }) => [s.hookCardLocked, pressed && { opacity: 0.85 }]}
       accessibilityRole="button"
-      accessibilityLabel={`Unlock weekly insight for ${activeKid?.name ?? 'your child'}`}
+      accessibilityLabel="See what's in Sturdy+"
     >
       <View style={s.hookCardRow}>
         <Text style={s.hookLockedIcon}>🔒</Text>
         <View style={{ flex: 1 }}>
-          <Text style={s.hookLockedMeta}>Weekly insight for {activeKid?.name ?? 'your child'}</Text>
           <Text style={s.hookLockedTitle} numberOfLines={2}>
-            "{quote}"
+            {blurb}
           </Text>
-          <Text style={[s.hookLockedMeta, { marginTop: 4 }]}>Unlock full insight with Sturdy+ →</Text>
+          <Text style={[s.hookLockedMeta, { marginTop: 4 }]}>See what's in Sturdy+ →</Text>
         </View>
       </View>
     </Pressable>
