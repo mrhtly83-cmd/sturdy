@@ -1,147 +1,182 @@
-Sturdy Master Blueprint
-Version: v5 (Architecture Pivot & Consolidation)
-Date Locked: May 2026
-Status: Live Source of Truth
+# Sturdy Master Blueprint
 
-1. The Vision & The Shift
+**Version:** v6 (V1 Launch Edition)
+**Date Locked:** May 2026
+**Status:** Live Source of Truth
+
+---
+
+## 1. The Vision & The Shift
+
 Sturdy is the go-to parenting companion for every parent at every level.
 
-The Shift: Sturdy is transitioning from a purely emergency SOS tool into a daily thinking partner. The SOS remains the safety net (housed inside each child's hub), but the primary daily use is asking questions and wondering aloud.
+**The Shift:** Sturdy is transitioning from a purely emergency SOS tool into a daily thinking partner. The SOS remains the safety net (housed inside each child's hub), but the primary daily use is asking questions and wondering aloud.
 
-The core question: "What should I say right now?"
-The deeper promise: A better parent, one moment at a time.
-The philosophy: Sturdy gives you the words. Use them exactly, or make them yours.
+**The core question:** "What should I say right now?"
+**The deeper promise:** A better parent, one moment at a time.
+**The philosophy:** Sturdy gives you the words. Use them exactly, or make them yours.
 
-2. Revenue, Onboarding & Data (The Core Rules)
-Authentication & Onboarding
-Mandatory Auth: Guest mode does not exist. All users must authenticate to use the app.
+---
 
-3-Beat Welcome Flow: A clean, 3-page onboarding sequence. The final CTA card contains only two options: "Get started" (Sign Up) and "Sign in". There is no "Try without account" fallback.
+## 2. Revenue, Onboarding & Data (The Core Rules)
 
-State Hydration: ChildProfileContext relies strictly on an authenticated Supabase session.
+### Authentication & Onboarding
 
-The Metered Freemium Model
-Free Tier: 50 free script generations per calendar month.
+**Auth-optional with guest path.** Users can try Sturdy without creating an account. Guest users get a full experience with child profile data stored locally via AsyncStorage (`sturdy_guest_child`). Guest data migrates to Supabase on sign-up.
 
-Sturdy+ ($9.99/month): Unlimited scripts, Voice playback on all modes, full weekly insights, and tone selector (Soft/Gentle/Direct).
+**3-Beat Welcome Flow:** A clean, 5-page onboarding sequence. The final CTA card offers three paths: "Get started" (child setup → sign up), "Try without account" (guest mode), and "Sign in" (returning users).
 
-The Quota System: Tracked strictly via a Supabase RPC (check_monthly_quota) evaluating the usage_events table. Free users hit a hard paywall (PaywallSheet.tsx) at script 51.
+**State Hydration:** `ChildProfileContext` loads from Supabase for authenticated users and falls back to AsyncStorage for guests.
 
-The Crisis Exemption: We never paywall safety. If the safety filter returns response_type: "crisis", it bypasses the quota limit and routes to the free /crisis support screen.
+### The Metered Freemium Model
 
-"Zero Trace" Data Safety
-Strict Deletion: Users have a "Delete Account & All Data" button in settings.
+**Free Tier:** 50 free script generations per calendar month across Question, Reconnect, Understand, and Conversation modes.
 
-Database Level: All user-scoped tables, including safety_events, strictly use ON DELETE CASCADE so no anonymized traces remain. The deletion triggers supabase.auth.admin.deleteUser(uid) via a Service Role Edge Function.
+**SOS is always unlimited and free.** SOS scripts are excluded from the monthly quota. The `check_monthly_quota` RPC filters on `event_meta->>'mode' != 'sos'` and only counts `script_generated`, `question_generated`, and `followup_generated` event types. This is non-negotiable per Principle 6.
 
-3. The Two Product Modes
-1. Question Mode (Lives on Home)
-Purpose: For wondering, worrying, and celebrating.
+**Sturdy+ ($9.99/month or $69.99/year):**
+- Unlimited scripts across all modes (no monthly cap)
+- Tone selector (Soft / Direct)
+- Follow-up scripts
+- Saved script library (searchable)
+- Voice playback on all modes
 
-Input: A single "What's on your mind?" text area on the Home tab.
+**V1 Sturdy+ does NOT include** (deferred to V2):
+- Weekly insights / reflections
+- Emerging pattern detection
+- "A Sturdy that knows your child" personalization
 
-Output: A flowing, journal-style narrative (not structured cards). Length adapts to the question's complexity.
+**The Quota System:** Tracked server-side via `check_monthly_quota` RPC evaluating the `usage_events` table. Free users hit a hard paywall (`PaywallSheet.tsx`) when the non-SOS count reaches 50. Crisis paths and SOS are always exempt.
 
-Child Auto-detection: Sturdy runs name-match detection. If it finds a child's name, it auto-tags the thought. If ambiguous with 2+ children, it prompts a tiny inline picker.
+**The Crisis Exemption:** We never paywall safety. If the safety filter returns `response_type: "crisis"`, it bypasses quota and rate limits and routes to the free `/crisis` support screen.
 
-Storage: Saves to parent_thoughts. Displayed in a "Recent Thoughts" strip.
+### "Zero Trace" Data Safety
 
-2. Directed Modes (Lives in Child Hub)
-Purpose: For active parenting moments and meltdowns. Reached by tapping a child's avatar.
+**Strict Deletion:** Users have a "Delete Account & All Data" button in Settings.
 
-Internal Modes:
+**Database Level:** All user-scoped tables, including `safety_events`, use `ON DELETE CASCADE` so no anonymized traces remain. The deletion triggers `supabase.auth.admin.deleteUser(uid)` via a Service Role Edge Function.
 
-SOS: Help us calm down (Regulate / Connect / Guide)
+---
 
-Understand: Help me understand why (Why / What they need / What helps)
+## 3. The Two Product Modes
 
-Reconnect: Repair what happened (Open Door / Hold Steady / Leave Space)
+### 1. Question Mode (Lives on Home)
 
-Conversation: Set up a talk (Set up / Curiosity / State clearly)
+**Purpose:** For wondering, worrying, and celebrating.
 
-Output: Structured JSON translated into collapsible, interactive UI cards.
+**Input:** A single "What's on your mind?" text area on the Home tab.
 
-4. Navigation & Screen Architecture
-Tab Bar (3 Tabs)
-🏠 Home (/(tabs)/index.tsx) — Dashboard + Ask Sturdy input. Shows child avatars, 3 cycling dashboard cards (Last Session, Patterns, Sturdy+ Insight), and question input pill.
+**Output:** A flowing, journal-style narrative (not structured cards). Length adapts to the question's complexity.
 
-❤️ Family (/(tabs)/family.tsx) — Placeholder. Planned for co-parent sharing, family member management, shared script library.
+**Child Auto-detection:** Sturdy runs name-match detection. If it finds a child's name, it auto-tags the thought. If ambiguous with 2+ children, it prompts a tiny inline picker.
 
-⚙️ Settings (/(tabs)/settings.tsx) — Account, subscription, children, tone, legal, account lifecycle.
+**Storage:** Saves to `parent_thoughts`. Displayed in a "Recent Thoughts" strip.
 
-Home = The Parent Hub
-State of Mind Header: Rotating greeting using the parent's real first name.
+### 2. Directed Modes (Lives in Child Hub)
 
-Question Mode Input: "Ask Sturdy anything…" pill with amber send button.
+**Purpose:** For active parenting moments and meltdowns. Reached by tapping a child's avatar.
 
-The Gateways (Child Roster): Horizontal scroll of child avatar chips with amber glow on active selection. Tapping routes to /child/[id].
+**Internal Modes:**
+- **SOS:** Help us calm down (Regulate / Connect / Guide)
+- **Understand:** Help me understand why (Why / What they need / What helps)
+- **Reconnect:** Repair what happened (Open Door / Hold Steady / Leave Space)
+- **Conversation:** Set up a talk (Set up / Curiosity / State clearly)
 
-Dashboard Cards (3 cards, cycling per child):
-- Last Session: Most recent interaction_log per child — child name, mode badge, timestamp, situation summary, "View full script →"
-- Patterns: Top 3 trigger categories from loadChildInsights — colored bar chart (amber / sage / steel)
-- Sturdy+ Insight: Locked weekly insight teaser, personalized to child's top trigger, taps to /upgrade
+**Output:** Structured JSON translated into collapsible, interactive UI cards.
+
+---
+
+## 4. Navigation & Screen Architecture
+
+### Tab Bar (3 Tabs)
+
+🏠 **Home** (`/(tabs)/index.tsx`) — Dashboard + Ask Sturdy input. Shows child avatars, 3 cycling dashboard cards (Last Session, Patterns, Sturdy+ Insight), and question input pill.
+
+❤️ **Family** (`/(tabs)/family.tsx`) — Child list with trigger badges, session counts, and "Add a child" CTA. Co-parent sharing planned for V2.
+
+⚙️ **Settings** (`/(tabs)/settings.tsx`) — Account, subscription, children, tone, legal, account lifecycle.
+
+### Home = The Parent Hub
+
+**State of Mind Header:** Rotating greeting using the parent's real first name.
+
+**Question Mode Input:** "Ask Sturdy anything…" pill with amber send button.
+
+**The Gateways (Child Roster):** Horizontal scroll of child avatar chips with amber glow on active selection. Tapping routes to `/child/[id]`.
+
+**Dashboard Cards (3 cards, cycling per child):**
+- **Last Session:** Most recent `interaction_log` per child — child name, mode badge, timestamp, situation summary, "View full script →"
+- **Patterns:** Top 3 trigger categories from `loadChildInsights` — colored bar chart (amber / sage / steel)
+- **Sturdy+ Insight:** Locked weekly insight teaser, personalized to child's top trigger, taps to `/upgrade`
 
 Cards auto-cycle across children every 5 seconds (crossfade animation). Swipeable left/right. Amber indicator dots for 2+ children.
 
-Quota Counter: Tracked server-side via check_monthly_quota RPC — not displayed on home screen UI.
+**Quota Counter:** Tracked server-side via `check_monthly_quota` RPC — not displayed on home screen UI.
 
-The Child Hub (/child/[id].tsx)
-Personalized Dashboard: Header shows the specific child's name and age.
+### The Child Hub (`/child/[id].tsx`)
 
-SOS Input: Direct access to script generation contextualized to this child.
+**Personalized Dashboard:** Header shows the specific child's name and age.
 
-History: Saved scripts and recent activity for this child specifically.
+**SOS Input:** Direct access to script generation contextualized to this child.
 
-Profile Link: Entry to /child-profile/[id].tsx to see their locked weekly insights, common triggers, and emerging patterns.
+**History:** Saved scripts and recent activity for this child specifically.
 
-5. AI & Voice System
-Model: Anthropic Claude (claude-sonnet-4-20250514) via Supabase Edge Functions.
+**Profile Link:** Entry to `/child-profile/[id].tsx` to see their common triggers and emerging patterns.
 
-Safety First: The safetyFilter.ts runs instantly on every prompt.
+---
 
-Neurotype Detection: Sturdy detects neurotype silently from message context to adapt the AI's tone and strategies. It is never displayed as a label to the user.
+## 5. AI & Voice System
 
-Voice Capabilities:
+**Model:** Anthropic Claude (`claude-sonnet-4-20250514`) via Supabase Edge Functions.
 
-Input (v1): Speech-to-text populates the input fields.
+**Safety First:** The `safetyFilter.ts` runs instantly on every prompt.
 
-Output (v2): expo-speech device TTS reads responses aloud. Unlocked for SOS for all users; Sturdy+ gated for other modes.
+**Neurotype Detection:** Sturdy detects neurotype silently from message context to adapt the AI's tone and strategies. It is never displayed as a label to the user.
 
-6. Design System: Golden Beam (v6)
-Background: #0d0b08 (warm near-black) with golden-particles-bg.png parallax + dark gradient overlay.
+**Voice Capabilities:**
+- **Input (v1):** Speech-to-text populates the input fields.
+- **Output (v2):** `expo-speech` device TTS reads responses aloud. Unlocked for SOS for all users; Sturdy+ gated for other modes.
 
-Particles: 40 animated floating golden particles across 4 distribution zones (top-right cluster densest, fading to floor).
+---
 
-Gradients: Amber CTA gradient (#C8883A → #E8A855). SOS coral (#E87461) reserved for crisis only.
+## 6. Design System: Golden Beam (v6)
 
-Glass Cards: Transparent backgrounds (rgba(255,255,255,0.04)), 0.07 opacity borders, 14px border radii. Dashboard cards cycle across children.
+**Background:** `#0d0b08` (warm near-black) with `golden-particles-bg.png` parallax + dark gradient overlay.
 
-Typography: Fraunces italic (serif) for situational summaries and greetings; DM Sans for body and UI.
+**Particles:** 40 animated floating golden particles across 4 distribution zones (top-right cluster densest, fading to floor).
 
-Animations: Particle float (4.5–10.5s loops), card crossfade (250ms), parallax background drift (25s). Haptic feedback on interactions.
+**Gradients:** Amber CTA gradient (`#C8883A → #E8A855`). SOS coral (`#E87461`) reserved for crisis only.
 
-7. Database Architecture
-Core Tables
-profiles (Auth parent accounts)
+**Glass Cards:** Transparent backgrounds (`rgba(255,255,255,0.04)`), 0.07 opacity borders, 14px border radii. Dashboard cards cycle across children.
 
-child_profiles (Child context: name, age, inferred neurotype array)
+**Typography:** Fraunces italic (serif) for situational summaries and greetings; DM Sans for body and UI.
 
-parent_thoughts (NEW: Question mode Q&A, auto-tagged to children)
+**Animations:** Particle float (4.5–10.5s loops), card crossfade (250ms), parallax background drift (25s). Haptic feedback on interactions.
 
-interaction_logs (Logs R/C/G mode results, tone selected, and user follow-up)
+---
 
-usage_events (Tracking for the 50-script quota)
+## 7. Database Architecture
 
-safety_events (Logged triggers — MUST be ON DELETE CASCADE)
+### Core Tables
 
-child_insights (Aggregated patterns, week_of dates, Sturdy+ content)
+- `profiles` — Auth parent accounts
+- `child_profiles` — Child context: name, age, inferred neurotype array
+- `parent_thoughts` — Question mode Q&A, auto-tagged to children
+- `interaction_logs` — Logs R/C/G mode results, tone selected, and user follow-up
+- `usage_events` — Tracking for the freemium quota (SOS excluded from count)
+- `safety_events` — Logged triggers — `ON DELETE CASCADE` (no anonymized retention)
+- `child_insights` — Aggregated patterns, week_of dates, Sturdy+ content
 
-Key RPCs
-check_monthly_quota: Returns count of usage_events for auth.uid() in the current month.
+### Key RPCs
 
-The Standard
+`check_monthly_quota`: Returns count of non-SOS `usage_events` for the given user in the current calendar month. Filters: `event_meta->>'mode' != 'sos'` and `event_type in ('script_generated', 'question_generated', 'followup_generated')`.
+
+---
+
+## The Standard
+
 If a stressed parent opens Sturdy in a hard moment, the product should feel:
-Fast. Calm. Clear. Human. Useful within seconds.
+**Fast. Calm. Clear. Human. Useful within seconds.**
 
 If a returning parent opens Sturdy on a calm evening, the product should feel:
-Warm. Knowing. Personal. Worth keeping.
+**Warm. Knowing. Personal. Worth keeping.**

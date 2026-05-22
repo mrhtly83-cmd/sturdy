@@ -105,7 +105,12 @@ references and `docs/SCRIPT QUALITY STANDARDS.md` for SOS register.
 The free tier of Sturdy is a real product, not a trial. Unlimited SOS scripts.
 Question mode. Crisis support. These never become paid.
 
+The 50/month quota applies only to Reconnect, Understand, Conversation, and
+Question modes. SOS is excluded from the quota count at the database level
+(`check_monthly_quota` filters `event_meta->>'mode' != 'sos'`).
+
 **This looks like a violation when:**
+- SOS scripts are counted toward the monthly quota
 - Free-tier features get rate-limited beyond reasonable abuse prevention
 - Free-tier features get degraded over time to push subscription
 - Marketing implies the free tier is a teaser
@@ -118,11 +123,15 @@ Sturdy does not use dark patterns to drive subscription. No fake higher prices
 discounted back. No urgency manufactured by countdown timers. No friction
 inserted to make cancellation harder than subscription.
 
+The paywall only promises features that are actually built and shipping. No
+vaporware in the Sturdy+ feature list.
+
 **This looks like a violation when:**
 - Pricing anchors that don't reflect real prices
 - "Limited time" claims that aren't limited
 - Multi-step cancellation flows
 - Loss-aversion language in the paywall ("don't miss out")
+- Sturdy+ feature list includes items not yet built
 
 ---
 
@@ -135,11 +144,9 @@ We offer a 30-day pause for users who might regret a hasty decision, and
 we offer a data export before any deletion. Once a user chooses to delete,
 we honour it fully.
 
-The one exception is `safety_events` — when a safety filter triggers, the
-resulting log row has its `user_id` stripped on account deletion but the
-content is retained anonymously. This is disclosed in the privacy policy.
-The retention serves the safety filter's improvement for all future users,
-including those whose own accounts are later deleted.
+All user-scoped tables use `ON DELETE CASCADE`, including `safety_events`.
+No anonymized traces remain after account deletion. This is the "Zero Trace"
+commitment disclosed in the privacy policy.
 
 **This looks like a violation when:**
 - "Recover deleted account" flows that revive data after the deletion period
@@ -149,6 +156,7 @@ including those whose own accounts are later deleted.
   clauses that quietly preserve deleted user data
 - Any path where a user's deletion is reversible by the company (only the
   user can reverse a pause; only within the 30-day window)
+- `safety_events` or any other table uses `SET NULL` instead of `CASCADE`
 
 ---
 

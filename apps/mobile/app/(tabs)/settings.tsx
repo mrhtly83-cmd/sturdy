@@ -1,6 +1,10 @@
 // app/(tabs)/settings.tsx
-// v4 — Deep Warm v5.2: C-2 settings gradient, dark glass, amber section labels.
-// + Real subscription status from RevenueCat
+// v5 — V1 Launch cleanup:
+// - Removed push notification toggle (no backend, was lying)
+// - Removed research consent toggle (not persisted, was lying)
+// - Wired "Help & FAQ" and "Contact us" to email
+// - Fixed upgrade sub copy (removed "insights" — not built)
+// - GENERAL section removed (was only push toggle)
 
 import { useState } from 'react';
 import {
@@ -10,7 +14,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from 'react-native';
@@ -39,15 +42,15 @@ function SettingGroup({ children }: { children: React.ReactNode }) {
 }
 
 function SettingRow({
-  label, value, onPress, danger, toggle, toggleValue, onToggle, accent,
+  label, value, onPress, danger, accent,
 }: {
   label: string; value?: string; onPress?: () => void; danger?: boolean;
-  toggle?: boolean; toggleValue?: boolean; onToggle?: (v: boolean) => void; accent?: boolean;
+  accent?: boolean;
 }) {
   return (
     <Pressable
       onPress={() => { if (onPress) { Haptics.selectionAsync(); onPress(); } }}
-      disabled={!onPress && !toggle}
+      disabled={!onPress}
       style={({ pressed }) => [s.row, onPress && pressed && { opacity: 0.7 }]}
     >
       <Text style={[
@@ -57,14 +60,7 @@ function SettingRow({
       ]}>
         {label}
       </Text>
-      {toggle ? (
-        <Switch
-          value={toggleValue}
-          onValueChange={(v) => { Haptics.selectionAsync(); onToggle?.(v); }}
-          trackColor={{ false: 'rgba(255,255,255,0.10)', true: C.amber }}
-          thumbColor="#FFFFFF"
-        />
-      ) : value ? (
+      {value ? (
         <Text style={s.rowValue}>{value}</Text>
       ) : onPress ? (
         <Text style={s.rowChevron}>›</Text>
@@ -88,7 +84,6 @@ function planDisplayName(plan: 'free' | 'monthly' | 'annual'): string {
 }
 
 function handleManageSubscription() {
-  // Deep-link to the platform's subscription management
   if (Platform.OS === 'android') {
     Linking.openURL('https://play.google.com/store/account/subscriptions');
   } else if (Platform.OS === 'ios') {
@@ -96,13 +91,21 @@ function handleManageSubscription() {
   }
 }
 
+const SUPPORT_EMAIL = 'sturdymobile@gmail.com';
+
+function handleContactUs() {
+  Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Sturdy%20Support`);
+}
+
+function handleHelpFAQ() {
+  Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Sturdy%20Help`);
+}
+
 // ─── Main ───
 
 export default function SettingsScreen() {
   const { session, signOut } = useAuth();
   const { isPremium, plan, restore } = useSubscription();
-  const [pushEnabled, setPushEnabled] = useState(false);
-  const [researchConsent, setResearchConsent] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
@@ -113,7 +116,6 @@ export default function SettingsScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     try {
       await signOut();
-      // AuthGate handles post-signout routing.
     } catch {
       setSigningOut(false);
     }
@@ -224,7 +226,7 @@ export default function SettingsScreen() {
               >
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={s.upgradeLabel}>Upgrade to Sturdy+</Text>
-                  <Text style={s.upgradeSub}>Unlimited scripts, full history, insights</Text>
+                  <Text style={s.upgradeSub}>Unlimited scripts, tone selector, voice</Text>
                 </View>
                 <View style={s.upgradeBtn}>
                   <Text style={s.upgradeBtnText}>→</Text>
@@ -244,34 +246,22 @@ export default function SettingsScreen() {
             <SettingRow label="Manage children" onPress={() => router.push('/child/new')} />
           </SettingGroup>
 
-          {/* GENERAL */}
-          <SectionLabel label="GENERAL" />
-          <SettingGroup>
-            <SettingRow
-              label="Push notifications"
-              toggle toggleValue={pushEnabled} onToggle={setPushEnabled}
-            />
-          </SettingGroup>
-
           {/* PRIVACY */}
           <SectionLabel label="PRIVACY" />
           <SettingGroup>
-            <SettingRow
-              label="Research consent"
-              toggle toggleValue={researchConsent} onToggle={setResearchConsent}
-            />
-            <Divider />
             <SettingRow label="Privacy policy" onPress={() => router.push('/legal/privacy-policy')} />
             <Divider />
             <SettingRow label="Terms of service" onPress={() => router.push('/legal/terms-of-service')} />
+            <Divider />
+            <SettingRow label="AI limitations" onPress={() => router.push('/legal/ai-limitations')} />
+            <Divider />
+            <SettingRow label="Medical safety" onPress={() => router.push('/legal/medical-safety')} />
           </SettingGroup>
 
           {/* SUPPORT */}
           <SectionLabel label="SUPPORT" />
           <SettingGroup>
-            <SettingRow label="Help & FAQ" onPress={() => {}} />
-            <Divider />
-            <SettingRow label="Contact us" onPress={() => {}} />
+            <SettingRow label="Contact us" onPress={handleContactUs} />
           </SettingGroup>
 
           {/* MANAGE ACCOUNT */}
@@ -292,7 +282,7 @@ export default function SettingsScreen() {
             />
           </SettingGroup>
 
-          <Text style={s.version}>Sturdy v6.0 · Made with ♥</Text>
+          <Text style={s.version}>Sturdy v1.0 · Made with ♥</Text>
 
           <View style={{ height: 60 }} />
         </ScrollView>

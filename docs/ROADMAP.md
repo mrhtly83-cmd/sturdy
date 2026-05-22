@@ -2,7 +2,9 @@
 
 **Last updated: 2026-05-21**
 
-> Phase 1 section reflects actual shipped state as of May 2026. See `docs/FEATURE_INVENTORY.md` for the full ground-truth audit (last run 2026-05-21).
+> This roadmap reflects the V1 launch plan. Phase 1 is split into "shipped" and "V1 launch fixes". Everything else is V2+, prioritized by real user data post-launch.
+
+---
 
 ## Vision
 
@@ -23,137 +25,137 @@ Every decision should serve at least one of these:
 
 ---
 
-## Phase 1 — Foundation (complete)
+## V1 Launch — Play Store First (Target: June 15, 2026)
 
-**Goal:** A working, trustworthy SOS tool that sounds human and adapts to the child.
+**Goal:** Ship a working, trustworthy product on Google Play. Fix what's broken. Don't add features.
+
+**Platform:** Google Play first. Apple App Store follows once Play Store is live and stable.
 
 ### ✅ Shipped and working
 
 **Authentication**
-- Sign up / sign in / sign out — email + password (`app/auth/index.tsx`)
-- Forgot password — email reset link, "check your inbox" confirm state (`app/auth/forgot-password.tsx`)
-- Password reset — deep link handler in `_layout.tsx`, new password screen (`app/auth/reset-password.tsx`)
-- Confirm-email state shown after sign-up when Supabase requires email confirmation
-- `handle_new_user()` Postgres trigger auto-creates `profiles` row on signup
+- Sign up / sign in / sign out — email + password
+- Forgot password — email reset link, confirm state
+- Password reset — deep link handler, new password screen
+- Confirm-email state shown after sign-up
+- `handle_new_user()` trigger auto-creates `profiles` row
 
 **Child profiles**
-- Add child — name + exact age 2–17, optional personality notes (`child-setup.tsx`, `child/new.tsx`)
-- Multi-child support — home screen handles 0/1/many children with avatar picker
-- Guest path — child stored to AsyncStorage (`sturdy_guest_child`), migrates on sign-up
+- Add child — name + exact age 2–17, optional personality notes
+- Multi-child support — home screen handles 0/1/many children
+- Guest path — child stored to AsyncStorage, migrates on sign-up
 
 **AI script generation — all four modes**
-- Per-child hub (`child/[id].tsx?mode=...`) serves SOS / Reconnect / Understand / Conversation
-- Edge Function: `chat-parenting-assistant` — Anthropic Claude `claude-sonnet-4-20250514`
-- Prompt assembly in `buildPrompt.ts`: age calibration, silent neurotype detection, 5 trigger-category guidance blocks (meltdown / refusal / shutdown / aggression / transition), tone injection
-- Output: `situation_summary` + `regulate` / `connect` / `guide` steps + `avoid[]`
-- `coaching` + `strategies[]` optional per step
-- Result screen (`result.tsx`) — collapsible cards, avoid section, "what happened next?" feedback, save, share, voice player, profile nudge after 3rd script
+- Per-child hub serves SOS / Reconnect / Understand / Conversation
+- Edge Function: `chat-parenting-assistant` — Claude `claude-sonnet-4-20250514`
+- Prompt assembly: age calibration, silent neurotype detection, trigger guidance, tone injection
+- Result screen — collapsible cards, avoid section, feedback, save, share, voice
 
 **Question mode**
-- Home screen textarea → Edge Function `mode: 'question'` → prose response
-- Result at `thought/[id].tsx` — persisted to `parent_thoughts` table
+- Home screen textarea → prose response → persisted to `parent_thoughts`
 - Pin / delete / ask-another actions
 
 **Safety**
-- Safety filter (`_shared/safetyFilter.ts`) — 8 crisis categories, phrase-based detection, runs before every AI call on both SOS and question paths
-- Crisis screen (`crisis.tsx`) — adaptive content per crisis_type, real hotlines (988, Crisis Text Line, Poison Control), `tel:` / `sms:` deep links
-- Safety events logged to `safety_events` table (SET NULL on deletion — anonymized row retained per Principle 8)
-- Rate limiting — per-user burst + daily cap (`_shared/rateLimit.ts`); crisis paths always bypass
+- Safety filter — 8 crisis categories, runs before every AI call
+- Crisis screen — adaptive content, real hotlines, deep links
+- Safety events logged (CASCADE on deletion)
+- Rate limiting — per-user burst + daily cap; crisis always bypasses
 
 **Tone system**
 - Three tones: Soft / Gentle / Direct — end-to-end wired
-- AsyncStorage-backed (`src/utils/tone.ts`) → API request body → `validateInput` → `getToneBlock()` injects into all four mode prompts
-- Gentle is the default free-tier voice (no-op — prompt unchanged); Soft + Direct are Sturdy+ gated
+- Gentle is free-tier default; Soft + Direct are Sturdy+ gated
 
 **Trigger classification**
-- `_shared/triggerClassifier.ts` — 15 categories (homework, bedtime, screen_time, leaving_places, mealtime, morning_routine, sharing, sibling, separation, public_meltdown, getting_dressed, bath_time, sport_activity, social_conflict, + fallback)
-- Logged silently to `interaction_logs.trigger_category` — feeds child profile screen
+- 15 categories logged to `interaction_logs.trigger_category`
 
-**Subscription / billing (SDK wired, not yet activated)**
-- `react-native-purchases` installed and `Purchases.configure()` called in `_layout.tsx`
-- `useSubscription.ts` has real RevenueCat purchase / restore / entitlement logic
-- `Purchases.logIn(session.user.id)` syncs Supabase user to RevenueCat
-- **Not yet activated** — `EXPO_PUBLIC_REVENUECAT_API_KEY` is set to test key; products not created in App Store Connect / Google Play
-- Entitlement ID: `sturdy_plus`; to activate: set production API key + create products + configure RevenueCat dashboard
+**Subscription / billing (SDK wired)**
+- `react-native-purchases` installed, `Purchases.configure()` called
+- `useSubscription.ts` has real purchase / restore / entitlement logic
+- Entitlement: `sturdy_plus`
 
 **Paywall + gating**
-- `upgrade.tsx` — Monthly $9.99 (3-day trial) / Annual $69.99 (7-day trial)
-- `PaywallSheet.tsx` — reusable bottom-sheet shown when free user taps locked feature
-- All Sturdy+ gates read from `useSubscription().isPremium`
+- `upgrade.tsx` — Monthly $9.99 / Annual $69.99
+- `PaywallSheet.tsx` — reusable bottom-sheet for locked features
 
 **Account lifecycle**
-- Pause account (30-day reversible) — `account-pause` Edge Function + `app/account/pause.tsx`
-- Permanent deletion — "DELETE" confirmation required — `account-delete` Edge Function + `app/account/delete.tsx`
-- Data export — signed 24-hour URL → zip with JSON + Markdown — `account-export` Edge Function + `app/account/export.tsx`
-- Daily cron (`scheduled-pause-cleanup`) auto-deletes accounts paused > 30 days
+- Pause (30-day reversible), permanent deletion, data export
+- Daily cron auto-deletes accounts paused > 30 days
 
 **Content screens**
-- Saved scripts library (`saved.tsx`) — grouped by child, swipe-to-delete
-- Interaction history (`history.tsx`) — filterable by mode + trigger category
-- Child profile / "Your Child" (`child-profile/[id].tsx`) — common triggers, what works, patterns teaser, weekly insight teaser
-- Settings — real wiring: RevenueCat status, tone, legal, account lifecycle, sign out
+- Saved scripts library, interaction history, child profile, settings
 
-**Home screen dashboard (v6 — Golden Beam)**
-- 3 dashboard cards: Last Session (per-child recent `interaction_logs`), Patterns (trigger frequency from `loadChildInsights`), Sturdy+ Insight (locked teaser)
-- Cards auto-cycle across children (5s crossfade, swipeable, indicator dots for 2+ children)
-- `golden-particles-bg.png` parallax background with 40 animated floating particles
-- Child avatar selector chips with amber active glow
-- "Ask Sturdy anything…" pill input for Question mode
+**Home screen dashboard (Golden Beam v6)**
+- 3 dashboard cards: Last Session, Patterns, Sturdy+ Insight
+- Auto-cycling, particles, parallax, child avatar selector
 
-**Navigation (3-tab structure)**
-- Tab bar: Home (`index.tsx`), Family (`family.tsx` — placeholder), Settings (`settings.tsx`)
-- Family tab is empty — planned for co-parent/sharing features
-
-**Rate limiting**
-- `_shared/rateLimit.ts` — per-user abuse prevention (10 events/60s burst, 100 events/24h daily)
-- Counted from `usage_events` table, single PostgREST round-trip
-- Crisis paths bypass entirely (Principle 4)
-- Fails open on DB error — never blocks a real parent
-- `RateLimitError` surfaced in mobile app with server-supplied message
-
-**Welcome / onboarding**
-- v12 native flow (`welcome/index.tsx`) — 5-page paged ScrollView, photo-identity (`welcome-family.jpg`, `welcome-horizon.jpg`), spring animations, haptics
-- Three CTA paths: Get started → `child-setup`, Try without account → guest flag, Sign in → auth
-- `TypingDemo.tsx` — live animated demo of Regulate/Connect/Guide output during onboarding
-
-**Legal**
-- Four in-app screens: privacy-policy, terms-of-service, ai-limitations, medical-safety (`app/legal/`)
+**Navigation**
+- 3-tab bar: Home, Family, Settings
 
 **Database**
-- 14 tables, all with FK constraints + explicit ON DELETE behaviour
-- Migration `20260428_004` retroactively added missing FKs
-- `enforce_conversation_child_ownership` trigger maintains cross-table user_id consistency
+- 14 tables, all with FK constraints + CASCADE deletion
 
 ---
 
-### 🟡 Built but incomplete
+### ✅ V1 launch fixes (completed)
 
-| Area | What exists | What's missing |
-|---|---|---|
-| Subscription / billing | RevenueCat SDK wired, purchase/restore logic real | Test API key only — products not in App Store Connect / Google Play; `isPremium` always `false` until store products configured |
-| Restore purchase | `restore()` in `useSubscription.ts` + Settings row | SDK wired but no store products to restore against |
-| Push notifications | Toggle in Settings (React state only) | Not persisted to DB; no APNs/FCM wiring; no Expo push token |
-| Research consent | Toggle in Settings (React state only) | Not persisted to DB |
-| Help & FAQ / Contact us | Settings rows exist | Tap targets are empty handlers; no FAQ content; no contact form |
-| Weekly insight | Locked teaser UI on child-profile screen + home Sturdy+ card | No generation code; `child_insights` table exists but unpopulated |
-| Emerging patterns | Placeholder + lock UI | No detection logic; `incident_events` table exists but unused |
-| Legal docs (long-form) | Short placeholder text in legal screens | Long-form drafts not yet committed or wired |
-| Analytics backend | `analytics.ts` event stubs (logs in dev, no-op in prod) | No backend wired; no funnel visibility |
-| Error monitoring | Nothing | No Sentry / Bugsnag; production crashes invisible |
-| Welcome dead code | `welcome/` has orphaned files: `trial.tsx`, `trial-result.tsx`, `child-setup.tsx`, `signup.tsx` | These are unreachable from v12 but not deleted; `OnboardingProvider` is vestigial |
-| Family tab | Tab exists in 3-tab bar (`family.tsx`) | Empty placeholder — no content, no co-parent sharing built |
+| Fix | Status |
+|-----|--------|
+| Quota RPC: exclude SOS from monthly count (Principle 6) | ✅ Applied |
+| Legal docs: full content in all 4 in-app screens | ✅ Updated |
+| Legal docs: full content in `docs/legal/*.md` | ✅ Updated |
+| Paywall copy: remove unbuilt features (weekly insights, patterns) | ✅ Updated |
+| Contact email: `sturdymobile@gmail.com` in legal screens | ✅ Updated |
+| Master Blueprint: resolve guest mode + quota contradictions | ✅ Updated |
+| Roadmap: reflect V1/V2 split | ✅ This document |
 
 ---
 
-### ⬜ Remaining for App Store submission
+### 🔧 V1 remaining before submission
 
-1. **Wire long-form legal docs** into in-app legal screens (drafts exist, not committed)
-2. **Privacy policy public URL** — App Store listing requires a live public URL (`apps/web/` exists, needs `/privacy` route)
-3. **App Store assets** — screenshots, listing copy, age rating, content advisory
-4. **Error monitoring** — Sentry or equivalent before going live
-5. **RevenueCat products config** — SDK is wired with test key; products must be created in App Store Connect / Google Play and added to RevenueCat dashboard before billing works in production
-6. ~~**Email verification flow**~~ — Confirm-email state added; email confirmation not yet enabled on Supabase project
-7. ~~**Forgot password / password reset**~~ — ✅ SHIPPED (`auth/forgot-password.tsx`, `auth/reset-password.tsx`)
+| # | Task | Priority | Owner |
+|---|------|----------|-------|
+| 1 | Wire Sentry into mobile app | BLOCKING | Thai |
+| 2 | Google Play developer account setup | BLOCKING | Thai |
+| 3 | RevenueCat: production API key + create store products | BLOCKING | Thai |
+| 4 | Privacy policy public URL (needs domain + web deploy) | BLOCKING | Thai |
+| 5 | Play Store listing: screenshots, age rating, content advisory | BLOCKING | Thai |
+| 6 | Test full purchase/restore flow with Play sandbox | BLOCKING | Thai |
+| 7 | EAS production build for Android | BLOCKING | Thai |
+| 8 | Submit to Google Play | BLOCKING | Thai |
+| 9 | Fix lying toggles: persist or remove push/research consent toggles | SHOULD DO | Thai |
+| 10 | Add thumbs up/down feedback after script results | HIGH | Thai |
+| 11 | Delete orphaned welcome files if they exist | LOW | Thai |
+
+---
+
+### 🚫 Explicitly NOT in V1
+
+These are cut. Don't build, don't promise, don't touch:
+
+- Weekly insights generation
+- Emerging patterns detection
+- Analytics backend (Sentry for crashes is enough)
+- Push notification pipeline
+- Help & FAQ content
+- Contact form
+- Multilingual support
+- Any new AI features
+- Apple App Store submission (follows after Play Store is stable)
+
+---
+
+## V2 — Post-Launch (data-driven priorities)
+
+**Goal:** Learn from real users. Build what matters. Earn Sturdy+ value.
+
+Priorities ordered by likely impact, subject to change based on V1 user data:
+
+1. **Analytics backend** — funnel visibility before building retention features
+2. **Apple App Store submission** — second platform once Play Store is stable
+3. **Weekly insights** — strongest Sturdy+ value prop after unlimited scripts
+4. **Script feedback analysis** — use thumbs up/down data to improve prompts
+5. **Push notifications** — retention lever, only after organic return rate understood
+6. **Emerging patterns** — needs data volume to be meaningful
 
 ---
 
@@ -162,22 +164,19 @@ Every decision should serve at least one of these:
 **Goal:** Scripts that feel unmistakably better. Daily habits that keep parents coming back.
 
 ### Script Quality
-- Claude API fully integrated
 - Prompt rebuilt around 12 source books with concrete examples
 - Age calibration tested across all ages 2-17
-- Neurotype detection accuracy improved with expanded keyword lists
+- Neurotype detection accuracy improved
 - Follow-up scripts tested and tuned
 
 ### Parent Wellbeing Layer
 - Replace clinical crisis routing with parent support
-- When safety triggers: script for child + quiet support for parent below
 - Repair guide — what to say after you lost your temper
 - "You're not alone" — normalise the hard moments
 
 ### Daily Habit Features
 - Daily reflection — one question per day
 - Streak tracking — gentle, not gamified
-- Script library — saved scripts organised by child and situation
 - Pattern recognition — "You've described 6 transition situations this month"
 
 ---
@@ -186,22 +185,9 @@ Every decision should serve at least one of these:
 
 **Goal:** Help parents understand why, not just what to say.
 
-### Age Guide
-- What's developmentally normal at every exact age 2-17
-- Common behaviours at each age + why they happen
-- What approaches work at each stage
-- Based on Siegel, Markham, Kennedy, Faber & Mazlish
-
-### Behaviour Decoder
-- Parent describes a recurring pattern
-- Sturdy explains the developmental or emotional driver
-- Suggests approaches from relevant books
-- Not a diagnosis — a framework for understanding
-
-### Child Profile Insights
-- Based on saved scripts and situations over time
-- Proactive — "Based on what you've shared, Tyler often struggles with transitions"
-- Quiet, not intrusive
+- Age Guide: what's developmentally normal at every exact age
+- Behaviour Decoder: explain the driver behind recurring patterns
+- Child Profile Insights: proactive, quiet observations over time
 
 ---
 
@@ -209,27 +195,10 @@ Every decision should serve at least one of these:
 
 **Goal:** Long-term parent development. Break cycles. Build awareness.
 
-### Reflection
-- Daily or weekly prompts
-- "What went well?" "What would you do differently?"
-- Builds self-awareness over time
-
-### Book Insights
-- Bite-sized principles from the 12 source books
-- Delivered contextually — after a relevant SOS, not as a library
-- One insight, when it matters
-
-### Parent Style Mirror
-- Based on described situations over time
-- Shows patterns in how the parent responds
-- Not a label — a mirror
-- "You tend to lead with connection. Here's how to balance that with clearer limits."
-
-### Repair Guide
-- You lost your temper. You said something you regret.
-- What do you say now to your child?
-- How do you repair it?
-- From Philippa Perry + Becky Kennedy
+- Reflection prompts
+- Book insights delivered contextually
+- Parent Style Mirror
+- Repair Guide (from Philippa Perry + Becky Kennedy)
 
 ---
 
@@ -237,20 +206,9 @@ Every decision should serve at least one of these:
 
 **Goal:** Sturdy as a platform, not just an app.
 
-### Multilingual
-- App UI and scripts in multiple languages
-- Priority order: English → Spanish → French → Mandarin → Arabic
-- Scripts must maintain warmth and naturalness in translation
-
-### Family Sharing
-- Multiple parents / caregivers on one child profile
-- Shared script library
-- Co-parenting support (separate parents, shared child)
-
-### Professional Version
-- Therapists, educators, and social workers use Sturdy with families
-- Different access model
-- Annotation and notes layer
+- Multilingual (English → Spanish → French → Mandarin → Arabic)
+- Family sharing / co-parent support
+- Professional version for therapists and educators
 
 ---
 

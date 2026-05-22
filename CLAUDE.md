@@ -68,11 +68,11 @@ Routing is Expo Router with the file tree under `apps/mobile/app/`:
   - Pages 1–3: feature slides — full-bleed `welcome-horizon.jpg` + `BlurView` glass card anchored to bottom edge. Three slides cover: SOS scripts, Question mode, per-child personalization.
   - Page 4: final CTA — full-bleed `welcome-family.jpg` + `BlurView` card with "Get started" → `/child-setup`, "Try without account" → sets `sturdy_guest_seen_v1` in AsyncStorage and routes to `/(tabs)`, "Sign in" → `/auth/sign-in`.
   - **No trial flow, no live AI preview, no blurred-preview cards.** That earlier flow is replaced.
-  - **Caveat:** the welcome dir still contains orphaned files from a prior funnel (`trial.tsx`, `trial-result.tsx`, `child-setup.tsx`, `signup.tsx`) and `welcome/_layout.tsx` still wraps the stack in `OnboardingProvider`. None of those are reachable from v12; they're vestigial.
+ - **Note:** `welcome/_layout.tsx` wraps the stack in `OnboardingProvider` which is vestigial from a prior funnel. The welcome dir only contains `_layout.tsx` and `index.tsx` — both active.
 - `child/[id].tsx` is the per-child hub. Reads `?mode=…` from the URL (one of `sos` / `reconnect` / `understand` / `conversation`) and adapts placeholder + CTA copy. SOS flows are scoped to a specific child here and route to `result.tsx`. `result.tsx` back-navigates to the originating child hub.
 - `child-profile/[id].tsx` is the Your Child profile screen — triggers / what's helped / locked weekly insight + emerging patterns. Reachable from the child hub's profile-link card.
 - `thought/[id].tsx` is the Question-mode result screen.
-- `upgrade.tsx` is the Sturdy+ paywall.
+- `upgrade.tsx` is the Sturdy+ paywall. V1 feature list: unlimited scripts, follow-up scripts, tone selector, saved library, voice on all modes. Weekly insights and patterns removed (not built).
 - `crisis.tsx` is the safety-support screen reached when the Edge Function returns `response_type: "crisis"`.
 
 State:
@@ -138,7 +138,7 @@ Defined in `apps/mobile/app/upgrade.tsx`:
 - **Monthly** — $9.99/month, 3-day free trial
 - **Annual** — $69.99/year ($5.83/mo), 7-day free trial, "5 months free vs monthly"
 
-Free tier (always free, never paywalled): unlimited SOS scripts, voice playback on SOS mode, Regulate → Connect → Guide structure. Crisis routing is always free per Master Blueprint.
+Free tier (always free, never paywalled): unlimited SOS scripts (excluded from quota by `check_monthly_quota` RPC), Question mode, crisis support. 50/month quota applies to Reconnect, Understand, and Conversation modes only. Crisis routing is always free per Master Blueprint.
 
 Billing is **not yet wired** — `useSubscription` calls the RevenueCat SDK but `EXPO_PUBLIC_REVENUECAT_API_KEY` is not set, so RevenueCat never initializes and `isPremium` is always `false`. All Sturdy+ gates are effectively open-but-blocked. To activate: set the API key, create products in App Store Connect / Google Play, and configure the `sturdy_plus` entitlement in the RevenueCat dashboard.
 
@@ -157,7 +157,7 @@ Schema lives across `supabase/migrations/` and historical SQL Editor changes. As
 - `subscriptions` — billing records (CASCADE; currently dormant — RevenueCat not yet activated)
 - `usage_events` — usage tracking (CASCADE)
 - `user_preferences` — settings, tone, notifications (CASCADE)
-- `safety_events` — risk-flagged events (CASCADE today, will become SET NULL with the account-deletion migration to retain anonymized safety data per Principle 8)
+- `safety_events` — risk-flagged events (CASCADE — no anonymized retention per updated Principle 8)
 
 **Child-scoped tables** (FK to `child_profiles`, no direct FK to `auth.users`):
 - `messages` — conversation turns
