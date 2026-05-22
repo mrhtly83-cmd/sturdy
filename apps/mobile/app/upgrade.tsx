@@ -1,7 +1,8 @@
 // app/upgrade.tsx
-// v4 — Deep Warm v5.2: C-2 fast-fade gradient backdrop, glass cards,
-// amber gradient CTA. All accent colors now sourced from theme tokens
-// (C.amber / C.amberMid) rather than file-local hex constants.
+// v5 — V1 Launch: Only promises features that actually ship.
+// Removed: "Weekly reflection", "A Sturdy that knows your child" (not built).
+// Added: "Unlimited scripts", "Tone selector".
+// Updated hero subtitle and fine print for Play Store (was App Store only).
 //
 // Pricing (locked):
 //   Monthly  $9.99/month   · 3-day free trial
@@ -42,11 +43,11 @@ const SAGE        = '#8DB89A';                       // checkmarks + savings bad
 const SAGE_BG     = 'rgba(141,184,154,0.12)';
 
 const FEATURES = [
-  { icon: '🧒', label: 'A Sturdy that knows your child', desc: 'Patterns Sturdy notices about what sets them off — and what helps' },
-  { icon: '💡', label: 'Weekly reflection',              desc: 'What Sturdy noticed across your weeks together' },
-  { icon: '🎯', label: 'Follow-up scripts',              desc: 'A second script for when the first one didn\'t land — tailored to what happened' },
-  { icon: '📚', label: 'Everything you\'ve saved, kept', desc: 'Every script, every answer — searchable, yours' },
-  { icon: '🔊', label: 'Voice on every mode',            desc: 'Hear the response read aloud — for the moments your hands are full' },
+  { icon: '♾️', label: 'Unlimited scripts',               desc: 'No monthly limit — use every mode as often as you need' },
+  { icon: '🎯', label: 'Follow-up scripts',               desc: 'A second script for when the first one didn\'t land — tailored to what happened' },
+  { icon: '🔊', label: 'Tone selector',                    desc: 'Choose Soft or Direct — match the script to the moment and your style' },
+  { icon: '📚', label: 'Everything you\'ve saved, kept',   desc: 'Every script, every answer — searchable, yours' },
+  { icon: '🗣️', label: 'Voice on every mode',              desc: 'Hear the response read aloud — for the moments your hands are full' },
 ];
 
 const FREE_FEATURES = [
@@ -153,8 +154,8 @@ export default function UpgradeScreen() {
             <Text style={s.heroTitle}>Sturdy+</Text>
             <Text style={s.heroSub}>
               {childName
-                ? `The version that remembers. So Sturdy gets sharper about ${childName}, week by week.`
-                : 'The version that remembers. So Sturdy gets sharper about your child, week by week.'}
+                ? `Every mode, unlimited. The tools that make scripts work better for ${childName}.`
+                : 'Every mode, unlimited. Plus the tools that make scripts feel like yours.'}
             </Text>
           </View>
 
@@ -261,7 +262,7 @@ export default function UpgradeScreen() {
               <Text style={s.restoreLink}>Restore purchase</Text>
             </Pressable>
             <Text style={s.fineText}>
-              Payment will be charged to your App Store account at the end of the trial period.
+              Payment will be charged to your account at the end of the trial period.
               Subscription automatically renews unless cancelled at least 24 hours before the end
               of the current period.
             </Text>
