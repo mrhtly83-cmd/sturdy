@@ -6,9 +6,7 @@
 //   1. Header — avatar, name, age
 //   2. Common triggers — top 5 trigger categories from interaction_logs
 //   3. What works — saved scripts for this child (proxy for "what helped")
-//   4. Emerging patterns — placeholder + lock (table not built yet)
-//   5. Weekly insight — locked teaser + Coming-soon pill
-//   6. Profile basics — read-only name / age (editing TBD)
+//   4. Profile basics — read-only name / age (editing TBD)
 //
 // Empty states are load-bearing: they tell the parent the profile gets
 // smarter the more they use Sturdy. That IS the conversion hook.
@@ -231,37 +229,7 @@ export default function ChildProfileScreen() {
             )}
           </View>
 
-          {/* ─── 3. Emerging patterns (locked / coming soon) ─── */}
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>Emerging patterns</Text>
-            <View style={[s.lockedCard]}>
-              <View style={s.lockedHeader}>
-                <Text style={s.lockedIcon}>🔒</Text>
-                <Text style={s.lockedPill}>COMING SOON</Text>
-              </View>
-              <Text style={s.lockedBody}>
-                Sturdy will start noticing things like "worst moments around 4–6pm" or
-                "{child.name} responds to repair quickly" once we have enough to go on.
-              </Text>
-            </View>
-          </View>
-
-          {/* ─── 4. Weekly insight (locked / coming soon) ─── */}
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>This week's insight</Text>
-            <View style={[s.lockedCard]}>
-              <View style={s.lockedHeader}>
-                <Text style={s.lockedIcon}>🔒</Text>
-                <Text style={s.lockedPill}>COMING SOON</Text>
-              </View>
-              <Text style={s.lockedBody}>
-                A short audio reflection every Sunday — what showed up for {child.name} this
-                week, what worked, and one thing to try next.
-              </Text>
-            </View>
-          </View>
-
-          {/* ─── 5. Profile basics (read-only for now) ─── */}
+          {/* ─── 4. Profile basics (read-only for now) ─── */}
           <View style={s.section}>
             <Text style={s.sectionTitle}>Profile</Text>
             <View style={s.card}>
