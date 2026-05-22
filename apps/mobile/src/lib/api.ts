@@ -74,6 +74,17 @@ export class CrisisDetectedError extends Error {
 }
 
 
+// Thrown when the Edge Function returns 402 (monthly quota exceeded).
+// quota_type distinguishes which bucket ran out: 'scripts' or 'questions'.
+export class QuotaExceededError extends Error {
+  readonly quotaType: 'scripts' | 'questions';
+  constructor(quotaType: 'scripts' | 'questions' = 'scripts') {
+    super('quota_exceeded');
+    this.name      = 'QuotaExceededError';
+    this.quotaType = quotaType;
+  }
+}
+
 // Thrown when the Edge Function returns 429. Server-supplied message is the
 // safe one to surface to the parent. Crisis paths bypass the rate limit by
 // design, so callers don't need to special-case crisis here.
@@ -163,6 +174,11 @@ export async function getParentingScript(
       typeof (data as { error: unknown }).error === 'string'
         ? (data as { error: string }).error : 'request-failed';
     console.log('[API] Response not ok:', msg);
+    if (response.status === 402) {
+      const qt = typeof data === 'object' && data !== null && 'quota_type' in data &&
+        (data as { quota_type: unknown }).quota_type === 'questions' ? 'questions' : 'scripts';
+      throw new QuotaExceededError(qt);
+    }
     if (response.status === 429) {
       throw new RateLimitError(msg, parseRetryAfter(response));
     }
@@ -261,6 +277,9 @@ export async function getQuestionResponse(
       typeof (data as { error: unknown }).error === 'string'
         ? (data as { error: string }).error : 'request-failed';
     console.log('[API] Question response not ok:', msg);
+    if (response.status === 402) {
+      throw new QuotaExceededError('questions');
+    }
     if (response.status === 429) {
       throw new RateLimitError(msg, parseRetryAfter(response));
     }
