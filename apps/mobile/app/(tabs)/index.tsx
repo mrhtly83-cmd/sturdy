@@ -42,8 +42,9 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useChildProfile } from '../../src/context/ChildProfileContext';
 import { supabase } from '../../src/lib/supabase';
 import { loadChildInsights, type ChildInsights } from '../../src/lib/loadChildInsights';
-import { getQuestionResponse, CrisisDetectedError, RateLimitError } from '../../src/lib/api';
+import { getQuestionResponse, CrisisDetectedError, RateLimitError, QuotaExceededError } from '../../src/lib/api';
 import { colors as C, fonts as F } from '../../src/theme';
+import { QuotaBar } from '../../src/components/ui/QuotaBar';
 
 // ═══════════════════════════════════════════════
 // CONSTANTS
@@ -574,6 +575,7 @@ const handleSend = async () => {
       });
       return;
     }
+    if (err instanceof QuotaExceededError) { router.push('/upgrade' as any); return; }
     if (err instanceof RateLimitError) { setError(err.message); return; }
     setError("Couldn't get a response right now. Please try again.");
   } finally {
@@ -793,6 +795,7 @@ return (
               </Pressable>
             </View>
             {error ? <Text style={s.errorText}>{error}</Text> : null}
+            <QuotaBar />
 
             {/* ─── Dashboard hook cards ─── */}
             <View style={s.hookStack}>
