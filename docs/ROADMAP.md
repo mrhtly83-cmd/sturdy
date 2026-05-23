@@ -100,31 +100,39 @@ Every decision should serve at least one of these:
 
 | Fix | Status |
 |-----|--------|
-| Quota RPC: exclude SOS from monthly count (Principle 6) | ✅ Applied |
-| Legal docs: full content in all 4 in-app screens | ✅ Updated |
-| Legal docs: full content in `docs/legal/*.md` | ✅ Updated |
-| Paywall copy: remove unbuilt features (weekly insights, patterns) | ✅ Updated |
-| Contact email: `sturdymobile@gmail.com` in legal screens | ✅ Updated |
-| Master Blueprint: resolve guest mode + quota contradictions | ✅ Updated |
-| Roadmap: reflect V1/V2 split | ✅ This document |
+| Legal docs: full content in all 4 in-app screens | ✅ Done |
+| Legal docs: full content in `docs/legal/*.md` | ✅ Done |
+| Paywall copy: remove unbuilt features (weekly insights, patterns) | ✅ Done (PR #42) |
+| Contact email: `sturdymobile@gmail.com` in legal screens | ✅ Done |
+| Settings: removed lying toggles, wired dead tap targets to email | ✅ Done |
+| Dead code deleted: `getScriptUsage.ts`, `sessionTimeout.ts`, `child-setup.tsx` | ✅ Done (PR #42) |
+| Vaporware removed: home screen Sturdy+ card, child profile locked sections | ✅ Done (PR #42) |
+| Feature Inventory updated: legal, schema integrity, architectural notes | ✅ Done (PR #42) |
+| Dual quota system: `check_script_quota` (50), `check_question_quota` (25), `get_quota_counts` | ✅ Done |
+| QuotaBar: two progress bars below Ask Sturdy pill, CTA at 80% | ✅ Done |
+| QuotaResultFooter: remaining count on result screen, CTA at ≤10 remaining | ✅ Done |
+| Voice gating: SOS free, all modes for Sturdy+ | ✅ Done |
+| QuotaExceededError: routes to `/upgrade` on 402 (scripts or questions) | ✅ Done |
+| All docs updated: Blueprint v8, Principles, Roadmap, Launch Plan | ✅ Done |
 
 ---
 
 ### 🔧 V1 remaining before submission
 
-| # | Task | Priority | Owner |
-|---|------|----------|-------|
-| 1 | Wire Sentry into mobile app | BLOCKING | Thai |
-| 2 | Google Play developer account setup | BLOCKING | Thai |
-| 3 | RevenueCat: production API key + create store products | BLOCKING | Thai |
-| 4 | Privacy policy public URL (needs domain + web deploy) | BLOCKING | Thai |
-| 5 | Play Store listing: screenshots, age rating, content advisory | BLOCKING | Thai |
-| 6 | Test full purchase/restore flow with Play sandbox | BLOCKING | Thai |
-| 7 | EAS production build for Android | BLOCKING | Thai |
-| 8 | Submit to Google Play | BLOCKING | Thai |
-| 9 | Fix lying toggles: persist or remove push/research consent toggles | SHOULD DO | Thai |
-| 10 | Add thumbs up/down feedback after script results | HIGH | Thai |
-| 11 | Delete orphaned welcome files if they exist | LOW | Thai |
+| # | Task | Priority | Owner | Notes |
+|---|------|----------|-------|-------|
+| 1 | Implement 1-child limit for free users | BLOCKING | Thai | Gate in `ChildProfileContext` or `child/new.tsx`, trigger PaywallSheet |
+| 2 | Update `upgrade.tsx`: add "unlimited children" to feature list | BLOCKING | Thai | Child limit is key conversion lever — paywall must reflect it |
+| 3 | Wire Sentry into mobile app | BLOCKING | Thai | Cannot launch blind |
+| 4 | Google Play developer account setup | BLOCKING | Thai | $25 one-time fee, approval can take 48hrs |
+| 5 | RevenueCat: production API key + create store products | BLOCKING | Thai | Products in Play Console → RevenueCat → `sturdy_plus` entitlement |
+| 6 | Privacy policy public URL (needs domain + web deploy) | BLOCKING | Thai | Play Store requires live public URL |
+| 7 | Play Store listing: screenshots, age rating, content advisory | BLOCKING | Thai | Use Play Store listing copy doc |
+| 8 | Test full purchase/restore flow with Play sandbox | BLOCKING | Thai | End-to-end: purchase, restore, cancel |
+| 9 | EAS production build for Android | BLOCKING | Thai | `eas build --platform android --profile production` |
+| 10 | Submit to Google Play | BLOCKING | Thai | |
+| 11 | Add thumbs up/down feedback after script results | HIGH | Thai | Log to `script_feedback` — your only quality signal |
+| 12 | Home screen new-user state | HIGH | Thai | Show mode cards instead of empty dashboard for new users |
 
 ---
 
