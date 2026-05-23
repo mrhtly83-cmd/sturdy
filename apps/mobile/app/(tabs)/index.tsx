@@ -1,5 +1,5 @@
 // app/(tabs)/index.tsx
-// v6 — Golden Beam (sturdy-home-final.html → React Native)
+// v7 — SOS Heartbeat + Traffic Dots
 //
 // Visual identity:
 //   - Warm brown gradient (#302820 → #1c1812) — 20% softer
@@ -7,17 +7,16 @@
 //   - Animated floating golden particles distributed across full screen
 //   - Warm atmospheric glows: mid-left, bottom-right, floor wash
 //   - No glass cards — open, breathing layout
-//   - Horizontal swipe mode selector with colored glow dots
-//   - Stacked child avatars in a compact row
-//   - CTA: "Get words to say" (amber gradient)
+//   - Compact child pills (22px) below the thinking space
+//   - SOS zone: heartbeat pulse dot + 4-col trigger grid
+//   - TrafficDots quota indicator (top-right, free users only)
 //
-// All behavior preserved from v5.
+// All behavior preserved from v6.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
-  Dimensions,
   Easing,
   KeyboardAvoidingView,
   Modal,
@@ -28,7 +27,6 @@ import {
   Text,
   TextInput,
   View,
-  Image,
 } from 'react-native';
 
 import { router, useFocusEffect } from 'expo-router';
@@ -36,7 +34,6 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import { ImageBackground } from 'react-native';
 
 import { useAuth } from '../../src/context/AuthContext';
 import { useChildProfile } from '../../src/context/ChildProfileContext';
@@ -44,14 +41,14 @@ import { supabase } from '../../src/lib/supabase';
 import { loadChildInsights, type ChildInsights } from '../../src/lib/loadChildInsights';
 import { getQuestionResponse, CrisisDetectedError, RateLimitError, QuotaExceededError } from '../../src/lib/api';
 import { colors as C, fonts as F } from '../../src/theme';
-import { QuotaBar } from '../../src/components/ui/QuotaBar';
+import { TrafficDots } from '../../src/components/ui/TrafficDots';
 
 // ═══════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════
 
 export const GREETINGS = ['Hi', 'Hello', 'Hey'];
-const MODE_CARD_WIDTH = 150; // 140 card + 10 gap
+const MODE_CARD_WIDTH = 150;
 
 const ASK_PLACEHOLDERS = [
   'Ask Sturdy anything…',
@@ -61,11 +58,15 @@ const ASK_PLACEHOLDERS = [
   'Is this behavior normal for a 4-year-old?',
 ];
 
-const PRELOADED_SCENARIOS = [
-  { id: 's1', title: 'Refusing to leave the park',   icon: '🏃', color: C.amber },
-  { id: 's2', title: 'Meltdown over the wrong cup',  icon: '☕', color: '#E87461' },
-  { id: 's3', title: 'Hitting a sibling',             icon: '✋', color: '#5778A3' },
-  { id: 's4', title: "Won't stay in bed",             icon: '🌙', color: '#8DB89A' },
+const TRIGGER_CARDS = [
+  { id: 'bedtime',         label: 'Bedtime',    icon: '🌙', color: 'rgba(138,160,96,0.15)' },
+  { id: 'mealtime',        label: 'Mealtime',   icon: '🍽️', color: 'rgba(200,136,58,0.15)' },
+  { id: 'sibling',         label: 'Sibling',    icon: '👊', color: 'rgba(87,120,163,0.15)' },
+  { id: 'leaving_places',  label: 'Leaving',    icon: '🏃', color: 'rgba(200,136,58,0.15)' },
+  { id: 'public_meltdown', label: 'Meltdown',   icon: '😱', color: 'rgba(232,116,97,0.15)' },
+  { id: 'screen_time',     label: 'Screens',    icon: '📱', color: 'rgba(87,120,163,0.15)' },
+  { id: 'morning_routine', label: 'Morning',    icon: '☀️', color: 'rgba(200,136,58,0.15)' },
+  { id: 'separation',      label: 'Separation', icon: '😢', color: 'rgba(138,160,96,0.15)' },
 ];
 
 // ═══════════════════════════════════════════════
@@ -117,7 +118,6 @@ function generateParticles(count: number): ParticleConfig[] {
       opacity = 0.08 + Math.random() * 0.15;
     }
 
-    // Color variation: warm whites → deep golds (matching HTML)
     const warmth = Math.random();
     let colorR: number, colorG: number, colorB: number;
     if (warmth > 0.7) {
@@ -158,8 +158,8 @@ function FloatingParticle({ config }: { config: ParticleConfig }) {
     };
     startLoop();
     return () => anim.stopAnimation();
-  }, []); 
-   
+  }, []);
+
   const particleOpacity = anim.interpolate({
     inputRange: [0, 0.12, 0.88, 1],
     outputRange: [0, config.opacity, config.opacity, 0],
@@ -184,12 +184,12 @@ function FloatingParticle({ config }: { config: ParticleConfig }) {
         width: config.size,
         height: config.size,
         borderRadius: config.size / 2,
-       backgroundColor: `rgb(${config.colorR},${config.colorG},${config.colorB})`,
-shadowColor: `rgb(${config.colorR},${config.colorG},${config.colorB})`,
-shadowOffset: { width: 0, height: 0 },
-shadowOpacity: config.opacity * 1.5,
-shadowRadius: config.size * 2.5,
-opacity: particleOpacity,
+        backgroundColor: `rgb(${config.colorR},${config.colorG},${config.colorB})`,
+        shadowColor: `rgb(${config.colorR},${config.colorG},${config.colorB})`,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: config.opacity * 1.5,
+        shadowRadius: config.size * 2.5,
+        opacity: particleOpacity,
         transform: [{ translateY }, { translateX }],
       }}
     />
@@ -261,7 +261,6 @@ const OUTCOMES: Outcome[] = [
   },
 ];
 
-// Rotating gradient pairs for child avatars
 const CHILD_GRADIENTS: Array<[string, string]> = [
   [C.iconTalkStart, C.iconTalkEnd],
   [C.iconSosStart, C.iconSosEnd],
@@ -404,694 +403,693 @@ export default function HomeScreen() {
   const [recentLogs, setRecentLogs] = useState<RecentLog[]>([]);
   const [recentLogsByChild, setRecentLogsByChild] = useState<Record<string, RecentLog>>({});
   const [childInsights, setChildInsights] = useState<Record<string, ChildInsights>>({});
-const [activeSessionIndex, setActiveSessionIndex] = useState(0);
-const sessionAnim = useRef(new Animated.Value(1)).current;
-const autoSlideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [activeSessionIndex, setActiveSessionIndex] = useState(0);
+  const sessionAnim = useRef(new Animated.Value(1)).current;
+  const autoSlideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-const [placeholderIdx, setPlaceholderIdx] = useState(0);
-const placeholderFade = useRef(new Animated.Value(1)).current;
-
-const hasAnySessions = Object.values(recentLogsByChild).some(
-  (log) => log !== null && log !== undefined
-);
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const placeholderFade = useRef(new Animated.Value(1)).current;
 
   // Entry animations
-const fadeAnim = useRef(new Animated.Value(0)).current;
-const slideAnim = useRef(new Animated.Value(20)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
 
-useEffect(() => {
-  Animated.parallel([
-    Animated.timing(fadeAnim, {
-      toValue: 1, duration: 600, useNativeDriver: true,
-    }),
-    Animated.timing(slideAnim, {
-      toValue: 0, duration: 600, useNativeDriver: true,
-    }),
-  ]).start();
-}, []);
+  // SOS heartbeat pulse
+  const sosPulse = useRef(new Animated.Value(0)).current;
 
-// Rotate Ask Sturdy placeholder text
-useEffect(() => {
-  if (inputFocused || question.length > 0) return;
-  const interval = setInterval(() => {
-    Animated.sequence([
-      Animated.timing(placeholderFade, { toValue: 0, duration: 350, useNativeDriver: true }),
-      Animated.timing(placeholderFade, { toValue: 1, duration: 350, useNativeDriver: true }),
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1, duration: 600, useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0, duration: 600, useNativeDriver: true,
+      }),
     ]).start();
-    setTimeout(() => {
-      setPlaceholderIdx((prev) => (prev + 1) % ASK_PLACEHOLDERS.length);
-    }, 350);
-  }, 4000);
-  return () => clearInterval(interval);
-}, [inputFocused, question]);
+  }, []);
 
- // ─── Fetch parent's name ───
-const fetchName = useCallback(async () => {
-  if (!session?.user?.id) return;
-  try {
-    const { data } = await supabase
-      .from('profiles')
-      .select('full_name')
-      .eq('id', session.user.id)
-      .single();
-    if (data?.full_name) {
-      const first = String(data.full_name).trim().split(/\s+/)[0];
-      if (first) { setFirstName(first); return; }
-    }
-    const email = session.user.email ?? '';
-    const local = email.split('@')[0] ?? '';
-    const cleaned = local.split(/[._+-]/)[0] ?? '';
-    if (cleaned) {
-      setFirstName(cleaned.charAt(0).toUpperCase() + cleaned.slice(1));
-    }
-  } catch { }
-}, [session?.user?.id, session?.user?.email]);
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(sosPulse, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(sosPulse, { toValue: 0, duration: 800, useNativeDriver: true }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, []);
+
+  // Rotate Ask Sturdy placeholder text
+  useEffect(() => {
+    if (inputFocused || question.length > 0) return;
+    const interval = setInterval(() => {
+      Animated.sequence([
+        Animated.timing(placeholderFade, { toValue: 0, duration: 350, useNativeDriver: true }),
+        Animated.timing(placeholderFade, { toValue: 1, duration: 350, useNativeDriver: true }),
+      ]).start();
+      setTimeout(() => {
+        setPlaceholderIdx((prev) => (prev + 1) % ASK_PLACEHOLDERS.length);
+      }, 350);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [inputFocused, question]);
+
+  // ─── Fetch parent's name ───
+  const fetchName = useCallback(async () => {
+    if (!session?.user?.id) return;
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', session.user.id)
+        .single();
+      if (data?.full_name) {
+        const first = String(data.full_name).trim().split(/\s+/)[0];
+        if (first) { setFirstName(first); return; }
+      }
+      const email = session.user.email ?? '';
+      const local = email.split('@')[0] ?? '';
+      const cleaned = local.split(/[._+-]/)[0] ?? '';
+      if (cleaned) {
+        setFirstName(cleaned.charAt(0).toUpperCase() + cleaned.slice(1));
+      }
+    } catch { }
+  }, [session?.user?.id, session?.user?.email]);
 
   // ─── Fetch recent interaction logs ───
-const fetchRecentLogs = useCallback(async () => {
-  if (!session?.user?.id) return;
-  try {
-    const { data } = await supabase
-      .from('interaction_logs')
-      .select('id, mode, trigger_category, situation_summary, created_at, child_profile_id')
-      .eq('user_id', session.user.id)
-      .order('created_at', { ascending: false })
-      .limit(20);
-    if (data && Array.isArray(data)) {
-  const byChild: Record<string, RecentLog> = {};
-      for (const log of data) {
-        if (log.child_profile_id && !byChild[log.child_profile_id]) {
-          byChild[log.child_profile_id] = log;
+  const fetchRecentLogs = useCallback(async () => {
+    if (!session?.user?.id) return;
+    try {
+      const { data } = await supabase
+        .from('interaction_logs')
+        .select('id, mode, trigger_category, situation_summary, created_at, child_profile_id')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (data && Array.isArray(data)) {
+        const byChild: Record<string, RecentLog> = {};
+        for (const log of data) {
+          if (log.child_profile_id && !byChild[log.child_profile_id]) {
+            byChild[log.child_profile_id] = log;
+          }
         }
+        setRecentLogsByChild(byChild);
+        setRecentLogs(data.slice(0, 3));
       }
-     setRecentLogsByChild(byChild);
-      setRecentLogs(data.slice(0, 3));
+    } catch (e: any) {
+      // Silently fail — empty state is the right UX
     }
-  } catch (e: any) {
-    // Silently fail — empty state is the right UX
-  }
-}, [session?.user?.id]);
+  }, [session?.user?.id]);
 
-// ─── Helpers ───
-const displayName = firstName ?? 'there';
-const kidList = Array.isArray(children) ? children : [];
-const canSend = question.trim().length > 0 && !sending;
+  // ─── Helpers ───
+  const displayName = firstName ?? 'there';
+  const kidList = Array.isArray(children) ? children : [];
+  const canSend = question.trim().length > 0 && !sending;
 
-// Stable string key so useCallback doesn't re-create every render
-const kidIds = kidList.map((k: any) => k.id).join(',');
+  const kidIds = kidList.map((k: any) => k.id).join(',');
 
-// ─── Fetch child insights (triggers) ───
-const fetchChildInsights = useCallback(async () => {
-  if (!kidIds) return;
-  const ids = kidIds.split(',');
-  const results: Record<string, ChildInsights> = {};
-  await Promise.all(
-    ids.map(async (id) => {
-      const insights = await loadChildInsights(id);
-      results[id] = insights;
-    })
+  // ─── Fetch child insights (triggers) ───
+  const fetchChildInsights = useCallback(async () => {
+    if (!kidIds) return;
+    const ids = kidIds.split(',');
+    const results: Record<string, ChildInsights> = {};
+    await Promise.all(
+      ids.map(async (id) => {
+        const insights = await loadChildInsights(id);
+        results[id] = insights;
+      })
+    );
+    setChildInsights(results);
+  }, [kidIds]);
+
+  // ─── Focus effect ───
+  useFocusEffect(
+    useCallback(() => {
+      fetchName();
+      fetchRecentLogs();
+      fetchChildInsights();
+    }, [fetchName, fetchRecentLogs, fetchChildInsights]),
   );
-  setChildInsights(results);
-}, [kidIds]);
 
-// ─── Focus effect ───
-useFocusEffect(
-  useCallback(() => {
-    fetchName();
-    fetchRecentLogs();
-    fetchChildInsights();
-  }, [fetchName, fetchRecentLogs, fetchChildInsights]),
-);
+  // ─── Handlers ───
+  const handleOpenChild = (childId: string) => {
+    Haptics.selectionAsync();
+    router.push(`/child/${childId}` as any);
+  };
 
-// ─── Handlers ───
-const handleOpenChild = (childId: string) => {
-  Haptics.selectionAsync();
-  router.push(`/child/${childId}` as any);
-};
+  const handleAddChild = () => {
+    Haptics.selectionAsync();
+    router.push('/child/new');
+  };
 
-const handleAddChild = () => {
-  Haptics.selectionAsync();
-  router.push('/child/new');
-};
-
-const handleManageChildren = () => {
-  Haptics.selectionAsync();
-  if (kidList.length === 1 && kidList[0].id) {
-    router.push(`/child/${kidList[0].id}` as any);
-  } else if (kidList.length > 1) {
-    setPickerMode('sos');
-  }
-};
-
-const handleSelectOutcome = (mode: OutcomeMode) => {
-  Haptics.selectionAsync();
-  if (kidList.length === 0) { router.push('/child/new'); return; }
-  const targetId = activeChildId ?? (kidList.length === 1 ? kidList[0].id : null);
-  if (targetId) {
-    router.push({ pathname: `/child/${targetId}` as any, params: { mode } });
-    return;
-  }
-  setPickerMode(mode);
-};
-
-const handlePickerSelectChild = (childId: string) => {
-  if (!pickerMode) return;
-  Haptics.selectionAsync();
-  const mode = pickerMode;
-  setPickerMode(null);
-  router.push({ pathname: `/child/${childId}` as any, params: { mode } });
-};
-
-const handlePickerCancel = () => setPickerMode(null);
-
-const handleModeScroll = (event: any) => {
-  const x = event.nativeEvent.contentOffset.x;
-  setActiveScrollIndex(Math.min(Math.round(x / MODE_CARD_WIDTH), OUTCOMES.length - 1));
-};
-
-const handleSend = async () => {
-  const msg = question.trim();
-  if (!msg || sending) return;
-  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-  setError('');
-  setSending(true);
-
-  try {
-    const detectedChild = detectChildFromMessage(msg, kidList)
-      ? kidList.find((k: any) => k.id === detectChildFromMessage(msg, kidList))
-      : kidList.length === 1 ? kidList[0] : null;
-
-    const result = await getQuestionResponse({
-      message:        msg,
-      userId:         session?.user?.id,
-      childName:      detectedChild?.name ?? null,
-      childAge:       detectedChild?.childAge ?? null,
-      childProfileId: detectedChild?.id ?? null,
-    });
-
-    setQuestion('');
-
-    const responsePayload = result.response ?? '';
-    const thoughtId = result.thought_id ?? null;
-    if (thoughtId) {
-      router.push({
-        pathname: `/thought/${thoughtId}` as any,
-        params: { fallbackResponse: responsePayload, prompt: msg },
-      });
-    } else {
-      router.push({
-        pathname: '/thought/inline' as any,
-        params: { fallbackResponse: responsePayload, prompt: msg },
-      });
+  const handleManageChildren = () => {
+    Haptics.selectionAsync();
+    if (kidList.length === 1 && kidList[0].id) {
+      router.push(`/child/${kidList[0].id}` as any);
+    } else if (kidList.length > 1) {
+      setPickerMode('sos');
     }
-  } catch (err) {
-    if (err instanceof CrisisDetectedError) {
-      router.push({
-        pathname: '/crisis',
-        params: { crisisType: err.crisisType, riskLevel: err.riskLevel },
-      });
+  };
+
+  const handleSelectOutcome = (mode: OutcomeMode) => {
+    Haptics.selectionAsync();
+    if (kidList.length === 0) { router.push('/child/new'); return; }
+    const targetId = activeChildId ?? (kidList.length === 1 ? kidList[0].id : null);
+    if (targetId) {
+      router.push({ pathname: `/child/${targetId}` as any, params: { mode } });
       return;
     }
-    if (err instanceof QuotaExceededError) { router.push('/upgrade' as any); return; }
-    if (err instanceof RateLimitError) { setError(err.message); return; }
-    setError("Couldn't get a response right now. Please try again.");
-  } finally {
-    setSending(false);
-  }
-};
+    setPickerMode(mode);
+  };
 
-const handleSessionSwipe = (direction: 'left' | 'right') => {
-  if (autoSlideTimer.current) clearTimeout(autoSlideTimer.current);
-  Animated.timing(sessionAnim, {
-    toValue: 0,
-    duration: 250,
-    useNativeDriver: true,
-  }).start(() => {
-    setActiveSessionIndex(prev => {
-      if (direction === 'left') return prev >= kidList.length - 1 ? 0 : prev + 1;
-      return prev <= 0 ? kidList.length - 1 : prev - 1;
-    });
+  const handlePickerSelectChild = (childId: string) => {
+    if (!pickerMode) return;
+    Haptics.selectionAsync();
+    const mode = pickerMode;
+    setPickerMode(null);
+    router.push({ pathname: `/child/${childId}` as any, params: { mode } });
+  };
+
+  const handlePickerCancel = () => setPickerMode(null);
+
+  const handleModeScroll = (event: any) => {
+    const x = event.nativeEvent.contentOffset.x;
+    setActiveScrollIndex(Math.min(Math.round(x / MODE_CARD_WIDTH), OUTCOMES.length - 1));
+  };
+
+  const handleSend = async () => {
+    const msg = question.trim();
+    if (!msg || sending) return;
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setError('');
+    setSending(true);
+
+    try {
+      const detectedChild = detectChildFromMessage(msg, kidList)
+        ? kidList.find((k: any) => k.id === detectChildFromMessage(msg, kidList))
+        : kidList.length === 1 ? kidList[0] : null;
+
+      const result = await getQuestionResponse({
+        message:        msg,
+        userId:         session?.user?.id,
+        childName:      detectedChild?.name ?? null,
+        childAge:       detectedChild?.childAge ?? null,
+        childProfileId: detectedChild?.id ?? null,
+      });
+
+      setQuestion('');
+
+      const responsePayload = result.response ?? '';
+      const thoughtId = result.thought_id ?? null;
+      if (thoughtId) {
+        router.push({
+          pathname: `/thought/${thoughtId}` as any,
+          params: { fallbackResponse: responsePayload, prompt: msg },
+        });
+      } else {
+        router.push({
+          pathname: '/thought/inline' as any,
+          params: { fallbackResponse: responsePayload, prompt: msg },
+        });
+      }
+    } catch (err) {
+      if (err instanceof CrisisDetectedError) {
+        router.push({
+          pathname: '/crisis',
+          params: { crisisType: err.crisisType, riskLevel: err.riskLevel },
+        });
+        return;
+      }
+      if (err instanceof QuotaExceededError) { router.push('/upgrade' as any); return; }
+      if (err instanceof RateLimitError) { setError(err.message); return; }
+      setError("Couldn't get a response right now. Please try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleSessionSwipe = (direction: 'left' | 'right') => {
+    if (autoSlideTimer.current) clearTimeout(autoSlideTimer.current);
     Animated.timing(sessionAnim, {
-      toValue: 1,
+      toValue: 0,
       duration: 250,
       useNativeDriver: true,
-    }).start();
-  });
-  autoSlideTimer.current = setTimeout(() => {
-    autoSlideTimer.current = null;
-  }, 10000);
-};
-
-// ─── Auto-select sole child ───
-useEffect(() => {
-  if (kidList.length === 1 && activeChildId === null) {
-    setActiveChildId(kidList[0].id);
-  }
-}, [kidList.length]);
-
-// ─── Auto-cycle session card ───
-useEffect(() => {
-  if (kidList.length < 2) return;
-
-  const startTimer = () => {
-    autoSlideTimer.current = setTimeout(() => {
+    }).start(() => {
+      setActiveSessionIndex(prev => {
+        if (direction === 'left') return prev >= kidList.length - 1 ? 0 : prev + 1;
+        return prev <= 0 ? kidList.length - 1 : prev - 1;
+      });
       Animated.timing(sessionAnim, {
-        toValue: 0,
-        duration: 300,
+        toValue: 1,
+        duration: 250,
         useNativeDriver: true,
-      }).start(() => {
-        setActiveSessionIndex(prev =>
-          prev >= kidList.length - 1 ? 0 : prev + 1
-        );
+      }).start();
+    });
+    autoSlideTimer.current = setTimeout(() => {
+      autoSlideTimer.current = null;
+    }, 10000);
+  };
+
+  // ─── Auto-select sole child ───
+  useEffect(() => {
+    if (kidList.length === 1 && activeChildId === null) {
+      setActiveChildId(kidList[0].id);
+    }
+  }, [kidList.length]);
+
+  // ─── Auto-cycle session card ───
+  useEffect(() => {
+    if (kidList.length < 2) return;
+
+    const startTimer = () => {
+      autoSlideTimer.current = setTimeout(() => {
         Animated.timing(sessionAnim, {
-          toValue: 1,
+          toValue: 0,
           duration: 300,
           useNativeDriver: true,
-        }).start();
-        startTimer();
-      });
-    }, 5000);
-  };
+        }).start(() => {
+          setActiveSessionIndex(prev =>
+            prev >= kidList.length - 1 ? 0 : prev + 1
+          );
+          Animated.timing(sessionAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }).start();
+          startTimer();
+        });
+      }, 5000);
+    };
 
-  startTimer();
+    startTimer();
 
-  return () => {
-    if (autoSlideTimer.current) clearTimeout(autoSlideTimer.current);
-  };
-}, [kidList.length]);
+    return () => {
+      if (autoSlideTimer.current) clearTimeout(autoSlideTimer.current);
+    };
+  }, [kidList.length]);
 
-// ─── Loading ───
-if (isLoadingChild) {
-  return (
-    <View style={s.root}>
-      <Background />
-      <StatusBar style="light" />
-      <SafeAreaView style={s.centerGate}>
-        <ActivityIndicator color={C.amber} />
-      </SafeAreaView>
-    </View>
-  );
-}
+  // ─── Loading ───
+  if (isLoadingChild) {
+    return (
+      <View style={s.root}>
+        <Background />
+        <StatusBar style="light" />
+        <SafeAreaView style={s.centerGate}>
+          <ActivityIndicator color={C.amber} />
+        </SafeAreaView>
+      </View>
+    );
+  }
+
   // ─── Empty: 0 children ───
   if (kidList.length === 0) {
+    return (
+      <View style={s.root}>
+        <Background />
+        <StatusBar style="light" />
+        <SafeAreaView style={s.safe} edges={['top']}>
+          <View style={s.emptyWrap}>
+            <Text style={s.greetingText}>Good evening, {displayName}.</Text>
+            <Text style={s.emptyTitle}>Let's add your first child.</Text>
+            <Text style={s.emptyBody}>
+              Sturdy tailors every response to your child's age and world.
+            </Text>
+            <Pressable
+              onPress={handleAddChild}
+              style={({ pressed }) => [pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] }]}
+            >
+              <LinearGradient
+                colors={[C.amber, C.amberMid]}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                style={s.primaryBtn}
+              >
+                <Text style={s.primaryBtnText}>Add a child</Text>
+              </LinearGradient>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  // ─── Main: 1+ children ───
   return (
     <View style={s.root}>
       <Background />
       <StatusBar style="light" />
       <SafeAreaView style={s.safe} edges={['top']}>
-        <View style={s.emptyWrap}>
-          <Text style={s.greetingText}>Good evening, {displayName}.</Text>
-          <Text style={s.emptyTitle}>Let's add your first child.</Text>
-          <Text style={s.emptyBody}>
-            Sturdy tailors every response to your child's age and world.
-          </Text>
-          <Pressable
-            onPress={handleAddChild}
-            style={({ pressed }) => [pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] }]}
-          >
-            <LinearGradient
-              colors={[C.amber, C.amberMid]}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-              style={s.primaryBtn}
-            >
-              <Text style={s.primaryBtnText}>Add a child</Text>
-            </LinearGradient>
-          </Pressable>
-        </View>
-      </SafeAreaView>
-    </View>
-  );
-}
-
-  // ─── Main: 1+ children ───
-return (
-  <View style={s.root}>
-    <Background />
-    <StatusBar style="light" />
-    <SafeAreaView style={s.safe} edges={['top']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-      >
-        <ScrollView
-          contentContainerStyle={s.scroll}
-          keyboardDismissMode="interactive"
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
         >
-          <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+          <ScrollView
+            contentContainerStyle={s.scroll}
+            keyboardDismissMode="interactive"
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
-            {/* ─── Greeting ─── */}
-<View style={s.greetingWrap}>
-  <Text style={s.greetingText}>Good evening, {displayName}.</Text>
-  <Text style={s.greetingSection}>What's on your mind?</Text>
-</View>
-
-            {/* ─── Child pills ─── */}
-            {kidList.length > 0 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={s.pillRow}
-              >
-                {kidList.map((kid: any, index: number) => {
-                  const isActive = activeChildId === kid.id;
-                  const grad = CHILD_GRADIENTS[index % CHILD_GRADIENTS.length];
-                  const initial = (kid?.name?.trim()?.[0] ?? '?').toUpperCase();
-                  return (
-                    <Pressable
-                      key={kid.id}
-                      onPress={() => {
-                        Haptics.selectionAsync();
-                        setActiveChildId(isActive ? null : kid.id);
-                      }}
-                      style={[
-                        s.childPill,
-                        isActive && s.childPillActive,
-                        activeChildId && !isActive && s.childPillFaded,
-                      ]}
-                    >
-                      <LinearGradient
-                        colors={grad}
-                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                        style={s.pillAvatar}
-                      >
-                        <Text style={s.pillAvatarText}>{initial}</Text>
-                      </LinearGradient>
-                      <Text style={[s.pillNameText, isActive && s.pillNameTextActive]}>
-                        {kid.name} · {kid.childAge}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-                <Pressable onPress={handleAddChild} style={s.childPill}>
-                  <View style={s.pillAddCircle}>
-                    <Text style={s.pillAddPlus}>+</Text>
-                  </View>
-                  <Text style={s.pillNameText}>Add</Text>
-                </Pressable>
-              </ScrollView>
-            )}
-
-            {/* ─── Ask Sturdy — Thinking Space ─── */}
-            <Animated.View style={[
-              s.thinkingCard,
-              inputFocused && s.thinkingCardFocused,
-            ]}>
-              {!question && (
-                <Animated.View style={[s.placeholderWrap, { opacity: placeholderFade }]} pointerEvents="none">
-                  <Text style={s.placeholderText}>{ASK_PLACEHOLDERS[placeholderIdx]}</Text>
-                </Animated.View>
-              )}
-              <TextInput
-                multiline
-                value={question}
-                onChangeText={(t) => { setQuestion(t); if (error) setError(''); }}
-                onFocus={() => setInputFocused(true)}
-                onBlur={() => setInputFocused(false)}
-                style={s.thinkingInput}
-                textAlignVertical="top"
-                editable={!sending}
-                selectionColor={C.amber}
-              />
-              <View style={s.thinkingSendWrap}>
-                <Pressable
-                  onPress={handleSend}
-                  disabled={!canSend}
-                  style={({ pressed }) => [
-                    !canSend && { opacity: 0.32 },
-                    pressed && canSend && { transform: [{ scale: 0.94 }] },
-                  ]}
-                >
-                  <LinearGradient
-                    colors={[C.amber, C.amberMid]}
-                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                    style={s.thinkingSendBtn}
-                  >
-                    <Text style={s.thinkingSendArrow}>{sending ? '…' : '→'}</Text>
-                  </LinearGradient>
-                </Pressable>
+              {/* ─── Header row ─── */}
+              <View style={s.headerRow}>
+                <View>
+                  <Text style={s.greetingText}>Good evening, {displayName}.</Text>
+                </View>
+                <TrafficDots />
               </View>
-            </Animated.View>
-            {error ? <Text style={s.errorText}>{error}</Text> : null}
-            <QuotaBar />
 
-            {/* ─── Content: New user OR Returning user ─── */}
-            {!hasAnySessions ? (
+              {/* ─── Question zone ─── */}
+              <Text style={s.questionIntro}>The quiet questions matter too.</Text>
 
-              /* ─── NEW USER: Scenario cards + gateway ─── */
-              <View style={s.newUserSection}>
-                <Text style={s.sectionHeader}>
-                  {activeChildId && kidList.find((k: any) => k.id === activeChildId)
-                    ? `QUICK SCRIPTS FOR ${(kidList.find((k: any) => k.id === activeChildId) as any)?.name?.toUpperCase()}`
-                    : 'QUICK SCRIPTS'}
-                </Text>
+              {/* ─── Ask Sturdy — Thinking Space ─── */}
+              <Animated.View style={[
+                s.thinkingCard,
+                inputFocused && s.thinkingCardFocused,
+              ]}>
+                {!question && (
+                  <Animated.View style={[s.placeholderWrap, { opacity: placeholderFade }]} pointerEvents="none">
+                    <Text style={s.placeholderText}>{ASK_PLACEHOLDERS[placeholderIdx]}</Text>
+                  </Animated.View>
+                )}
+                <TextInput
+                  multiline
+                  value={question}
+                  onChangeText={(t) => { setQuestion(t); if (error) setError(''); }}
+                  onFocus={() => setInputFocused(true)}
+                  onBlur={() => setInputFocused(false)}
+                  style={s.thinkingInput}
+                  textAlignVertical="top"
+                  editable={!sending}
+                  selectionColor={C.amber}
+                />
+                <View style={s.thinkingSendWrap}>
+                  <Pressable
+                    onPress={handleSend}
+                    disabled={!canSend}
+                    style={({ pressed }) => [
+                      !canSend && { opacity: 0.32 },
+                      pressed && canSend && { transform: [{ scale: 0.94 }] },
+                    ]}
+                  >
+                    <LinearGradient
+                      colors={[C.amber, C.amberMid]}
+                      start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                      style={s.thinkingSendBtn}
+                    >
+                      <Text style={s.thinkingSendArrow}>{sending ? '…' : '→'}</Text>
+                    </LinearGradient>
+                  </Pressable>
+                </View>
+              </Animated.View>
+              {error ? <Text style={s.errorText}>{error}</Text> : null}
 
+              {/* ─── Child pills — compact ─── */}
+              {kidList.length > 0 && (
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={s.scenarioRow}
+                  contentContainerStyle={s.compactPillRow}
                 >
-                  {PRELOADED_SCENARIOS.map((scenario) => (
-                    <Pressable
-                      key={scenario.id}
-                      onPress={() => {
-                        Haptics.selectionAsync();
-                        const targetChild = activeChildId
-                          ? kidList.find((k: any) => k.id === activeChildId)
-                          : kidList[0];
-                        if (targetChild) {
-                          router.push(`/child/${(targetChild as any).id}` as any);
-                        } else {
-                          router.push('/child/new' as any);
-                        }
-                      }}
-                      style={({ pressed }) => [s.scenarioCard, pressed && { opacity: 0.8 }]}
-                    >
-                      <View style={[s.scenarioIcon, { backgroundColor: `${scenario.color}20` }]}>
-                        <Text style={{ fontSize: 22 }}>{scenario.icon}</Text>
-                      </View>
-                      <Text style={s.scenarioTitle}>{scenario.title}</Text>
-                    </Pressable>
-                  ))}
+                  {kidList.map((kid: any, index: number) => {
+                    const isActive = activeChildId === kid.id;
+                    const grad = CHILD_GRADIENTS[index % CHILD_GRADIENTS.length];
+                    const initial = (kid?.name?.trim()?.[0] ?? '?').toUpperCase();
+                    return (
+                      <Pressable
+                        key={kid.id}
+                        onPress={() => {
+                          Haptics.selectionAsync();
+                          setActiveChildId(kid.id);
+                        }}
+                        style={[s.compactPill, isActive && s.compactPillActive]}
+                      >
+                        <LinearGradient
+                          colors={grad}
+                          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                          style={s.compactPillAvatar}
+                        >
+                          <Text style={s.compactPillInitial}>{initial}</Text>
+                        </LinearGradient>
+                        <Text style={[s.compactPillName, isActive && s.compactPillNameActive]}>
+                          {kid.name}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
                 </ScrollView>
+              )}
 
-                <Pressable
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    const targetChild = activeChildId
-                      ? kidList.find((k: any) => k.id === activeChildId)
-                      : kidList[0];
-                    if (targetChild) {
-                      router.push(`/child/${(targetChild as any).id}` as any);
-                    } else {
-                      router.push('/child/new' as any);
-                    }
-                  }}
-                  style={({ pressed }) => [s.customScenarioCard, pressed && { opacity: 0.85 }]}
-                >
-                  <View style={s.customCardRow}>
-                    <View style={s.customCardIcon}>
-                      <Text style={{ fontSize: 16, color: '#E87461' }}>!</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.customCardTitle}>Describe what's happening</Text>
-                      <Text style={s.customCardSubtitle}>Get a custom script right now</Text>
-                    </View>
-                    <Text style={{ fontSize: 18, color: 'rgba(255,248,230,0.28)' }}>›</Text>
-                  </View>
-                </Pressable>
-
-                <Text style={s.freeFooter}>SOS is always free. No limits, no paywall.</Text>
+              {/* ─── SOS zone ─── */}
+              <View style={s.sosHeader}>
+                <Animated.View style={[s.sosPulseDot, {
+                  opacity: sosPulse.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }),
+                  transform: [{
+                    scale: sosPulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.3] }),
+                  }],
+                }]} />
+                <Text style={s.sosHeaderText}>
+                  {'What\'s happening with '}
+                  <Text style={{ color: C.amber }}>
+                    {kidList.find((k: any) => k.id === activeChildId)?.name ?? 'your child'}
+                  </Text>
+                  {' right now?'}
+                </Text>
               </View>
 
-            ) : (
+              {/* Trigger cards — 4-column grid */}
+              <View style={s.triggerGrid}>
+                {TRIGGER_CARDS.map((trigger) => (
+                  <Pressable
+                    key={trigger.id}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      const targetId = activeChildId ?? kidList[0]?.id;
+                      if (targetId) {
+                        router.push({
+                          pathname: `/child/${targetId}` as any,
+                          params: { prefill: trigger.label },
+                        });
+                      } else {
+                        router.push('/child/new' as any);
+                      }
+                    }}
+                    style={({ pressed }) => [s.triggerCard, pressed && { opacity: 0.7 }]}
+                  >
+                    <View style={[s.triggerIcon, { backgroundColor: trigger.color }]}>
+                      <Text style={{ fontSize: 18 }}>{trigger.icon}</Text>
+                    </View>
+                    <Text style={s.triggerGridLabel}>{trigger.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
 
-              /* ─── RETURNING USER: Dashboard cards ─── */
+              {/* Describe yours */}
+              <Pressable
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  const targetId = activeChildId ?? kidList[0]?.id;
+                  if (targetId) {
+                    router.push(`/child/${targetId}` as any);
+                  } else {
+                    router.push('/child/new' as any);
+                  }
+                }}
+                style={({ pressed }) => [s.describeCard, pressed && { opacity: 0.8 }]}
+              >
+                <View style={s.describeIcon}>
+                  <Text style={{ fontSize: 14, color: '#E87461', fontWeight: '700' }}>!</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.describeTitle}>Something else</Text>
+                  <Text style={s.describeSub}>Describe it → get a script</Text>
+                </View>
+                <Text style={{ fontSize: 16, color: 'rgba(255,248,230,0.2)' }}>›</Text>
+              </Pressable>
+
+              <Text style={s.freeFooter}>Always free · No paywall</Text>
+
+              {/* ─── Dashboard cards — returning users ─── */}
               <View style={s.hookStack}>
 
                 {/* Card 1 — Last Session */}
-<Text style={s.hookSubheader}>LAST SESSION</Text>
-{(() => {
-  const activeKid = kidList[activeSessionIndex];
-  const log = activeKid ? recentLogsByChild[activeKid.id] : null;
+                <Text style={s.hookSubheader}>LAST SESSION</Text>
+                {(() => {
+                  const activeKid = kidList[activeSessionIndex];
+                  const log = activeKid ? recentLogsByChild[activeKid.id] : null;
 
-  if (!log) {
-    return (
-      <View style={s.sessionCard}>
-        <Text style={s.triggersEmpty}>
-          No sessions yet — use SOS or a mode to see your last session here.
-        </Text>
-      </View>
-    );
-  }
+                  if (!log) {
+                    return (
+                      <View style={s.sessionCard}>
+                        <Text style={s.triggersEmpty}>
+                          No sessions yet — use SOS or a mode to see your last session here.
+                        </Text>
+                      </View>
+                    );
+                  }
 
-  const triggerLabel = log.trigger_category ? (RECENT_TRIGGER_LABELS[log.trigger_category] ?? log.trigger_category) : null;
-  const summary = log.situation_summary ?? triggerLabel ?? 'Session recorded';
-  const truncated = summary.length > 60 ? summary.slice(0, 60) + '...' : summary;
-  const timestamp = formatTimeAgo(log.created_at);
-  const modeLabel = RECENT_MODE_LABELS[log.mode] ?? log.mode ?? 'SOS';
-  const modeColor = log.mode === 'sos' ? '#E87461'
-    : log.mode === 'reconnect' ? '#E8A855'
-    : log.mode === 'understand' ? '#7BA4D0'
-    : log.mode === 'conversation' ? '#A0C068'
-    : '#E87461';
+                  const triggerLabel = log.trigger_category ? (RECENT_TRIGGER_LABELS[log.trigger_category] ?? log.trigger_category) : null;
+                  const summary = log.situation_summary ?? triggerLabel ?? 'Session recorded';
+                  const truncated = summary.length > 60 ? summary.slice(0, 60) + '...' : summary;
+                  const timestamp = formatTimeAgo(log.created_at);
+                  const modeLabel = RECENT_MODE_LABELS[log.mode] ?? log.mode ?? 'SOS';
+                  const modeColor = log.mode === 'sos' ? '#E87461'
+                    : log.mode === 'reconnect' ? '#E8A855'
+                    : log.mode === 'understand' ? '#7BA4D0'
+                    : log.mode === 'conversation' ? '#A0C068'
+                    : '#E87461';
 
-  return (
-    <Animated.View
-      style={{ opacity: sessionAnim }}
-      onStartShouldSetResponder={() => true}
-      onResponderRelease={(e) => {
-        const dx = e.nativeEvent.locationX;
-        if (dx < 80) handleSessionSwipe('right');
-        else if (dx > 260) handleSessionSwipe('left');
-      }}
-    >
-      <View style={s.sessionCard}>
-        <View style={s.sessionCardHeader}>
-          <Text style={s.sessionChildName}>{activeKid?.name ?? 'Child'}</Text>
-          <View style={[s.sessionModeBadge, { backgroundColor: `${modeColor}15`, borderColor: `${modeColor}30` }]}>
-            <Text style={[s.sessionModeBadgeText, { color: modeColor }]}>{modeLabel}</Text>
-          </View>
-        </View>
-        <Text style={s.sessionTimestamp}>{timestamp}</Text>
-        <Text style={s.sessionQuote}>"{truncated}"</Text>
-        <Pressable
-          onPress={() => { if (activeKid) router.push(`/child/${activeKid.id}` as any); }}
-          style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
-        >
-          <Text style={s.sessionCta}>View full script →</Text>
-        </Pressable>
-      </View>
-    </Animated.View>
-  );
-})()}
+                  return (
+                    <Animated.View
+                      style={{ opacity: sessionAnim }}
+                      onStartShouldSetResponder={() => true}
+                      onResponderRelease={(e) => {
+                        const dx = e.nativeEvent.locationX;
+                        if (dx < 80) handleSessionSwipe('right');
+                        else if (dx > 260) handleSessionSwipe('left');
+                      }}
+                    >
+                      <View style={s.sessionCard}>
+                        <View style={s.sessionCardHeader}>
+                          <Text style={s.sessionChildName}>{activeKid?.name ?? 'Child'}</Text>
+                          <View style={[s.sessionModeBadge, { backgroundColor: `${modeColor}15`, borderColor: `${modeColor}30` }]}>
+                            <Text style={[s.sessionModeBadgeText, { color: modeColor }]}>{modeLabel}</Text>
+                          </View>
+                        </View>
+                        <Text style={s.sessionTimestamp}>{timestamp}</Text>
+                        <Text style={s.sessionQuote}>"{truncated}"</Text>
+                        <Pressable
+                          onPress={() => { if (activeKid) router.push(`/child/${activeKid.id}` as any); }}
+                          style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
+                        >
+                          <Text style={s.sessionCta}>View full script →</Text>
+                        </Pressable>
+                      </View>
+                    </Animated.View>
+                  );
+                })()}
 
                 {/* Card 2 — Patterns */}
-<Text style={[s.hookSubheader, { marginTop: 22 }]}>PATTERNS</Text>
-{(() => {
-  const activeKid = kidList[activeSessionIndex];
-  const insights = activeKid ? childInsights[activeKid.id] : null;
-  const triggers = insights?.topTriggers?.slice(0, 3) ?? [];
-  const maxCount = triggers[0]?.count ?? 1;
-  const showEmpty = triggers.length === 0;
-  const barColors = ['#D4944A', '#8DB89A', '#82AAC4'];
+                <Text style={[s.hookSubheader, { marginTop: 22 }]}>PATTERNS</Text>
+                {(() => {
+                  const activeKid = kidList[activeSessionIndex];
+                  const insights = activeKid ? childInsights[activeKid.id] : null;
+                  const triggers = insights?.topTriggers?.slice(0, 3) ?? [];
+                  const maxCount = triggers[0]?.count ?? 1;
+                  const showEmpty = triggers.length === 0;
+                  const barColors = ['#D4944A', '#8DB89A', '#82AAC4'];
 
-  return (
-    <View style={s.triggersCard}>
-      <View style={s.triggersCardHeader}>
-        <Text style={s.sessionChildName}>{activeKid?.name ?? 'Child'}</Text>
-        <Text style={s.triggersWeekLabel}>this week</Text>
-      </View>
-      {showEmpty ? (
-        <Text style={s.triggersEmpty}>Patterns will appear here after a few sessions.</Text>
-      ) : (
-        <View style={s.triggersList}>
-          {triggers.map((trigger, index) => {
-            const barWidth = `${Math.round((trigger.count / maxCount) * 100)}%`;
-            const barColor = barColors[index] ?? '#D4944A';
-            return (
-              <View key={trigger.category} style={s.triggerRow}>
-                <Text style={s.triggerLabel} numberOfLines={1}>{trigger.label}</Text>
-                <View style={s.triggerBarWrap}>
-                  <View style={[s.triggerBar, { width: barWidth as any, backgroundColor: barColor }]} />
-                </View>
-                <Text style={s.triggerCount}>{trigger.count}×</Text>
-              </View>
-            );
-          })}
-        </View>
-      )}
-    </View>
-  );
-})()}
+                  return (
+                    <View style={s.triggersCard}>
+                      <View style={s.triggersCardHeader}>
+                        <Text style={s.sessionChildName}>{activeKid?.name ?? 'Child'}</Text>
+                        <Text style={s.triggersWeekLabel}>this week</Text>
+                      </View>
+                      {showEmpty ? (
+                        <Text style={s.triggersEmpty}>Patterns will appear here after a few sessions.</Text>
+                      ) : (
+                        <View style={s.triggersList}>
+                          {triggers.map((trigger, index) => {
+                            const barWidth = `${Math.round((trigger.count / maxCount) * 100)}%`;
+                            const barColor = barColors[index] ?? '#D4944A';
+                            return (
+                              <View key={trigger.category} style={s.triggerRow}>
+                                <Text style={s.triggerBarLabel} numberOfLines={1}>{trigger.label}</Text>
+                                <View style={s.triggerBarWrap}>
+                                  <View style={[s.triggerBar, { width: barWidth as any, backgroundColor: barColor }]} />
+                                </View>
+                                <Text style={s.triggerCount}>{trigger.count}×</Text>
+                              </View>
+                            );
+                          })}
+                        </View>
+                      )}
+                    </View>
+                  );
+                })()}
 
                 {/* Card 3 — Sturdy+ upsell (only after 3+ sessions) */}
-{(() => {
-  const activeKid = kidList[activeSessionIndex];
-  const insights = activeKid ? childInsights[activeKid.id] : null;
-  const totalInteractions = insights?.totalInteractions ?? 0;
-  if (totalInteractions < 3) return null;
+                {(() => {
+                  const activeKid = kidList[activeSessionIndex];
+                  const insights = activeKid ? childInsights[activeKid.id] : null;
+                  const totalInteractions = insights?.totalInteractions ?? 0;
+                  if (totalInteractions < 3) return null;
 
-  const blurb = `${activeKid?.name ?? 'Your child'} has used ${totalInteractions} sessions — unlock unlimited scripts and tone selector.`;
-  return (
-    <>
-      <Text style={[s.hookSubheader, { marginTop: 22, color: 'rgba(200,136,58,0.55)' }]}>STURDY+</Text>
-      <Pressable
-        onPress={() => { Haptics.selectionAsync(); router.push('/upgrade' as any); }}
-        style={({ pressed }) => [s.hookCardLocked, pressed && { opacity: 0.85 }]}
-        accessibilityRole="button"
-        accessibilityLabel="See what's in Sturdy+"
-      >
-        <View style={s.hookCardRow}>
-          <Text style={s.hookLockedIcon}>🔒</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={s.hookLockedTitle} numberOfLines={2}>{blurb}</Text>
-            <Text style={[s.hookLockedMeta, { marginTop: 4 }]}>See what's in Sturdy+ →</Text>
-          </View>
-        </View>
-      </Pressable>
-    </>
-  );
-})()}
+                  const blurb = `${activeKid?.name ?? 'Your child'} has used ${totalInteractions} sessions — unlock unlimited scripts and tone selector.`;
+                  return (
+                    <>
+                      <Text style={[s.hookSubheader, { marginTop: 22, color: 'rgba(200,136,58,0.55)' }]}>STURDY+</Text>
+                      <Pressable
+                        onPress={() => { Haptics.selectionAsync(); router.push('/upgrade' as any); }}
+                        style={({ pressed }) => [s.hookCardLocked, pressed && { opacity: 0.85 }]}
+                        accessibilityRole="button"
+                        accessibilityLabel="See what's in Sturdy+"
+                      >
+                        <View style={s.hookCardRow}>
+                          <Text style={s.hookLockedIcon}>🔒</Text>
+                          <View style={{ flex: 1 }}>
+                            <Text style={s.hookLockedTitle} numberOfLines={2}>{blurb}</Text>
+                            <Text style={[s.hookLockedMeta, { marginTop: 4 }]}>See what's in Sturdy+ →</Text>
+                          </View>
+                        </View>
+                      </Pressable>
+                    </>
+                  );
+                })()}
 
               </View>
 
-            )}
+            </Animated.View>
+            <View style={{ height: 40 }} />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
 
-          </Animated.View>
-          <View style={{ height: 40 }} />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-
-    {/* ─── Multi-child picker modal ─── */}
-    <Modal visible={pickerMode !== null} animationType="fade" transparent onRequestClose={handlePickerCancel}>
-      <Pressable style={s.pickerBackdrop} onPress={handlePickerCancel}>
-        <Pressable style={s.pickerSheet} onPress={() => {}}>
-          <Text style={s.pickerTitle}>Which child?</Text>
-          <Text style={s.pickerSub}>
-            {pickerMode ? OUTCOMES.find((o) => o.mode === pickerMode)?.desc : ''}
-          </Text>
-          <View style={s.pickerRow}>
-            {kidList.map((kid: any, index: number) => {
-              const grad = CHILD_GRADIENTS[index % CHILD_GRADIENTS.length];
-              const initial = (kid?.name?.trim()?.[0] ?? '?').toUpperCase();
-              return (
-                <Pressable
-                  key={kid.id}
-                  onPress={() => handlePickerSelectChild(kid.id)}
-                  style={({ pressed }) => [
-                    s.pickerChild,
-                    pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] },
-                  ]}
-                >
-                  <LinearGradient
-                    colors={grad}
-                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                    style={s.pickerAvatar}
+      {/* ─── Multi-child picker modal ─── */}
+      <Modal visible={pickerMode !== null} animationType="fade" transparent onRequestClose={handlePickerCancel}>
+        <Pressable style={s.pickerBackdrop} onPress={handlePickerCancel}>
+          <Pressable style={s.pickerSheet} onPress={() => {}}>
+            <Text style={s.pickerTitle}>Which child?</Text>
+            <Text style={s.pickerSub}>
+              {pickerMode ? OUTCOMES.find((o) => o.mode === pickerMode)?.desc : ''}
+            </Text>
+            <View style={s.pickerRow}>
+              {kidList.map((kid: any, index: number) => {
+                const grad = CHILD_GRADIENTS[index % CHILD_GRADIENTS.length];
+                const initial = (kid?.name?.trim()?.[0] ?? '?').toUpperCase();
+                return (
+                  <Pressable
+                    key={kid.id}
+                    onPress={() => handlePickerSelectChild(kid.id)}
+                    style={({ pressed }) => [
+                      s.pickerChild,
+                      pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] },
+                    ]}
                   >
-                    <Text style={s.pickerAvatarText}>{initial}</Text>
-                  </LinearGradient>
-                  <Text style={s.pickerChildName} numberOfLines={1}>{kid.name}</Text>
-                  <Text style={s.pickerChildAge}>Age {kid.childAge}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          <Pressable onPress={handlePickerCancel} style={s.pickerCancel}>
-            <Text style={s.pickerCancelText}>Cancel</Text>
+                    <LinearGradient
+                      colors={grad}
+                      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                      style={s.pickerAvatar}
+                    >
+                      <Text style={s.pickerAvatarText}>{initial}</Text>
+                    </LinearGradient>
+                    <Text style={s.pickerChildName} numberOfLines={1}>{kid.name}</Text>
+                    <Text style={s.pickerChildAge}>Age {kid.childAge}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Pressable onPress={handlePickerCancel} style={s.pickerCancel}>
+              <Text style={s.pickerCancelText}>Cancel</Text>
+            </Pressable>
           </Pressable>
         </Pressable>
-      </Pressable>
-    </Modal>
-  </View>
-);
+      </Modal>
+    </View>
+  );
 }
 
 // ═══════════════════════════════════════════════
-// STYLES — pixel-matched to sturdy-home-final.html
-// with v2 text opacity bumps applied
+// STYLES
 // ═══════════════════════════════════════════════
 
 const s = StyleSheet.create({
@@ -1100,48 +1098,16 @@ const s = StyleSheet.create({
   scroll: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 20 },
   centerGate: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  // ─── Light beam (diagonal golden glow from top-right) ───
-  lightBeamWrap: {
-    position: 'absolute',
-    top: -80,
-    right: -50,
-    width: 380,
-    height: 500,
-    transform: [{ rotate: '-8deg' }],
-    overflow: 'hidden',
-  },
-  lightBeamGradient: {
-    width: '100%',
-    height: '100%',
-  },
-
-  // ─── Atmospheric warmth layers ───
-  warmthMid: {
-    position: 'absolute',
-    top: '40%',
-    left: -40,
-    width: 140,
-    height: 180,
-    borderRadius: 90,
-  },
-  warmthCorner: {
-    position: 'absolute',
-    bottom: 80,
-    right: -30,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-  },
-  warmthFloor: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 300,
+  // ─── Header ───
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    marginTop: 8,
   },
 
   // ─── Greeting ───
-  greetingWrap: { gap: 6, marginTop: 8, marginBottom: 32 },
   greetingText: {
     fontFamily: F.heading,
     fontSize: 28,
@@ -1149,11 +1115,14 @@ const s = StyleSheet.create({
     letterSpacing: -0.5,
     lineHeight: 34,
   },
-  subGreeting: {
-    fontFamily: F.body,
-    fontSize: 14,
-    color: 'rgba(244,200,120,0.62)',      // bumped from 0.50
-    letterSpacing: 0.2,
+
+  // ─── Question zone ───
+  questionIntro: {
+    fontFamily: F.scriptItalic,
+    fontSize: 13,
+    color: 'rgba(255,248,230,0.55)',
+    marginBottom: 10,
+    fontStyle: 'italic',
   },
 
   // ─── Ask Sturdy — Thinking Space ───
@@ -1218,6 +1187,141 @@ const s = StyleSheet.create({
     paddingHorizontal: 4,
   },
 
+  // ─── Compact child pills ───
+  compactPillRow: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingBottom: 12,
+  },
+  compactPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 100,
+    padding: 3,
+    paddingRight: 10,
+  },
+  compactPillActive: {
+    backgroundColor: 'rgba(200,136,58,0.15)',
+    borderWidth: 1,
+    borderColor: C.amber,
+  },
+  compactPillAvatar: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  compactPillInitial: {
+    fontFamily: F.bodySemi,
+    fontSize: 10,
+    color: '#FFF',
+  },
+  compactPillName: {
+    fontFamily: F.bodyMedium,
+    fontSize: 12,
+    color: 'rgba(255,248,230,0.35)',
+  },
+  compactPillNameActive: {
+    color: C.amber,
+  },
+
+  // ─── SOS zone ───
+  sosHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  sosPulseDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#E87461',
+  },
+  sosHeaderText: {
+    fontFamily: F.bodyMedium,
+    fontSize: 14,
+    color: 'rgba(255,248,230,0.92)',
+    letterSpacing: 0.3,
+    flex: 1,
+  },
+
+  // ─── Trigger grid ───
+  triggerGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 10,
+  },
+  triggerCard: {
+    width: '23.5%',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 12,
+    padding: 10,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    gap: 6,
+  },
+  triggerIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  triggerGridLabel: {
+    fontFamily: F.bodyMedium,
+    fontSize: 10,
+    color: 'rgba(255,248,230,0.75)',
+    textAlign: 'center',
+  },
+
+  // ─── Describe yours ───
+  describeCard: {
+    backgroundColor: 'rgba(232,116,97,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(232,116,97,0.12)',
+    borderRadius: 12,
+    padding: 12,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 4,
+  },
+  describeIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: 'rgba(232,116,97,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  describeTitle: {
+    fontFamily: F.bodyMedium,
+    fontSize: 13,
+    color: 'rgba(255,248,230,0.85)',
+  },
+  describeSub: {
+    fontFamily: F.body,
+    fontSize: 11,
+    color: 'rgba(255,248,230,0.35)',
+    marginTop: 1,
+  },
+  freeFooter: {
+    fontFamily: F.body,
+    fontSize: 10,
+    color: 'rgba(255,248,230,0.2)',
+    textAlign: 'center',
+    marginTop: 12,
+    fontStyle: 'italic',
+    marginBottom: 24,
+  },
+
   // ─── Dashboard hook cards ───
   hookStack: { gap: 0 },
   hookSubheader: {
@@ -1279,31 +1383,6 @@ const s = StyleSheet.create({
     fontSize: 11,
     color: 'rgba(200,136,58,0.40)',
   },
-  // ─── Child chips (sleek, scaled) ───
-  chipsScroll: { marginBottom: 16 },
-  chipsRow: { flexDirection: 'row', gap: 6, paddingRight: 4 },
-  childChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    borderWidth: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderColor: 'rgba(255,255,255,0.09)',
-  },
-  childChipActive: {
-    backgroundColor: 'rgba(200,136,58,0.13)',
-    borderColor: 'rgba(200,136,58,0.38)',
-  },
-  chipDot: { width: 6, height: 6, borderRadius: 3 },
-  chipLabel: {
-    fontFamily: F.bodyMedium,
-    fontSize: 11,
-    color: 'rgba(255,248,230,0.48)',
-  },
-  chipLabelActive: { color: 'rgba(255,248,230,0.90)' },
 
   // ─── Empty state ───
   emptyWrap: { flex: 1, paddingHorizontal: 24, gap: 14, justifyContent: 'center' },
@@ -1409,264 +1488,187 @@ const s = StyleSheet.create({
     fontSize: 15,
     color: 'rgba(255,255,255,0.30)',
   },
-  // ─── Child pills ───
-  pillRow: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingBottom: 16,
-    paddingHorizontal: 2,
-  },
-  childPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
-    borderRadius: 100,
-    paddingVertical: 6,
-    paddingLeft: 6,
-    paddingRight: 16,
-  },
-  childPillActive: {
-    backgroundColor: 'rgba(200,136,58,0.15)',
-    borderColor: C.amber,
-  },
-  childPillFaded: {
-    opacity: 0.3,
-  },
-  pillAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  pillAvatarText: {
-    fontFamily: F.bodySemi,
-    fontSize: 13,
-    color: '#FFF',
-  },
-  pillNameText: {
-    fontFamily: F.bodyMedium,
-    fontSize: 14,
-    color: 'rgba(255,248,230,0.85)',
-  },
-  pillNameTextActive: {
-    color: C.amber,
-  },
-  pillAddCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,248,230,0.15)',
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  pillAddPlus: {
-    fontSize: 16,
-    color: 'rgba(255,248,230,0.3)',
-  },
 
-  // ─── New user state ───
-  newUserSection: {
-    marginTop: 8,
-  },
-  sectionHeader: {
-    fontFamily: F.label,
-    fontSize: 11,
-    letterSpacing: 1.2,
-    color: 'rgba(255,248,230,0.3)',
-    marginBottom: 14,
-  },
-  scenarioRow: {
-    gap: 12,
-    paddingBottom: 16,
-  },
-  scenarioCard: {
-    width: 140,
-    height: 140,
+  // ─── Session card ───
+  sessionCard: {
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.07)',
-    borderRadius: 18,
-    padding: 14,
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  sessionCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
   },
-  scenarioIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scenarioTitle: {
+  sessionChildName: {
     fontFamily: F.bodySemi,
     fontSize: 14,
-    color: 'rgba(255,248,230,0.9)',
-    lineHeight: 19,
+    color: 'rgba(255,248,230,0.90)',
   },
-  customScenarioCard: {
+  sessionModeBadge: {
+    backgroundColor: 'rgba(232,116,97,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(232,116,97,0.30)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  sessionModeBadgeText: {
+    fontFamily: F.label,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    color: '#E87461',
+  },
+  sessionTimestamp: {
+    fontFamily: F.body,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.35)',
+  },
+  sessionQuote: {
+    fontFamily: F.heading,
+    fontStyle: 'italic',
+    fontSize: 14,
+    color: 'rgba(255,248,230,0.78)',
+    lineHeight: 21,
+    letterSpacing: 0.1,
+  },
+  sessionCta: {
+    fontFamily: F.bodyMedium,
+    fontSize: 13,
+    color: '#D4944A',
+    marginTop: 4,
+  },
+
+  // ─── Patterns card ───
+  triggersCard: {
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.07)',
-    borderRadius: 18,
-    padding: 16,
-    marginTop: 8,
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    gap: 12,
   },
-  customCardRow: {
+  triggersCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  customCardIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: 'rgba(232,116,97,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-  },
-  customCardTitle: {
-    fontFamily: F.bodySemi,
-    fontSize: 15,
-    color: 'rgba(255,248,230,0.9)',
-    marginBottom: 2,
-  },
-  customCardSubtitle: {
+  triggersWeekLabel: {
     fontFamily: F.body,
-    fontSize: 13,
-    color: 'rgba(255,248,230,0.4)',
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.28)',
   },
-  freeFooter: {
+  triggersList: {
+    gap: 10,
+  },
+  triggerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  triggerBarLabel: {
     fontFamily: F.body,
     fontSize: 12,
-    color: 'rgba(255,248,230,0.22)',
-    textAlign: 'center',
-    marginTop: 24,
-    fontStyle: 'italic',
+    color: 'rgba(255,248,230,0.70)',
+    width: 100,
   },
-greetingSection: {
-  fontFamily: F.label,
-  fontSize: 10,
-  fontWeight: '700',
-  letterSpacing: 0.1,
-  color: 'rgba(255,255,255,0.22)',
-  textTransform: 'uppercase',
-  marginTop: 6,
-},
-sessionCard: {
-  backgroundColor: 'rgba(255,255,255,0.04)',
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.07)',
-  borderRadius: 14,
-  paddingVertical: 16,
-  paddingHorizontal: 16,
-  gap: 8,
-},
-sessionCardHeader: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-},
-sessionChildName: {
-  fontFamily: F.bodySemi,
-  fontSize: 14,
-  color: 'rgba(255,248,230,0.90)',
-},
-sessionModeBadge: {
-  backgroundColor: 'rgba(232,116,97,0.15)',
-  borderWidth: 1,
-  borderColor: 'rgba(232,116,97,0.30)',
-  borderRadius: 6,
-  paddingHorizontal: 8,
-  paddingVertical: 3,
-},
-sessionModeBadgeText: {
-  fontFamily: F.label,
-  fontSize: 10,
-  fontWeight: '700',
-  letterSpacing: 0.8,
-  color: '#E87461',
-},
-sessionTimestamp: {
-  fontFamily: F.body,
-  fontSize: 12,
-  color: 'rgba(255,255,255,0.35)',
-},
-sessionQuote: {
-  fontFamily: F.heading,
-  fontStyle: 'italic',
-  fontSize: 14,
-  color: 'rgba(255,248,230,0.78)',
-  lineHeight: 21,
-  letterSpacing: 0.1,
-},
-sessionCta: {
-  fontFamily: F.bodyMedium,
-  fontSize: 13,
-  color: '#D4944A',
-  marginTop: 4,
-},
-triggersCard: {
-  backgroundColor: 'rgba(255,255,255,0.04)',
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.07)',
-  borderRadius: 14,
-  paddingVertical: 16,
-  paddingHorizontal: 16,
-  gap: 12,
-},
-triggersCardHeader: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-},
-triggersWeekLabel: {
-  fontFamily: F.body,
-  fontSize: 11,
-  color: 'rgba(255,255,255,0.28)',
-},
-triggersList: {
-  gap: 10,
-},
-triggerRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 10,
-},
-triggerLabel: {
-  fontFamily: F.body,
-  fontSize: 12,
-  color: 'rgba(255,248,230,0.70)',
-  width: 100,
-},
-triggerBarWrap: {
-  flex: 1,
-  height: 4,
-  backgroundColor: 'rgba(255,255,255,0.06)',
-  borderRadius: 2,
-  overflow: 'hidden',
-},
-triggerBar: {
-  height: 4,
-  borderRadius: 2,
-},
-triggerCount: {
-  fontFamily: F.bodyMedium,
-  fontSize: 11,
-  color: 'rgba(255,255,255,0.35)',
-  width: 24,
-  textAlign: 'right',
-},
-triggersEmpty: {
-  fontFamily: F.body,
-  fontSize: 12,
-  color: 'rgba(255,255,255,0.25)',
-  fontStyle: 'italic',
-  lineHeight: 18,
-},
+  triggerBarWrap: {
+    flex: 1,
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  triggerBar: {
+    height: 4,
+    borderRadius: 2,
+  },
+  triggerCount: {
+    fontFamily: F.bodyMedium,
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.35)',
+    width: 24,
+    textAlign: 'right',
+  },
+  triggersEmpty: {
+    fontFamily: F.body,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.25)',
+    fontStyle: 'italic',
+    lineHeight: 18,
+  },
+
+  // ─── Atmospheric styles (kept for potential use) ───
+  lightBeamWrap: {
+    position: 'absolute',
+    top: -80,
+    right: -50,
+    width: 380,
+    height: 500,
+    transform: [{ rotate: '-8deg' }],
+    overflow: 'hidden',
+  },
+  lightBeamGradient: {
+    width: '100%',
+    height: '100%',
+  },
+  warmthMid: {
+    position: 'absolute',
+    top: '40%',
+    left: -40,
+    width: 140,
+    height: 180,
+    borderRadius: 90,
+  },
+  warmthCorner: {
+    position: 'absolute',
+    bottom: 80,
+    right: -30,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+  },
+  warmthFloor: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 300,
+  },
+  subGreeting: {
+    fontFamily: F.body,
+    fontSize: 14,
+    color: 'rgba(244,200,120,0.62)',
+    letterSpacing: 0.2,
+  },
+  chipsScroll: { marginBottom: 16 },
+  chipsRow: { flexDirection: 'row', gap: 6, paddingRight: 4 },
+  childChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.09)',
+  },
+  childChipActive: {
+    backgroundColor: 'rgba(200,136,58,0.13)',
+    borderColor: 'rgba(200,136,58,0.38)',
+  },
+  chipDot: { width: 6, height: 6, borderRadius: 3 },
+  chipLabel: {
+    fontFamily: F.bodyMedium,
+    fontSize: 11,
+    color: 'rgba(255,248,230,0.48)',
+  },
+  chipLabelActive: { color: 'rgba(255,248,230,0.90)' },
 });

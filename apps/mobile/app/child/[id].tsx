@@ -132,7 +132,7 @@ function Background() {
 
 export default function ChildHubScreen() {
   const navigation = useRouter();
-  const params = useLocalSearchParams<{ id?: string; mode?: string }>();
+  const params = useLocalSearchParams<{ id?: string; mode?: string; prefill?: string }>();
   const { session, signOut } = useAuth();
   const { children, activeChild, setActiveChild } = useChildProfile() as any;
 
@@ -163,7 +163,7 @@ export default function ChildHubScreen() {
   }, [children, child, params.id]);
 
   // ─── State: input ───
-  const [situation, setSituation]       = useState('');
+  const [situation, setSituation]       = useState(params.prefill ?? '');
   const [intensity, setIntensity]       = useState<number | null>(null);
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState('');
