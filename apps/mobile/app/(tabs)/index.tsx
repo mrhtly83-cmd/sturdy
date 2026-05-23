@@ -54,6 +54,14 @@ import { QuotaBar } from '../../src/components/ui/QuotaBar';
 export const GREETINGS = ['Hi', 'Hello', 'Hey'];
 const MODE_CARD_WIDTH = 150; // 140 card + 10 gap
 
+const ASK_PLACEHOLDERS = [
+  'Ask Sturdy anything…',
+  'Why is bedtime suddenly a battle?',
+  'Am I being too strict about screen time?',
+  'How do I prepare him for a new baby?',
+  'Is this behavior normal for a 4-year-old?',
+];
+
 // ═══════════════════════════════════════════════
 // PARTICLE SYSTEM
 // Matches sturdy-home-final.html particle distribution:
@@ -394,6 +402,9 @@ const [activeSessionIndex, setActiveSessionIndex] = useState(0);
 const sessionAnim = useRef(new Animated.Value(1)).current;
 const autoSlideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+const [placeholderIdx, setPlaceholderIdx] = useState(0);
+const placeholderFade = useRef(new Animated.Value(1)).current;
+
   // Entry animations
 const fadeAnim = useRef(new Animated.Value(0)).current;
 const slideAnim = useRef(new Animated.Value(20)).current;
@@ -408,6 +419,21 @@ useEffect(() => {
     }),
   ]).start();
 }, []);
+
+// Rotate Ask Sturdy placeholder text
+useEffect(() => {
+  if (inputFocused || question.length > 0) return;
+  const interval = setInterval(() => {
+    Animated.sequence([
+      Animated.timing(placeholderFade, { toValue: 0, duration: 350, useNativeDriver: true }),
+      Animated.timing(placeholderFade, { toValue: 1, duration: 350, useNativeDriver: true }),
+    ]).start();
+    setTimeout(() => {
+      setPlaceholderIdx((prev) => (prev + 1) % ASK_PLACEHOLDERS.length);
+    }, 350);
+  }, 4000);
+  return () => clearInterval(interval);
+}, [inputFocused, question]);
 
  // ─── Fetch parent's name ───
 const fetchName = useCallback(async () => {
@@ -767,39 +793,46 @@ return (
   </View>
 )}
 
-            {/* ─── Ask Sturdy pill ─── */}
-            <View style={[s.inputPill, inputFocused && s.inputPillFocused]}>
+            {/* ─── Ask Sturdy — Thinking Space ─── */}
+            <Animated.View style={[
+              s.thinkingCard,
+              inputFocused && s.thinkingCardFocused,
+            ]}>
+              {!question && (
+                <Animated.View style={[s.placeholderWrap, { opacity: placeholderFade }]} pointerEvents="none">
+                  <Text style={s.placeholderText}>{ASK_PLACEHOLDERS[placeholderIdx]}</Text>
+                </Animated.View>
+              )}
               <TextInput
                 multiline
-                numberOfLines={2}
-                placeholder="Ask Sturdy anything…"
-                placeholderTextColor="rgba(255,248,231,0.38)"
                 value={question}
                 onChangeText={(t) => { setQuestion(t); if (error) setError(''); }}
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setInputFocused(false)}
-                style={s.pillInput}
+                style={s.thinkingInput}
                 textAlignVertical="top"
                 editable={!sending}
+                selectionColor={C.amber}
               />
-              <Pressable
-                onPress={handleSend}
-                disabled={!canSend}
-                style={({ pressed }) => [
-                  s.pillSendBtn,
-                  !canSend && { opacity: 0.32 },
-                  pressed && canSend && { transform: [{ scale: 0.94 }] },
-                ]}
-              >
-                <LinearGradient
-                  colors={[C.amber, C.amberMid]}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                  style={s.pillSendGradient}
+              <View style={s.thinkingSendWrap}>
+                <Pressable
+                  onPress={handleSend}
+                  disabled={!canSend}
+                  style={({ pressed }) => [
+                    !canSend && { opacity: 0.32 },
+                    pressed && canSend && { transform: [{ scale: 0.94 }] },
+                  ]}
                 >
-                  <Text style={s.pillSendArrow}>{sending ? '…' : '→'}</Text>
-                </LinearGradient>
-              </Pressable>
-            </View>
+                  <LinearGradient
+                    colors={[C.amber, C.amberMid]}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                    style={s.thinkingSendBtn}
+                  >
+                    <Text style={s.thinkingSendArrow}>{sending ? '…' : '→'}</Text>
+                  </LinearGradient>
+                </Pressable>
+              </View>
+            </Animated.View>
             {error ? <Text style={s.errorText}>{error}</Text> : null}
             <QuotaBar />
 
@@ -1069,53 +1102,59 @@ const s = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // ─── Ask Sturdy pill (prominent premium search bar) ───
-  inputPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(14,10,6,0.78)',
+  // ─── Ask Sturdy — Thinking Space ───
+  thinkingCard: {
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,248,231,0.14)',
-    borderRadius: 22,
-    paddingLeft: 20,
-    paddingRight: 8,
-    paddingVertical: 10,
-    marginBottom: 24,
-    gap: 10,
-    shadowColor: '#F4C878',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.06,
-    shadowRadius: 18,
+    borderColor: 'rgba(255,248,231,0.07)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    minHeight: 120,
+    padding: 16,
+    paddingBottom: 60,
+    position: 'relative',
+    marginBottom: 12,
   },
-  inputPillFocused: {
-    borderColor: 'rgba(232,168,85,0.60)',
-    backgroundColor: 'rgba(14,10,6,0.92)',
-    shadowOpacity: 0.14,
+  thinkingCardFocused: {
+    borderColor: 'rgba(200,136,58,0.3)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
-  pillInput: {
-    flex: 1,
-    color: '#FFF8E7',
-    fontSize: 16,
+  thinkingInput: {
     fontFamily: F.body,
-    paddingVertical: 10,
-    lineHeight: 22,
+    fontSize: 16,
+    color: '#FFF8E7',
+    minHeight: 80,
+    maxHeight: 160,
+    textAlignVertical: 'top',
+    lineHeight: 24,
   },
-  pillSendBtn: {
-    borderRadius: 18,
-    overflow: 'hidden',
+  placeholderWrap: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    right: 60,
   },
-  pillSendGradient: {
-    width: 46,
-    height: 46,
-    borderRadius: 18,
+  placeholderText: {
+    fontFamily: F.body,
+    fontSize: 16,
+    color: 'rgba(255,248,231,0.38)',
+    lineHeight: 24,
+  },
+  thinkingSendWrap: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+  },
+  thinkingSendBtn: {
+    width: 56,
+    height: 40,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pillSendArrow: {
+  thinkingSendArrow: {
     color: '#140f0a',
     fontSize: 18,
-    fontWeight: '700',
-    lineHeight: 22,
+    fontFamily: F.bodySemi,
   },
   errorText: {
     color: '#FF8A7D',
