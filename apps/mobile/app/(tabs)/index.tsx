@@ -29,7 +29,6 @@ import {
   TextInput,
   View,
   Image,
-  TouchableOpacity,
 } from 'react-native';
 
 import { router, useFocusEffect } from 'expo-router';
@@ -60,6 +59,13 @@ const ASK_PLACEHOLDERS = [
   'Am I being too strict about screen time?',
   'How do I prepare him for a new baby?',
   'Is this behavior normal for a 4-year-old?',
+];
+
+const PRELOADED_SCENARIOS = [
+  { id: 's1', title: 'Refusing to leave the park',   icon: '🏃', color: C.amber },
+  { id: 's2', title: 'Meltdown over the wrong cup',  icon: '☕', color: '#E87461' },
+  { id: 's3', title: 'Hitting a sibling',             icon: '✋', color: '#5778A3' },
+  { id: 's4', title: "Won't stay in bed",             icon: '🌙', color: '#8DB89A' },
 ];
 
 // ═══════════════════════════════════════════════
@@ -405,6 +411,10 @@ const autoSlideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 const [placeholderIdx, setPlaceholderIdx] = useState(0);
 const placeholderFade = useRef(new Animated.Value(1)).current;
 
+const hasAnySessions = Object.values(recentLogsByChild).some(
+  (log) => log !== null && log !== undefined
+);
+
   // Entry animations
 const fadeAnim = useRef(new Animated.Value(0)).current;
 const slideAnim = useRef(new Animated.Value(20)).current;
@@ -735,63 +745,53 @@ return (
 <View style={s.greetingWrap}>
   <Text style={s.greetingText}>Good evening, {displayName}.</Text>
   <Text style={s.greetingSection}>What's on your mind?</Text>
-</View><TouchableOpacity 
-  onPress={() => router.push('/mockup')}
-  style={{ backgroundColor: '#C8883A', padding: 12, borderRadius: 8, marginVertical: 10 }}
->
-  <Text style={{ color: 'white', textAlign: 'center' }}>Test New Input Mockup →</Text>
-</TouchableOpacity>
+</View>
 
-            {/* ─── Child selector chips ─── */}
+            {/* ─── Child pills ─── */}
             {kidList.length > 0 && (
-  <View style={s.avatarSection}>
-    <View style={s.avatarDivider}>
-      <Text style={s.avatarDividerLabel}>Your children</Text>
-      <View style={s.avatarDividerLine} />
-    </View>
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={s.avatarRow}
-    >
-      {kidList.map((kid: any, index: number) => {
-        const isActive = activeChildId === kid.id;
-        const grad = CHILD_GRADIENTS[index % CHILD_GRADIENTS.length];
-        const initial = (kid?.name?.trim()?.[0] ?? '?').toUpperCase();
-        return (
-          <Pressable
-            key={kid.id}
-            onPress={() => {
-              Haptics.selectionAsync();
-              setActiveChildId(isActive ? null : kid.id);
-            }}
-            style={s.avatarChip}
-            accessibilityRole="button"
-            accessibilityLabel={`Select ${kid.name}`}
-          >
-            <LinearGradient
-              colors={grad}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              style={[s.avatarCircle, isActive && s.avatarCircleActive]}
-            >
-              <Text style={s.avatarInitial}>{initial}</Text>
-              {isActive && <View style={s.avatarActiveDot} />}
-            </LinearGradient>
-            <Text style={[s.avatarName, isActive && s.avatarNameActive]}>
-              {kid.name} · {kid.childAge}
-            </Text>
-          </Pressable>
-        );
-      })}
-      <Pressable onPress={handleAddChild} style={s.avatarChip}>
-        <View style={s.avatarAdd}>
-          <Text style={s.avatarAddPlus}>+</Text>
-        </View>
-        <Text style={s.avatarName}>Add</Text>
-      </Pressable>
-    </ScrollView>
-  </View>
-)}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={s.pillRow}
+              >
+                {kidList.map((kid: any, index: number) => {
+                  const isActive = activeChildId === kid.id;
+                  const grad = CHILD_GRADIENTS[index % CHILD_GRADIENTS.length];
+                  const initial = (kid?.name?.trim()?.[0] ?? '?').toUpperCase();
+                  return (
+                    <Pressable
+                      key={kid.id}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setActiveChildId(isActive ? null : kid.id);
+                      }}
+                      style={[
+                        s.childPill,
+                        isActive && s.childPillActive,
+                        activeChildId && !isActive && s.childPillFaded,
+                      ]}
+                    >
+                      <LinearGradient
+                        colors={grad}
+                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                        style={s.pillAvatar}
+                      >
+                        <Text style={s.pillAvatarText}>{initial}</Text>
+                      </LinearGradient>
+                      <Text style={[s.pillNameText, isActive && s.pillNameTextActive]}>
+                        {kid.name} · {kid.childAge}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+                <Pressable onPress={handleAddChild} style={s.childPill}>
+                  <View style={s.pillAddCircle}>
+                    <Text style={s.pillAddPlus}>+</Text>
+                  </View>
+                  <Text style={s.pillNameText}>Add</Text>
+                </Pressable>
+              </ScrollView>
+            )}
 
             {/* ─── Ask Sturdy — Thinking Space ─── */}
             <Animated.View style={[
@@ -836,16 +836,86 @@ return (
             {error ? <Text style={s.errorText}>{error}</Text> : null}
             <QuotaBar />
 
-            {/* ─── Dashboard hook cards ─── */}
-            <View style={s.hookStack}>
+            {/* ─── Content: New user OR Returning user ─── */}
+            {!hasAnySessions ? (
 
-              {/* Card 1 — Last Session (animated, per child) */}
+              /* ─── NEW USER: Scenario cards + gateway ─── */
+              <View style={s.newUserSection}>
+                <Text style={s.sectionHeader}>
+                  {activeChildId && kidList.find((k: any) => k.id === activeChildId)
+                    ? `QUICK SCRIPTS FOR ${(kidList.find((k: any) => k.id === activeChildId) as any)?.name?.toUpperCase()}`
+                    : 'QUICK SCRIPTS'}
+                </Text>
+
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={s.scenarioRow}
+                >
+                  {PRELOADED_SCENARIOS.map((scenario) => (
+                    <Pressable
+                      key={scenario.id}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        const targetChild = activeChildId
+                          ? kidList.find((k: any) => k.id === activeChildId)
+                          : kidList[0];
+                        if (targetChild) {
+                          router.push(`/child/${(targetChild as any).id}` as any);
+                        } else {
+                          router.push('/child/new' as any);
+                        }
+                      }}
+                      style={({ pressed }) => [s.scenarioCard, pressed && { opacity: 0.8 }]}
+                    >
+                      <View style={[s.scenarioIcon, { backgroundColor: `${scenario.color}20` }]}>
+                        <Text style={{ fontSize: 22 }}>{scenario.icon}</Text>
+                      </View>
+                      <Text style={s.scenarioTitle}>{scenario.title}</Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+
+                <Pressable
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    const targetChild = activeChildId
+                      ? kidList.find((k: any) => k.id === activeChildId)
+                      : kidList[0];
+                    if (targetChild) {
+                      router.push(`/child/${(targetChild as any).id}` as any);
+                    } else {
+                      router.push('/child/new' as any);
+                    }
+                  }}
+                  style={({ pressed }) => [s.customScenarioCard, pressed && { opacity: 0.85 }]}
+                >
+                  <View style={s.customCardRow}>
+                    <View style={s.customCardIcon}>
+                      <Text style={{ fontSize: 16, color: '#E87461' }}>!</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.customCardTitle}>Describe what's happening</Text>
+                      <Text style={s.customCardSubtitle}>Get a custom script right now</Text>
+                    </View>
+                    <Text style={{ fontSize: 18, color: 'rgba(255,248,230,0.28)' }}>›</Text>
+                  </View>
+                </Pressable>
+
+                <Text style={s.freeFooter}>SOS is always free. No limits, no paywall.</Text>
+              </View>
+
+            ) : (
+
+              /* ─── RETURNING USER: Dashboard cards ─── */
+              <View style={s.hookStack}>
+
+                {/* Card 1 — Last Session */}
 <Text style={s.hookSubheader}>LAST SESSION</Text>
 {(() => {
   const activeKid = kidList[activeSessionIndex];
   const log = activeKid ? recentLogsByChild[activeKid.id] : null;
 
-  // No real session data — show empty state
   if (!log) {
     return (
       <View style={s.sessionCard}>
@@ -879,9 +949,7 @@ return (
     >
       <View style={s.sessionCard}>
         <View style={s.sessionCardHeader}>
-          <Text style={s.sessionChildName}>
-            {activeKid?.name ?? 'Child'}
-          </Text>
+          <Text style={s.sessionChildName}>{activeKid?.name ?? 'Child'}</Text>
           <View style={[s.sessionModeBadge, { backgroundColor: `${modeColor}15`, borderColor: `${modeColor}30` }]}>
             <Text style={[s.sessionModeBadgeText, { color: modeColor }]}>{modeLabel}</Text>
           </View>
@@ -889,9 +957,7 @@ return (
         <Text style={s.sessionTimestamp}>{timestamp}</Text>
         <Text style={s.sessionQuote}>"{truncated}"</Text>
         <Pressable
-          onPress={() => {
-            if (activeKid) router.push(`/child/${activeKid.id}` as any);
-          }}
+          onPress={() => { if (activeKid) router.push(`/child/${activeKid.id}` as any); }}
           style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
         >
           <Text style={s.sessionCta}>View full script →</Text>
@@ -901,7 +967,7 @@ return (
   );
 })()}
 
-              {/* Card 2 — Common Triggers */}
+                {/* Card 2 — Patterns */}
 <Text style={[s.hookSubheader, { marginTop: 22 }]}>PATTERNS</Text>
 {(() => {
   const activeKid = kidList[activeSessionIndex];
@@ -909,22 +975,16 @@ return (
   const triggers = insights?.topTriggers?.slice(0, 3) ?? [];
   const maxCount = triggers[0]?.count ?? 1;
   const showEmpty = triggers.length === 0;
-
   const barColors = ['#D4944A', '#8DB89A', '#82AAC4'];
 
   return (
     <View style={s.triggersCard}>
       <View style={s.triggersCardHeader}>
-        <Text style={s.sessionChildName}>
-          {activeKid?.name ?? 'Child'}
-        </Text>
+        <Text style={s.sessionChildName}>{activeKid?.name ?? 'Child'}</Text>
         <Text style={s.triggersWeekLabel}>this week</Text>
       </View>
-
       {showEmpty ? (
-        <Text style={s.triggersEmpty}>
-          Patterns will appear here after a few sessions.
-        </Text>
+        <Text style={s.triggersEmpty}>Patterns will appear here after a few sessions.</Text>
       ) : (
         <View style={s.triggersList}>
           {triggers.map((trigger, index) => {
@@ -932,16 +992,9 @@ return (
             const barColor = barColors[index] ?? '#D4944A';
             return (
               <View key={trigger.category} style={s.triggerRow}>
-                <Text style={s.triggerLabel} numberOfLines={1}>
-                  {trigger.label}
-                </Text>
+                <Text style={s.triggerLabel} numberOfLines={1}>{trigger.label}</Text>
                 <View style={s.triggerBarWrap}>
-                  <View
-                    style={[
-                      s.triggerBar,
-                      { width: barWidth as any, backgroundColor: barColor },
-                    ]}
-                  />
+                  <View style={[s.triggerBar, { width: barWidth as any, backgroundColor: barColor }]} />
                 </View>
                 <Text style={s.triggerCount}>{trigger.count}×</Text>
               </View>
@@ -953,37 +1006,38 @@ return (
   );
 })()}
 
-              {/* Card 3 — Sturdy+ upsell */}
-<Text style={[s.hookSubheader, { marginTop: 22, color: 'rgba(200,136,58,0.55)' }]}>STURDY+</Text>
+                {/* Card 3 — Sturdy+ upsell (only after 3+ sessions) */}
 {(() => {
   const activeKid = kidList[activeSessionIndex];
   const insights = activeKid ? childInsights[activeKid.id] : null;
-  const hasTriggers = (insights?.topTriggers?.length ?? 0) > 0;
-  const blurb = hasTriggers
-    ? `${activeKid?.name ?? 'Your child'} has used ${insights?.totalInteractions ?? 0} sessions — unlock unlimited scripts and tone selector.`
-    : 'Unlimited scripts, tone selector, and more.';
+  const totalInteractions = insights?.totalInteractions ?? 0;
+  if (totalInteractions < 3) return null;
 
+  const blurb = `${activeKid?.name ?? 'Your child'} has used ${totalInteractions} sessions — unlock unlimited scripts and tone selector.`;
   return (
-    <Pressable
-      onPress={() => { Haptics.selectionAsync(); router.push('/upgrade' as any); }}
-      style={({ pressed }) => [s.hookCardLocked, pressed && { opacity: 0.85 }]}
-      accessibilityRole="button"
-      accessibilityLabel="See what's in Sturdy+"
-    >
-      <View style={s.hookCardRow}>
-        <Text style={s.hookLockedIcon}>🔒</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={s.hookLockedTitle} numberOfLines={2}>
-            {blurb}
-          </Text>
-          <Text style={[s.hookLockedMeta, { marginTop: 4 }]}>See what's in Sturdy+ →</Text>
+    <>
+      <Text style={[s.hookSubheader, { marginTop: 22, color: 'rgba(200,136,58,0.55)' }]}>STURDY+</Text>
+      <Pressable
+        onPress={() => { Haptics.selectionAsync(); router.push('/upgrade' as any); }}
+        style={({ pressed }) => [s.hookCardLocked, pressed && { opacity: 0.85 }]}
+        accessibilityRole="button"
+        accessibilityLabel="See what's in Sturdy+"
+      >
+        <View style={s.hookCardRow}>
+          <Text style={s.hookLockedIcon}>🔒</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={s.hookLockedTitle} numberOfLines={2}>{blurb}</Text>
+            <Text style={[s.hookLockedMeta, { marginTop: 4 }]}>See what's in Sturdy+ →</Text>
+          </View>
         </View>
-      </View>
-    </Pressable>
+      </Pressable>
+    </>
   );
 })()}
 
-            </View>
+              </View>
+
+            )}
 
           </Animated.View>
           <View style={{ height: 40 }} />
@@ -1355,96 +1409,146 @@ const s = StyleSheet.create({
     fontSize: 15,
     color: 'rgba(255,255,255,0.30)',
   },
-  avatarSection: { marginBottom: 20 },
-avatarDivider: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 10,
-  marginBottom: 14,
-},
-avatarDividerLabel: {
-  fontFamily: F.label,
-  fontSize: 10,
-  fontWeight: '700',
-  letterSpacing: 0.09,
-  textTransform: 'uppercase',
-  color: 'rgba(255,255,255,0.22)',
-},
-avatarDividerLine: {
-  flex: 1,
-  height: 1,
-  backgroundColor: 'rgba(255,255,255,0.06)',
-},
-avatarRow: {
-  flexDirection: 'row',
-  gap: 18,
-  paddingRight: 4,
-  paddingBottom: 4,
-},
-avatarChip: {
-  alignItems: 'center',
-  gap: 7,
-},
-avatarCircle: {
-  width: 54,
-  height: 54,
-  borderRadius: 27,
-  alignItems: 'center',
-  justifyContent: 'center',
-  position: 'relative',
-},
-avatarCircleActive: {
-  shadowColor: '#D4944A',
-  shadowOffset: { width: 0, height: 0 },
-  shadowOpacity: 0.5,
-  shadowRadius: 10,
-  borderWidth: 2.5,
-  borderColor: '#D4944A',
-},
-avatarInitial: {
-  fontFamily: F.heading,
-  fontSize: 18,
-  color: '#FFFFFF',
-  fontWeight: '600',
-},
-avatarActiveDot: {
-  position: 'absolute',
-  bottom: 1,
-  right: 1,
-  width: 10,
-  height: 10,
-  borderRadius: 5,
-  backgroundColor: '#D4944A',
-  borderWidth: 2,
-  borderColor: '#0d0b08',
-},
-avatarName: {
-  fontFamily: F.bodyMedium,
-  fontSize: 11,
-  color: 'rgba(255,255,255,0.28)',
-  textAlign: 'center',
-},
-avatarNameActive: {
-  color: '#D4944A',
-  fontWeight: '700',
-},
-avatarAdd: {
-  width: 54,
-  height: 54,
-  borderRadius: 27,
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: 'rgba(255,255,255,0.04)',
-  borderWidth: 1.5,
-  borderColor: 'rgba(255,255,255,0.12)',
-  borderStyle: 'dashed',
-},
-avatarAddPlus: {
-  fontSize: 22,
-  color: 'rgba(255,255,255,0.20)',
-  fontWeight: '300',
-  lineHeight: 26,
-},
+  // ─── Child pills ───
+  pillRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingBottom: 16,
+    paddingHorizontal: 2,
+  },
+  childPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 100,
+    paddingVertical: 6,
+    paddingLeft: 6,
+    paddingRight: 16,
+  },
+  childPillActive: {
+    backgroundColor: 'rgba(200,136,58,0.15)',
+    borderColor: C.amber,
+  },
+  childPillFaded: {
+    opacity: 0.3,
+  },
+  pillAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  pillAvatarText: {
+    fontFamily: F.bodySemi,
+    fontSize: 13,
+    color: '#FFF',
+  },
+  pillNameText: {
+    fontFamily: F.bodyMedium,
+    fontSize: 14,
+    color: 'rgba(255,248,230,0.85)',
+  },
+  pillNameTextActive: {
+    color: C.amber,
+  },
+  pillAddCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,248,230,0.15)',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  pillAddPlus: {
+    fontSize: 16,
+    color: 'rgba(255,248,230,0.3)',
+  },
+
+  // ─── New user state ───
+  newUserSection: {
+    marginTop: 8,
+  },
+  sectionHeader: {
+    fontFamily: F.label,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    color: 'rgba(255,248,230,0.3)',
+    marginBottom: 14,
+  },
+  scenarioRow: {
+    gap: 12,
+    paddingBottom: 16,
+  },
+  scenarioCard: {
+    width: 140,
+    height: 140,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 18,
+    padding: 14,
+    justifyContent: 'space-between',
+  },
+  scenarioIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scenarioTitle: {
+    fontFamily: F.bodySemi,
+    fontSize: 14,
+    color: 'rgba(255,248,230,0.9)',
+    lineHeight: 19,
+  },
+  customScenarioCard: {
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 18,
+    padding: 16,
+    marginTop: 8,
+  },
+  customCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  customCardIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: 'rgba(232,116,97,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  customCardTitle: {
+    fontFamily: F.bodySemi,
+    fontSize: 15,
+    color: 'rgba(255,248,230,0.9)',
+    marginBottom: 2,
+  },
+  customCardSubtitle: {
+    fontFamily: F.body,
+    fontSize: 13,
+    color: 'rgba(255,248,230,0.4)',
+  },
+  freeFooter: {
+    fontFamily: F.body,
+    fontSize: 12,
+    color: 'rgba(255,248,230,0.22)',
+    textAlign: 'center',
+    marginTop: 24,
+    fontStyle: 'italic',
+  },
 greetingSection: {
   fontFamily: F.label,
   fontSize: 10,
