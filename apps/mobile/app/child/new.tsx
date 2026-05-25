@@ -103,17 +103,15 @@ export default function NewChildScreen() {
     <SafeAreaView style={st.root} edges={['top', 'bottom']}>
       <StatusBar style="light" />
 
-      {/* Background — C-2 fast-fade gradient */}
+      {/* Background — golden particles + dark overlay */}
+      <Image
+        source={require('../../assets/golden-particles-bg.png')}
+        style={StyleSheet.absoluteFill}
+        resizeMode="cover"
+      />
       <LinearGradient
-        colors={[
-          C.gradientTop,
-          C.gradientMid1,
-          C.gradientMid2,
-          C.gradientMid3,
-          C.gradientMid4,
-          C.gradientBottom,
-        ]}
-        locations={[0, 0.14, 0.28, 0.42, 0.58, 1]}
+        colors={['rgba(0,0,0,0.50)', 'rgba(0,0,0,0.65)', 'rgba(0,0,0,0.80)', 'rgba(0,0,0,0.90)', 'rgba(0,0,0,0.95)']}
+        locations={[0, 0.25, 0.50, 0.72, 1]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -129,10 +127,7 @@ export default function NewChildScreen() {
             <Text style={st.backText}>← Back</Text>
           </Pressable>
 
-          {/* Logo + Header */}
-          <View style={st.logoWrap}>
-            <Image source={require('../../assets/logo.png')} style={st.logo} resizeMode="contain" />
-          </View>
+          {/* Header */}
           <View style={st.header}>
             <Text style={st.title}>Add a child</Text>
             <Text style={st.subtitle}>The more Sturdy knows, the better the scripts.</Text>
@@ -278,14 +273,11 @@ export default function NewChildScreen() {
 
 // ─── Styles ───
 const st = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.background },
+  root: { flex: 1, backgroundColor: '#0d0b08' },
   scroll: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 24, gap: 20 },
 
   back:     { alignSelf: 'flex-start', paddingVertical: 6 },
   backText: { fontFamily: F.bodyMedium, fontSize: 16, color: C.textSecondary },
-
-  logoWrap: { alignItems: 'center' },
-  logo:     { width: 44, height: 44 },
 
   header:   { alignItems: 'center', gap: 6 },
   title:    { fontFamily: F.heading, fontSize: 26, color: C.text, textAlign: 'center', letterSpacing: -0.3 },

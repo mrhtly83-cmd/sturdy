@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -115,18 +116,18 @@ function isHubMode(v: unknown): v is HubMode {
 
 function Background() {
   return (
-    <LinearGradient
-      colors={[
-        C.gradientTop,
-        C.gradientMid1,
-        C.gradientMid2,
-        C.gradientMid3,
-        C.gradientMid4,
-        C.gradientBottom,
-      ]}
-      locations={[0, 0.14, 0.28, 0.42, 0.58, 1]}
-      style={StyleSheet.absoluteFill}
-    />
+    <>
+      <Image
+        source={require('../../assets/golden-particles-bg.png')}
+        style={StyleSheet.absoluteFill}
+        resizeMode="cover"
+      />
+      <LinearGradient
+        colors={['rgba(0,0,0,0.50)', 'rgba(0,0,0,0.65)', 'rgba(0,0,0,0.80)', 'rgba(0,0,0,0.90)', 'rgba(0,0,0,0.95)']}
+        locations={[0, 0.25, 0.50, 0.72, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+    </>
   );
 }
 
@@ -652,7 +653,7 @@ const card = {
 } as const;
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.background },
+  root: { flex: 1, backgroundColor: '#0d0b08' },
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 24, paddingBottom: 20, gap: 22 },
 
