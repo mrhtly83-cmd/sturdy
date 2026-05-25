@@ -13,7 +13,7 @@ import * as Haptics from 'expo-haptics';
 
 import { useChildProfile } from '../../src/context/ChildProfileContext';
 import { loadChildInsights, type ChildInsights } from '../../src/lib/loadChildInsights';
-import { colors as C, fonts as F } from '../../src/theme';
+import { colors as C, fonts as F, TAB_BAR_HEIGHT } from '../../src/theme';
 
 const CHILD_GRADIENTS: Array<[string, string]> = [
   [C.iconTalkStart, C.iconTalkEnd],
@@ -45,7 +45,7 @@ export default function FamilyScreen() {
 
   return (
     <View style={s.root}>
-      <SafeAreaView style={s.safe} edges={['top']}>
+      <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
         <ScrollView
           contentContainerStyle={s.scroll}
           showsVerticalScrollIndicator={false}
@@ -226,8 +226,9 @@ const s = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingBottom: 8,
     paddingTop: 8,
+    marginBottom: TAB_BAR_HEIGHT,
   },
   addBtn: {
     borderRadius: 14,

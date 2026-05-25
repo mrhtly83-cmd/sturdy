@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../src/context/AuthContext';
@@ -85,7 +85,6 @@ const Background = () => {
 
 export default function WelcomeScreen() {
   const { session } = useAuth();
-  const insets = useSafeAreaInsets();
   const [page, setPage] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -120,7 +119,7 @@ export default function WelcomeScreen() {
       <Background />
       
       <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
-        
+
         {/* ─── Navigation Header ─── */}
         <View style={s.header}>
           <View style={s.progressContainer}>
@@ -128,7 +127,7 @@ export default function WelcomeScreen() {
               <View key={i} style={[s.progressLine, page === i && s.progressLineActive]} />
             ))}
           </View>
-          <Pressable onPress={handleGetStarted} hitSlop={10}>
+          <Pressable onPress={handleGetStarted} hitSlop={12}>
             <Text style={s.skipText}>Skip</Text>
           </Pressable>
         </View>
@@ -206,14 +205,12 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0d0b08' },
   safe: { flex: 1 },
   header: {
-    position: 'absolute',
-    top: 60,
-    left: 24,
-    right: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    zIndex: 10,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   progressContainer: { flexDirection: 'row', gap: 6 },
   progressLine: { width: 20, height: 2, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 1 },
@@ -226,7 +223,7 @@ const s = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 40,
+    paddingTop: 8,
   },
   haloWrapper: {
     width: W * 0.65,

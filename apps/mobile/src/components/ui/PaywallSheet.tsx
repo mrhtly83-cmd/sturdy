@@ -8,6 +8,7 @@
 // purchase button text + behaviour can stay identical.
 
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors as C, fonts as F } from '../../theme';
 import { useSubscription } from '../../hooks/useSubscription';
 
@@ -20,6 +21,7 @@ type Props = {
 
 export function PaywallSheet({ visible, onClose, feature, body }: Props) {
   const { purchase } = useSubscription();
+  const insets = useSafeAreaInsets();
 
  const handlePurchase = async () => {
   try {
@@ -39,7 +41,7 @@ export function PaywallSheet({ visible, onClose, feature, body }: Props) {
       onRequestClose={onClose}
     >
       <Pressable style={s.backdrop} onPress={onClose}>
-        <Pressable style={s.sheet} onPress={() => { /* stop bubble */ }}>
+        <Pressable style={[s.sheet, { paddingBottom: 24 + insets.bottom }]} onPress={() => { /* stop bubble */ }}>
           <Text style={s.lock}>🔒</Text>
           <Text style={s.title}>{feature} is part of Sturdy+</Text>
           {body ? <Text style={s.body}>{body}</Text> : null}
@@ -75,7 +77,7 @@ const s = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
     paddingTop: 24,
-    paddingBottom: 36,
+    paddingBottom: 24,
     gap: 12,
   },
   lock:  { fontSize: 28, marginBottom: 4 },
