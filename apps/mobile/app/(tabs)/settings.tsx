@@ -24,7 +24,7 @@ import { LinearGradient }  from 'expo-linear-gradient';
 import * as Haptics        from 'expo-haptics';
 import { useAuth }         from '../../src/context/AuthContext';
 import { useSubscription } from '../../src/hooks/useSubscription';
-import { colors as C, fonts as F } from '../../src/theme';
+import { colors as C, fonts as F, TAB_BAR_HEIGHT } from '../../src/theme';
 
 // ─── Components ───
 
@@ -284,7 +284,7 @@ export default function SettingsScreen() {
 
           <Text style={s.version}>Sturdy v1.0 · Made with ♥</Text>
 
-          <View style={{ height: 60 }} />
+          <View style={{ height: TAB_BAR_HEIGHT }} />
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -299,7 +299,7 @@ const SAGE_BG = 'rgba(141,184,154,0.12)';
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.background },
   safe: { flex: 1 },
-  scroll: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 60, gap: 6 },
+  scroll: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20, gap: 6 },
 
   title: {
     fontFamily:    F.heading,

@@ -3,6 +3,10 @@
 
 export { colors, fonts } from './colors';
 
+// Height of the absolute-positioned tab bar (set in app/(tabs)/_layout.tsx).
+// Used by tab screens to ensure scroll content clears the floating tab bar.
+export const TAB_BAR_HEIGHT = 80;
+
 export const spacing = {
   xxs: 4,
   xs:  8,

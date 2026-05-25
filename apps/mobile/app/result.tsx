@@ -302,7 +302,7 @@ const handleRetry = () => {
         locations={[0, 0.10, 0.25, 0.42, 0.58, 1]}
         style={StyleSheet.absoluteFill}
       />
-      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         {/* Back */}

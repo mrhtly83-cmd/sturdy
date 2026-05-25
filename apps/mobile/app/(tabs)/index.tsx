@@ -34,7 +34,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useChildProfile } from '../../src/context/ChildProfileContext';
 import { supabase } from '../../src/lib/supabase';
 import { getQuestionResponse, CrisisDetectedError, RateLimitError, QuotaExceededError } from '../../src/lib/api';
-import { colors as C, fonts as F } from '../../src/theme';
+import { colors as C, fonts as F, TAB_BAR_HEIGHT } from '../../src/theme';
 import { TrafficDots } from '../../src/components/ui/TrafficDots';
 import { useSubscription } from '../../src/hooks/useSubscription';
 import { getTone as loadTone, setTone as saveTone, type Tone, TONE_DEFAULT } from '../../src/utils/tone';
@@ -741,7 +741,7 @@ export default function HomeScreen() {
               </View>
 
               <Text style={s.freeFooter}>Always free · No paywall</Text>
-              <View style={{ height: 40 }} />
+              <View style={{ height: TAB_BAR_HEIGHT }} />
 
             </Animated.View>
           </ScrollView>
@@ -841,7 +841,7 @@ const s = StyleSheet.create({
   },
   thinkingSendBtn: {
     width: 56,
-    height: 40,
+    height: 44,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -872,7 +872,8 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    padding: 4,
+    paddingVertical: 10,
+    paddingLeft: 8,
     paddingRight: 12,
     borderRadius: 100,
     borderWidth: 1,
@@ -983,7 +984,7 @@ const s = StyleSheet.create({
   },
   getScriptBtn: {
     paddingHorizontal: 16,
-    height: 36,
+    height: 44,
     borderRadius: 10,
     backgroundColor: 'rgba(232,116,97,0.12)',
     borderWidth: 1,
