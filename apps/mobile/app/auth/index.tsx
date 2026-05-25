@@ -7,6 +7,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState } from 'react';
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -124,16 +125,14 @@ export default function AuthScreen() {
   return (
     <View style={s.root}>
       <StatusBar style="light" />
+      <Image
+        source={require('../../assets/golden-particles-bg.png')}
+        style={StyleSheet.absoluteFill}
+        resizeMode="cover"
+      />
       <LinearGradient
-        colors={[
-          C.gradientTop,
-          C.gradientMid1,
-          C.gradientMid2,
-          C.gradientMid3,
-          C.gradientMid4,
-          C.gradientBottom,
-        ]}
-        locations={[0, 0.14, 0.28, 0.42, 0.58, 1]}
+        colors={['rgba(0,0,0,0.50)', 'rgba(0,0,0,0.65)', 'rgba(0,0,0,0.80)', 'rgba(0,0,0,0.90)', 'rgba(0,0,0,0.95)']}
+        locations={[0, 0.25, 0.50, 0.72, 1]}
         style={StyleSheet.absoluteFill}
       />
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
@@ -272,7 +271,7 @@ export default function AuthScreen() {
       {/* Sticky CTA — hidden on confirm-email screen */}
       {screenState !== 'confirm-email' && <View style={s.stickyWrap}>
         <LinearGradient
-          colors={['transparent', 'rgba(12,12,12,0.85)', C.background]}
+          colors={['transparent', 'rgba(12,12,12,0.85)', '#0d0b08']}
           locations={[0, 0.45, 0.85]}
           style={s.stickyFade}
           pointerEvents="none"
@@ -315,7 +314,7 @@ export default function AuthScreen() {
 }
 
 const s = StyleSheet.create({
-  root:    { flex: 1, backgroundColor: C.background },
+  root:    { flex: 1, backgroundColor: '#0d0b08' },
   content: { paddingHorizontal: 28, paddingTop: 12, paddingBottom: 110, gap: 20 },
 
   back:     { alignSelf: 'flex-start', paddingVertical: 6 },
@@ -394,7 +393,7 @@ const s = StyleSheet.create({
   stickyWrap: { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10 },
   stickyFade: { height: 36 },
   stickyContent: {
-    backgroundColor:   C.background,
+    backgroundColor:   '#0d0b08',
     paddingHorizontal: 28,
     paddingTop:        4,
     paddingBottom:     28,
