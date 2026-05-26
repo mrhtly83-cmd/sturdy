@@ -1,30 +1,27 @@
 // src/theme/colors.ts
-// Sturdy v6 — Deep Warm (locked April 30 2026)
+// Sturdy v7 — Twilight × Obsidian Gold (locked May 26 2026)
 //
-// Visual identity: near-black base (#111111), C-2 fast-fade gradient
-// (#d8d5d0 → dark), warmth from atmospheric amber glow — lighting,
-// not surface color. Cards are dark semi-transparent glass with
-// colored accents (left borders, badges). Calibrated against Open:
-// Breathwork + Meditation as primary visual reference.
+// Visual identity: pure black night-sky base (#020202 → #0e0c08 → #050402),
+// yellow-gold accent (#c9a85c → #a8843a → #8a6820), horizon glow rising
+// from the bottom. Cards are frosted-glass ultra-thin (rgba(255,255,255,0.04))
+// with gold-tinted borders. Stars animated in the night sky background.
 //
-// Logo colors retained: Coral #FF5C75, Peach #F79566, Steel #5778A3
-// Amber shifted: #F79566 → #C8883A (deeper, warmer, less peachy)
+// Gold shifted: #C8883A (orange-amber) → #c9a85c (yellow-gold, more celestial)
+// Card glass shifted: rgba(26,24,22,0.78) → rgba(255,255,255,0.04) (lighter veil)
+// Text shifted: pure white → warm gold-tinted (#ffe8c0 family)
 //
-// Card system: dark card bg (rgba(26,24,22,0.78)) used consistently
-// across outcome cards, script cards, section cards, and settings.
-// Script R/C/G differentiated by left-border accent + badge pill,
-// not by tinted card fill.
+// Logo coral (#FF5C75) and steel (#5778A3) unchanged — reserved for SOS + trust.
 
 export const colors = {
   // ═══════════════════════════════════════════════
   // SURFACES
   // ═══════════════════════════════════════════════
-  background:       '#111111',                       // near-black neutral base
-  backgroundDeep:   '#0C0C0C',                       // deepest gradient stop
-  backgroundWarm:   '#d8d5d0',                       // warm parchment (gradient top)
-  surface:          'rgba(26,24,22,0.78)',            // card bg — dark glass
-  surfaceRaised:    'rgba(26,24,22,0.85)',            // elevated card
-  surfaceSubtle:    'rgba(255,255,255,0.03)',          // barely-there separator
+  background:       '#0e0c08',                       // warm dark night-sky base
+  backgroundDeep:   '#050402',                       // deepest gradient stop
+  backgroundWarm:   '#020202',                       // pure black (night sky top)
+  surface:          'rgba(255,255,255,0.04)',         // card bg — frosted glass veil
+  surfaceRaised:    'rgba(255,255,255,0.028)',        // elevated card (SOS card weight)
+  surfaceSubtle:    'rgba(255,255,255,0.025)',        // barely-there separator
 
   // ═══════════════════════════════════════════════
   // PRIMARY — Coral (from logo)
@@ -36,15 +33,15 @@ export const colors = {
   primaryMuted:     'rgba(255,92,117,0.06)',
 
   // ═══════════════════════════════════════════════
-  // ACCENT — Amber (Deep Warm hero color)
+  // ACCENT — Gold (Twilight × Obsidian Gold hero color)
   // CTA gradient, tab active, shimmer text, greeting sub
   // ═══════════════════════════════════════════════
-  amber:            '#C8883A',                       // deep amber (was #F79566)
-  amberLight:       '#F4C06A',                       // shimmer gradient end
-  amberMid:         '#E8A855',                       // CTA gradient end
-  amberGlow:        'rgba(200,136,58,0.35)',          // atmospheric glow
-  amberBadge:       'rgba(200,136,58,0.22)',          // badge pill bg
-  amberBorder:      'rgba(200,136,58,0.45)',          // script card left accent
+  amber:            '#c9a85c',                       // celestial yellow-gold (was #C8883A)
+  amberLight:       '#e8d4a0',                       // shimmer gradient end
+  amberMid:         '#a8843a',                       // CTA gradient mid
+  amberGlow:        'rgba(201,168,92,0.35)',          // atmospheric glow
+  amberBadge:       'rgba(184,142,74,0.08)',          // badge pill bg
+  amberBorder:      'rgba(184,142,74,0.65)',          // script card left accent / SOS badge border
 
   // ═══════════════════════════════════════════════
   // BRAND — Steel Blue (from logo)
@@ -86,68 +83,68 @@ export const colors = {
   // ═══════════════════════════════════════════════
   // TEXT — light (on dark surfaces)
   // ═══════════════════════════════════════════════
-  text:             'rgba(255,255,255,0.94)',
-  textSecondary:    'rgba(255,255,255,0.55)',
-  textMuted:        'rgba(255,255,255,0.30)',
-  textFaint:        'rgba(255,255,255,0.15)',
-  textInverse:      '#111111',                       // dark text on amber CTA
+  text:             'rgba(240,225,185,0.95)',         // warm gold-tinted white (header-title)
+  textSecondary:    'rgba(220,195,145,0.70)',         // secondary warm (av-name family)
+  textMuted:        'rgba(200,175,120,0.55)',         // muted warm (status bar)
+  textFaint:        'rgba(200,180,130,0.28)',         // very faint (free-note)
+  textInverse:      '#1a1200',                       // near-black on gold CTA button
 
   // ═══════════════════════════════════════════════
-  // TEXT — dark (on warm gradient surfaces)
-  // Used in greeting zone where bg is #d8d5d0
+  // TEXT — warm gold (on deep night-sky surfaces)
+  // Replaces old dark-text-on-warm-gradient zone
   // ═══════════════════════════════════════════════
-  textDark:         '#2a2520',
-  textDarkSecondary: 'rgba(42,37,32,0.50)',
-  textDarkMuted:    'rgba(42,37,32,0.32)',
+  textDark:         'rgba(235,220,185,0.88)',         // prominent warm (sos-question)
+  textDarkSecondary: 'rgba(200,162,74,0.60)',         // gold-tinted secondary
+  textDarkMuted:    'rgba(184,142,74,0.45)',          // faint gold (header-subtitle range)
 
   // ═══════════════════════════════════════════════
   // STRUCTURE
   // ═══════════════════════════════════════════════
-  border:           'rgba(255,255,255,0.09)',          // card border
-  borderHi:         'rgba(255,255,255,0.14)',          // card top highlight
-  borderFocus:      '#C8883A',                       // amber focus ring
-  divider:          'rgba(255,255,255,0.05)',
-  avoidBorder:      'rgba(232,116,97,0.25)',          // avoid card left stripe
-  avoidLabel:       'rgba(232,116,97,0.55)',          // avoid section label
-  avoidStrike:      'rgba(232,116,97,0.18)',          // strikethrough color
+  border:           'rgba(184,142,74,0.22)',           // gold-tinted card border
+  borderHi:         'rgba(220,185,110,0.10)',          // card top inset highlight
+  borderFocus:      '#c9a85c',                        // gold focus ring
+  divider:          'rgba(184,142,74,0.30)',           // gold-fade divider line
+  avoidBorder:      'rgba(232,116,97,0.25)',           // avoid card left stripe
+  avoidLabel:       'rgba(232,116,97,0.55)',           // avoid section label
+  avoidStrike:      'rgba(232,116,97,0.18)',           // strikethrough color
 
   // ═══════════════════════════════════════════════
   // COMPONENT-LEVEL
   // ═══════════════════════════════════════════════
-  tabActive:        '#C8883A',                       // amber for active tab
-  tabInactive:      'rgba(255,255,255,0.30)',
-  chipBg:           'rgba(255,255,255,0.05)',
-  chipBorder:       'rgba(255,255,255,0.09)',
-  inputBg:          'rgba(26,24,22,0.55)',            // input on warm gradient
-  inputBorder:      'rgba(42,37,32,0.20)',
-  inputHighlight:   'rgba(255,255,255,0.08)',          // input top border
-  inputPlaceholder: 'rgba(255,255,255,0.50)',          // placeholder text
+  tabActive:        '#c9a85c',                        // celestial gold active tab
+  tabInactive:      'rgba(184,142,74,0.30)',           // gold-tinted inactive tab
+  chipBg:           'rgba(184,142,74,0.07)',           // gold-tinted chip bg
+  chipBorder:       'rgba(184,142,74,0.10)',           // gold-tinted chip border
+  inputBg:          'rgba(255,255,255,0.04)',          // frosted glass input (matches card)
+  inputBorder:      'rgba(184,142,74,0.22)',           // gold-tinted input border
+  inputHighlight:   'rgba(220,185,110,0.10)',          // input top inset highlight
+  inputPlaceholder: 'rgba(230,210,165,0.45)',          // warm italic placeholder
 
   // ═══════════════════════════════════════════════
   // GRADIENTS (use with LinearGradient)
-  // C-2 fast-fade: warm top → dark bottom
+  // Night sky: pure black top → warm dark bottom (horizon glow from bottom)
   // ═══════════════════════════════════════════════
-  gradientTop:      '#d8d5d0',                       // warm parchment
-  gradientMid1:     '#9e9a94',                       // ~14%
-  gradientMid2:     '#4a4540',                       // ~28%
-  gradientMid3:     '#1e1c1a',                       // ~42%
-  gradientMid4:     '#131210',                       // ~58%
-  gradientBottom:   '#0C0C0C',                       // near-black
+  gradientTop:      '#020202',                        // pure black (night sky zenith)
+  gradientMid1:     '#060604',                        // ~16%
+  gradientMid2:     '#0a0906',                        // ~40%
+  gradientMid3:     '#0d0b07',                        // ~58%
+  gradientMid4:     '#0c0a06',                        // ~70%
+  gradientBottom:   '#050402',                        // deep warm black (nadir)
 
-  // Result screen gradient (starts darker — no greeting zone)
-  gradientResultTop:    '#b5b1ac',
-  gradientResultMid1:   '#6a6560',                   // ~10%
-  gradientResultMid2:   '#2e2a27',                   // ~25%
-  gradientResultMid3:   '#171513',                   // ~42%
+  // Result screen gradient (same night-sky palette)
+  gradientResultTop:    '#020202',
+  gradientResultMid1:   '#060604',                    // ~10%
+  gradientResultMid2:   '#0a0906',                    // ~25%
+  gradientResultMid3:   '#0d0b07',                    // ~42%
 
-  // Settings gradient
-  gradientSettingsTop:  '#c8c5c0',
-  gradientSettingsMid1: '#807b76',                   // ~12%
-  gradientSettingsMid2: '#353230',                   // ~26%
+  // Settings gradient (same night-sky palette)
+  gradientSettingsTop:  '#020202',
+  gradientSettingsMid1: '#060604',                    // ~12%
+  gradientSettingsMid2: '#0a0906',                    // ~26%
 
-  // Ambient glow (radial gradient overlays)
-  glowAmber:        'rgba(200,136,58,0.09)',          // top of home screen
-  glowAmberResult:  'rgba(200,136,58,0.07)',          // top of result screen
+  // Ambient glow (radial gradient overlays — horizon warmth from bottom)
+  glowAmber:        'rgba(184,142,74,0.07)',           // horizon glow (bottom bleed)
+  glowAmberResult:  'rgba(184,142,74,0.05)',           // subtler on result screen
 
   // ═══════════════════════════════════════════════
   // ICON BADGE GRADIENTS (outcome card icons)
@@ -155,8 +152,8 @@ export const colors = {
   // ═══════════════════════════════════════════════
   iconSosStart:         '#E87461',
   iconSosEnd:           '#C45540',
-  iconRepairStart:      '#C8883A',
-  iconRepairEnd:        '#B87A30',
+  iconRepairStart:      '#c9a85c',                    // gold (was orange #C8883A)
+  iconRepairEnd:        '#a8843a',                    // gold mid (was #B87A30)
   iconUnderstandStart:  '#5778A3',
   iconUnderstandEnd:    '#3E5D80',
   iconTalkStart:        '#8AA060',
@@ -166,8 +163,8 @@ export const colors = {
   // SHADOWS (card system)
   // React Native shadow props, not CSS box-shadow
   // ═══════════════════════════════════════════════
-  shadowCard:       'rgba(0,0,0,0.40)',               // card ambient shadow
-  shadowAmber:      'rgba(200,136,58,0.08)',           // amber card color bleed
+  shadowCard:       'rgba(0,0,0,0.45)',               // card ambient shadow (deeper night)
+  shadowAmber:      'rgba(201,168,92,0.08)',           // gold card color bleed
   shadowSage:       'rgba(138,160,96,0.08)',           // sage card color bleed
   shadowSteel:      'rgba(87,120,163,0.08)',           // steel card color bleed
   shadowSos:        'rgba(232,116,97,0.25)',           // SOS icon glow
@@ -179,67 +176,67 @@ export const colors = {
   // v3/v4/v5 token names. Drop each alias when its consumer migrates.
   // ═══════════════════════════════════════════════
 
-  // Old surface names → new dark surfaces
-  base:             '#111111',
-  backgroundLight:  '#111111',
-  raised:           'rgba(26,24,22,0.78)',
-  elevated:         'rgba(26,24,22,0.85)',
-  subtle:           'rgba(255,255,255,0.03)',
-  glass:            'rgba(26,24,22,0.78)',
-  glassStrong:      'rgba(26,24,22,0.85)',
-  glassSoft:        'rgba(255,255,255,0.03)',
-  cardGlass:        'rgba(26,24,22,0.78)',
-  cardGlassStrong:  'rgba(26,24,22,0.85)',
-  cardGlassSoft:    'rgba(255,255,255,0.03)',
+  // Old surface names → new night-sky surfaces
+  base:             '#0e0c08',
+  backgroundLight:  '#0e0c08',
+  raised:           'rgba(255,255,255,0.04)',
+  elevated:         'rgba(255,255,255,0.028)',
+  subtle:           'rgba(255,255,255,0.025)',
+  glass:            'rgba(255,255,255,0.04)',
+  glassStrong:      'rgba(255,255,255,0.028)',
+  glassSoft:        'rgba(255,255,255,0.025)',
+  cardGlass:        'rgba(255,255,255,0.04)',
+  cardGlassStrong:  'rgba(255,255,255,0.028)',
+  cardGlassSoft:    'rgba(255,255,255,0.025)',
 
-  // Old brand names → new Deep Warm
-  coral:            '#FF5C75',                       // → primary
+  // Old brand names → new Twilight × Obsidian Gold
+  coral:            '#FF5C75',                        // → primary
   coralLight:       '#E8506A',
   coralMuted:       'rgba(255,92,117,0.12)',
-  rose:             '#FF5C75',                       // → primary
+  rose:             '#FF5C75',                        // → primary
   roseLight:        '#E8506A',
   roseMuted:        'rgba(255,92,117,0.12)',
-  peach:            '#C8883A',                       // → amber (shifted)
-  peachMuted:       'rgba(200,136,58,0.12)',
-  blue:             '#5778A3',                       // → steel
+  peach:            '#c9a85c',                        // → gold (was orange #C8883A)
+  peachMuted:       'rgba(201,168,92,0.12)',
+  blue:             '#5778A3',                        // → steel
   blueLight:        '#90B8E0',
   blueMuted:        'rgba(87,120,163,0.12)',
-  amberDark:        '#B87A30',                       // terra replacement
-  amberMuted:       'rgba(200,136,58,0.12)',
+  amberDark:        '#8a6820',                        // darkest gold stop (was #B87A30)
+  amberMuted:       'rgba(201,168,92,0.12)',
   sageMuted:        'rgba(138,160,96,0.12)',
-  amberLight_alias: 'rgba(200,136,58,0.12)',          // old amberLight was rgba
+  amberLight_alias: 'rgba(201,168,92,0.12)',           // old amberLight was rgba
 
   // Old text token aliases
-  textBody:         'rgba(255,255,255,0.78)',
-  textSub:          'rgba(255,255,255,0.55)',
-  textGhost:        'rgba(255,255,255,0.15)',
-  textSoft:         'rgba(255,255,255,0.78)',
+  textBody:         'rgba(230,210,165,0.78)',          // warm gold-tinted body text
+  textSub:          'rgba(220,195,145,0.65)',          // warm secondary
+  textGhost:        'rgba(200,180,130,0.28)',          // very faint gold
+  textSoft:         'rgba(230,210,165,0.78)',          // warm soft body
 
   // Old border alias
-  borderLight:      'rgba(255,255,255,0.14)',
+  borderLight:      'rgba(220,185,110,0.10)',          // gold inset highlight
 
   // Old semantic
   success:          '#8AA060',
-  warning:          '#C8883A',                       // was #F79566
+  warning:          '#c9a85c',                        // gold (was orange #C8883A)
   danger:           '#E87461',
   disabled:         'rgba(255,255,255,0.06)',
   disabledText:     'rgba(255,255,255,0.20)',
   pressed:          'rgba(255,255,255,0.04)',
 
-  // Old gradient stops → C-2 fast fade
-  gradStart:        '#d8d5d0',
-  gradMid1:         '#9e9a94',
-  gradMid2:         '#4a4540',
-  gradEnd:          '#0C0C0C',
+  // Old gradient stops → night sky
+  gradStart:        '#020202',
+  gradMid1:         '#060604',
+  gradMid2:         '#0a0906',
+  gradEnd:          '#050402',
 
   // Old category card backgrounds (now dark card system)
   catPink:          'rgba(255,92,117,0.10)',
   catBlue:          'rgba(87,120,163,0.10)',
   catGreen:         'rgba(138,160,96,0.10)',
-  catYellow:        'rgba(200,136,58,0.10)',
+  catYellow:        'rgba(201,168,92,0.10)',           // gold-shifted cat bg
 
-  linkAction:       '#C8883A',
-  linkSecondary:    'rgba(255,255,255,0.30)',
+  linkAction:       '#c9a85c',                        // gold link (was orange #C8883A)
+  linkSecondary:    'rgba(184,142,74,0.30)',           // gold-tinted secondary link
 } as const;
 
 
@@ -295,7 +292,7 @@ export const fonts = {
 // Home, Auth, Child Hub, and Add Child screens.
 // ═══════════════════════════════════════════════
 
-export const particlesBg = '#0d0b08';
+export const particlesBg = '#0e0c08';
 export const particlesOverlay = [
   'rgba(0,0,0,0.50)',
   'rgba(0,0,0,0.65)',
