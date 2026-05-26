@@ -24,7 +24,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { supabase }       from '../../src/lib/supabase';
 import { markOnboardingComplete } from '../../src/utils/onboarding';
 import { useAuth }        from '../../src/context/AuthContext';
-import { colors as C, fonts as F } from '../../src/theme/colors';
+import { colors as C, fonts as F, particlesBg, particlesOverlay, particlesOverlayLocations } from '../../src/theme/colors';
 
 const PENDING_CHILD_KEY = 'sturdy_pending_child_v1';
 
@@ -131,8 +131,8 @@ export default function AuthScreen() {
         resizeMode="cover"
       />
       <LinearGradient
-        colors={['rgba(0,0,0,0.50)', 'rgba(0,0,0,0.65)', 'rgba(0,0,0,0.80)', 'rgba(0,0,0,0.90)', 'rgba(0,0,0,0.95)']}
-        locations={[0, 0.25, 0.50, 0.72, 1]}
+        colors={particlesOverlay}
+        locations={particlesOverlayLocations}
         style={StyleSheet.absoluteFill}
       />
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
@@ -314,7 +314,7 @@ export default function AuthScreen() {
 }
 
 const s = StyleSheet.create({
-  root:    { flex: 1, backgroundColor: '#0d0b08' },
+  root:    { flex: 1, backgroundColor: particlesBg },
   content: { paddingHorizontal: 28, paddingTop: 12, paddingBottom: 110, gap: 20 },
 
   back:     { alignSelf: 'flex-start', paddingVertical: 6 },
@@ -393,7 +393,7 @@ const s = StyleSheet.create({
   stickyWrap: { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10 },
   stickyFade: { height: 36 },
   stickyContent: {
-    backgroundColor:   '#0d0b08',
+    backgroundColor:   particlesBg,
     paddingHorizontal: 28,
     paddingTop:        4,
     paddingBottom:     28,

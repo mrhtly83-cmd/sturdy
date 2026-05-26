@@ -1,7 +1,7 @@
 // Sturdy v6 — Deep Warm Design Tokens
 // Single import point: import { colors, spacing, radius, shadow, type } from '../theme';
 
-export { colors, fonts } from './colors';
+export { colors, fonts, particlesBg, particlesOverlay, particlesOverlayLocations } from './colors';
 
 // Height of the absolute-positioned tab bar (set in app/(tabs)/_layout.tsx).
 // Used by tab screens to ensure scroll content clears the floating tab bar.

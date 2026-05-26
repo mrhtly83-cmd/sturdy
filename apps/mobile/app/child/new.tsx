@@ -25,7 +25,7 @@ import { useAuth }          from '../../src/context/AuthContext';
 import { useChildProfile }  from '../../src/context/ChildProfileContext';
 import { useSubscription }  from '../../src/hooks/useSubscription';
 import { supabase }         from '../../src/lib/supabase';
-import { colors as C, fonts as F } from '../../src/theme/colors';
+import { colors as C, fonts as F, particlesBg, particlesOverlay, particlesOverlayLocations } from '../../src/theme/colors';
 
 const { width: W } = Dimensions.get('window');
 const MIN_AGE = 0;
@@ -110,8 +110,8 @@ export default function NewChildScreen() {
         resizeMode="cover"
       />
       <LinearGradient
-        colors={['rgba(0,0,0,0.50)', 'rgba(0,0,0,0.65)', 'rgba(0,0,0,0.80)', 'rgba(0,0,0,0.90)', 'rgba(0,0,0,0.95)']}
-        locations={[0, 0.25, 0.50, 0.72, 1]}
+        colors={particlesOverlay}
+        locations={particlesOverlayLocations}
         style={StyleSheet.absoluteFill}
       />
 
@@ -273,7 +273,7 @@ export default function NewChildScreen() {
 
 // ─── Styles ───
 const st = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0d0b08' },
+  root: { flex: 1, backgroundColor: particlesBg },
   scroll: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 24, gap: 20 },
 
   back:     { alignSelf: 'flex-start', paddingVertical: 6 },

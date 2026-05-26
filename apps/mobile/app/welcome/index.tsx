@@ -205,6 +205,7 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0d0b08' },
   safe: { flex: 1 },
   header: {
+    flexShrink: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -243,8 +244,9 @@ const s = StyleSheet.create({
   beatImage: { width: '100%', height: '100%' },
 
   textContainer: {
-    flex: 1.2, 
+    flex: 1.2,
     paddingHorizontal: 32,
+    paddingTop: 24,
     alignItems: 'center',
     justifyContent: 'flex-start',
   },

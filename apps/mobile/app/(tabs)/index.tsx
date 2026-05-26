@@ -33,9 +33,10 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../src/context/AuthContext';
 import { useChildProfile } from '../../src/context/ChildProfileContext';
 import { supabase } from '../../src/lib/supabase';
-import { getParentingScript, getQuestionResponse, CrisisDetectedError, RateLimitError, QuotaExceededError } from '../../src/lib/api';
+import { getParentingScript, getQuestionResponse, CrisisDetectedError, RateLimitError, QuotaExceededError, type ParentingScriptRequest } from '../../src/lib/api';
 import { incrementScriptCount } from '../../src/utils/profileNudge';
-import { colors as C, fonts as F, TAB_BAR_HEIGHT } from '../../src/theme';
+import { colors as C, fonts as F, TAB_BAR_HEIGHT, particlesOverlay, particlesOverlayLocations, particlesBg } from '../../src/theme';
+import { detectCrisis } from '../../src/hooks/useCrisisMode';
 import { TrafficDots } from '../../src/components/ui/TrafficDots';
 import { useSubscription } from '../../src/hooks/useSubscription';
 import { getTone as loadTone, setTone as saveTone, type Tone, TONE_DEFAULT } from '../../src/utils/tone';
@@ -43,8 +44,6 @@ import { getTone as loadTone, setTone as saveTone, type Tone, TONE_DEFAULT } fro
 // ═══════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════
-
-export const GREETINGS = ['Hi', 'Hello', 'Hey'];
 
 const ASK_PLACEHOLDERS = [
   'Ask Sturdy anything…',
@@ -56,15 +55,29 @@ const ASK_PLACEHOLDERS = [
 ];
 
 // SOS rotating placeholders — real parent voice, no ages, present tense
-const SOS_SCENARIOS: Record<string, string[]> = {
-  default: [
-    "He's losing it right now and I don't know what to say",
-    "She's been crying for 20 minutes and nothing is working",
-    "He completely shut down and won't talk to me or look at me",
-    "She threw herself on the floor and I'm losing patience",
-    "He said he hates me and slammed his door",
-  ],
-};
+const SOS_SCENARIOS: string[] = [
+  "He's losing it right now and I don't know what to say",
+  "She's been crying for 20 minutes and nothing is working",
+  "He completely shut down and won't talk to me or look at me",
+  "She threw herself on the floor and I'm losing patience",
+  "He said he hates me and slammed his door",
+];
+
+function getTimeGreeting(): string {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return 'Good morning';
+  if (h >= 12 && h < 17) return 'Good afternoon';
+  if (h >= 17 && h < 21) return 'Good evening';
+  return 'Good night';
+}
+
+function inferIntensity(text: string): number | null {
+  const lower = text.toLowerCase();
+  if (/hitting|throwing|hurting|screaming|can't breathe|completely lost it|out of control|violent|won't stop|freaking out/.test(lower)) return 4;
+  if (/losing it|meltdown|losing patience|can't handle|really struggling/.test(lower)) return 3;
+  if (/getting worse|really frustrated|keeps doing|won't listen|building up/.test(lower)) return 2;
+  return null;
+}
 
 // ═══════════════════════════════════════════════
 // PARTICLE SYSTEM
@@ -271,14 +284,8 @@ function Background() {
         resizeMode="cover"
       />
       <LinearGradient
-        colors={[
-          'rgba(0,0,0,0.50)',
-          'rgba(0,0,0,0.65)',
-          'rgba(0,0,0,0.80)',
-          'rgba(0,0,0,0.90)',
-          'rgba(0,0,0,0.95)',
-        ]}
-        locations={[0, 0.25, 0.50, 0.72, 1]}
+        colors={particlesOverlay}
+        locations={particlesOverlayLocations}
         style={StyleSheet.absoluteFill}
       />
     </>
@@ -331,13 +338,6 @@ export default function HomeScreen() {
     ]).start();
   }, []);
 
-  // ─── Load persisted tone ───
-  useEffect(() => {
-    let cancelled = false;
-    loadTone().then((t) => { if (!cancelled) setTone(t); });
-    return () => { cancelled = true; };
-  }, []);
-
   // ─── Rotate Ask Sturdy placeholder ───
   useEffect(() => {
     if (questionFocused || question.length > 0) return;
@@ -362,7 +362,7 @@ export default function HomeScreen() {
         Animated.timing(sosScenarioFade, { toValue: 1, duration: 350, useNativeDriver: true }),
       ]).start();
       setTimeout(() => {
-        setSosScenarioIdx((prev) => (prev + 1) % SOS_SCENARIOS.default.length);
+        setSosScenarioIdx((prev) => (prev + 1) % SOS_SCENARIOS.length);
       }, 350);
     }, 3500);
     return () => clearInterval(interval);
@@ -393,6 +393,9 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchName();
+      let cancelled = false;
+      loadTone().then((t) => { if (!cancelled) setTone(t); });
+      return () => { cancelled = true; };
     }, [fetchName]),
   );
 
@@ -407,7 +410,8 @@ export default function HomeScreen() {
   // ─── Helpers ───
   const displayName = firstName ?? 'there';
   const canSend = question.trim().length > 0 && !sending;
-  const canSosSend = sosInputText.trim().length > 0 && !sosSending;
+  const sosIsCrisis = detectCrisis(sosInputText);
+  const canSosSend = sosInputText.trim().length > 0 && !sosSending && !sosIsCrisis.isCrisis;
 
   // ─── Question mode handler ───
   const handleSend = async () => {
@@ -472,6 +476,11 @@ export default function HomeScreen() {
       return;
     }
 
+    if (sosIsCrisis.isCrisis) {
+      router.push({ pathname: '/crisis', params: { crisisType: sosIsCrisis.crisisType, riskLevel: sosIsCrisis.riskLevel } });
+      return;
+    }
+
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSosSending(true);
     setSosError('');
@@ -485,10 +494,10 @@ export default function HomeScreen() {
         message:        text,
         userId:         session?.user?.id,
         childProfileId: child?.id,
-        intensity:      null,
+        intensity:      inferIntensity(text),
         mode:           'sos',
         tone:           isPremium ? tone : 'gentle',
-      } as any);
+      } satisfies ParentingScriptRequest);
 
       if (child?.id) incrementScriptCount(child.id).catch(() => {});
 
@@ -555,7 +564,7 @@ export default function HomeScreen() {
         <StatusBar style="light" />
         <SafeAreaView style={s.safe} edges={['top']}>
           <View style={s.emptyWrap}>
-            <Text style={s.greetingText}>Good evening, {displayName}.</Text>
+            <Text style={s.greetingText}>{getTimeGreeting()}, {displayName}.</Text>
             <Text style={s.emptyTitle}>Let's add your first child.</Text>
             <Text style={s.emptyBody}>
               Sturdy tailors every response to your child's age and world.
@@ -598,7 +607,7 @@ export default function HomeScreen() {
 
               {/* ─── Header: Greeting + Traffic dots ─── */}
               <View style={s.headerRow}>
-                <Text style={s.greetingText}>Good evening, {displayName}.</Text>
+                <Text style={s.greetingText}>{getTimeGreeting()}, {displayName}.</Text>
                 <TrafficDots />
               </View>
 
@@ -716,12 +725,26 @@ export default function HomeScreen() {
                 </Text>
               </View>
 
+              {/* SOS crisis banner — shown when input contains crisis content */}
+              {sosIsCrisis.isCrisis && (
+                <Pressable
+                  onPress={() => router.push({ pathname: '/crisis', params: { crisisType: sosIsCrisis.crisisType ?? undefined, riskLevel: sosIsCrisis.riskLevel ?? undefined } })}
+                  style={s.crisisBanner}
+                >
+                  <Text style={s.crisisIcon}>⚠️</Text>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={s.crisisTitle}>This sounds serious</Text>
+                    <Text style={s.crisisSub}>Tap here if you need immediate help →</Text>
+                  </View>
+                </Pressable>
+              )}
+
               {/* SOS input */}
               <Animated.View style={[s.sosCard, sosInputFocused && s.sosCardFocused]}>
                 {!sosInputText && (
                   <Animated.View style={[s.placeholderWrap, { opacity: sosScenarioFade }]} pointerEvents="none">
                     <Text style={s.sosPlaceholder}>
-                      {SOS_SCENARIOS.default[sosScenarioIdx]}
+                      {SOS_SCENARIOS[sosScenarioIdx]}
                     </Text>
                   </Animated.View>
                 )}
@@ -797,7 +820,7 @@ export default function HomeScreen() {
 // ═══════════════════════════════════════════════
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0d0b08' },
+  root: { flex: 1, backgroundColor: particlesBg },
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 20 },
   centerGate: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -1076,6 +1099,31 @@ const s = StyleSheet.create({
     fontSize: 10,
     color: 'rgba(255,248,230,0.2)',
     marginTop: 2,
+  },
+
+  // ─── Crisis banner ───
+  crisisBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    paddingHorizontal: 16,
+    backgroundColor: C.sosLight,
+    borderWidth: 1,
+    borderColor: 'rgba(232,116,97,0.30)',
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  crisisIcon: { fontSize: 16 },
+  crisisTitle: {
+    fontFamily: F.bodyMedium,
+    fontSize: 14,
+    color: '#E87461',
+  },
+  crisisSub: {
+    fontFamily: F.body,
+    fontSize: 12,
+    color: 'rgba(232,116,97,0.75)',
   },
 
   // ─── Footer ───

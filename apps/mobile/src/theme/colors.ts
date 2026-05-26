@@ -289,6 +289,23 @@ export const fonts = {
 // stale imports don't crash.
 // ═══════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════
+// PARTICLES BACKGROUND TOKENS
+// Shared values for the golden-particles-bg.png overlay used on
+// Home, Auth, Child Hub, and Add Child screens.
+// ═══════════════════════════════════════════════
+
+export const particlesBg = '#0d0b08';
+export const particlesOverlay = [
+  'rgba(0,0,0,0.50)',
+  'rgba(0,0,0,0.65)',
+  'rgba(0,0,0,0.80)',
+  'rgba(0,0,0,0.90)',
+  'rgba(0,0,0,0.95)',
+] as const;
+export const particlesOverlayLocations = [0, 0.25, 0.50, 0.72, 1] as const;
+
+
 export type PaletteMode = 'auto' | 'light' | 'dark';
 export type PaletteName = 'sunrise' | 'daylight' | 'golden_hour' | 'dusk';
 
