@@ -32,7 +32,7 @@ import { incrementScriptCount } from '../../src/utils/profileNudge';
 import { useSubscription } from '../../src/hooks/useSubscription';
 import { getTone, setTone, type Tone, TONE_DEFAULT } from '../../src/utils/tone';
 import { PaywallSheet } from '../../src/components/ui/PaywallSheet';
-import { colors as C, fonts as F } from '../../src/theme';
+import { colors as C, fonts as F, particlesBg, particlesOverlay, particlesOverlayLocations } from '../../src/theme';
 
 
 // ═══════════════════════════════════════════════
@@ -123,8 +123,8 @@ function Background() {
         resizeMode="cover"
       />
       <LinearGradient
-        colors={['rgba(0,0,0,0.50)', 'rgba(0,0,0,0.65)', 'rgba(0,0,0,0.80)', 'rgba(0,0,0,0.90)', 'rgba(0,0,0,0.95)']}
-        locations={[0, 0.25, 0.50, 0.72, 1]}
+        colors={particlesOverlay}
+        locations={particlesOverlayLocations}
         style={StyleSheet.absoluteFill}
       />
     </>
@@ -653,7 +653,7 @@ const card = {
 } as const;
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0d0b08' },
+  root: { flex: 1, backgroundColor: particlesBg },
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 24, paddingBottom: 20, gap: 22 },
 
