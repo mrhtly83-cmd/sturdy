@@ -33,7 +33,8 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../src/context/AuthContext';
 import { useChildProfile } from '../../src/context/ChildProfileContext';
 import { supabase } from '../../src/lib/supabase';
-import { getQuestionResponse, CrisisDetectedError, RateLimitError, QuotaExceededError } from '../../src/lib/api';
+import { getParentingScript, getQuestionResponse, CrisisDetectedError, RateLimitError, QuotaExceededError } from '../../src/lib/api';
+import { incrementScriptCount } from '../../src/utils/profileNudge';
 import { colors as C, fonts as F, TAB_BAR_HEIGHT } from '../../src/theme';
 import { TrafficDots } from '../../src/components/ui/TrafficDots';
 import { useSubscription } from '../../src/hooks/useSubscription';
@@ -460,7 +461,7 @@ export default function HomeScreen() {
     }
   };
 
-  // ─── SOS handler — routes to child hub with prefill ───
+  // ─── SOS handler — calls API directly, bypasses child hub ───
   const handleSosSend = async () => {
     const text = sosInputText.trim();
     if (!text || sosSending) return;
@@ -471,18 +472,58 @@ export default function HomeScreen() {
       return;
     }
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSosSending(true);
+    setSosError('');
 
     try {
-      router.push({
-        pathname: `/child/${targetId}` as any,
-        params: { prefill: text, mode: 'sos' },
-      });
+      const child = kidList.find((k: any) => k.id === targetId);
+
+      const script = await getParentingScript({
+        childName:      child?.name || 'My child',
+        childAge:       child?.childAge ?? 4,
+        message:        text,
+        userId:         session?.user?.id,
+        childProfileId: child?.id,
+        intensity:      null,
+        mode:           'sos',
+        tone:           isPremium ? tone : 'gentle',
+      } as any);
+
+      if (child?.id) incrementScriptCount(child.id).catch(() => {});
+
       setSosInputText('');
+      router.push({
+        pathname: '/result',
+        params: {
+          source:              'home',
+          childId:             child?.id,
+          situationSummary:    script.situation_summary,
+          regulateAction:      script.regulate.parent_action,
+          regulateScript:      script.regulate.script,
+          regulateCoaching:    script.regulate.coaching ?? '',
+          regulateStrategies:  JSON.stringify(script.regulate.strategies ?? []),
+          connectAction:       script.connect.parent_action,
+          connectScript:       script.connect.script,
+          connectCoaching:     script.connect.coaching ?? '',
+          connectStrategies:   JSON.stringify(script.connect.strategies ?? []),
+          guideAction:         script.guide.parent_action,
+          guideScript:         script.guide.script,
+          guideCoaching:       script.guide.coaching ?? '',
+          guideStrategies:     JSON.stringify(script.guide.strategies ?? []),
+          avoid:               JSON.stringify(script.avoid),
+          childMessage:        text,
+          mode:                'sos',
+        },
+      });
     } catch (err) {
-      setSosError('Something went wrong. Please try again.');
-      console.error('[SOS HOME] send error:', err);
+      if (err instanceof CrisisDetectedError) {
+        router.push({ pathname: '/crisis', params: { crisisType: err.crisisType, riskLevel: err.riskLevel } });
+        return;
+      }
+      if (err instanceof QuotaExceededError) { router.push('/upgrade' as any); return; }
+      if (err instanceof RateLimitError) { setSosError(err.message); return; }
+      setSosError("Couldn't get a script right now. Please try again.");
     } finally {
       setSosSending(false);
     }

@@ -56,7 +56,7 @@ const FALLBACKS = [
 ];
 
 function isValid(v: unknown): boolean { return typeof v === 'string' && (v as string).trim().length > 4; }
-type Params = { situationSummary?: string; regulateAction?: string; regulateScript?: string; regulateCoaching?: string; regulateStrategies?: string; connectAction?: string; connectScript?: string; connectCoaching?: string; connectStrategies?: string; guideAction?: string; guideScript?: string; guideCoaching?: string; guideStrategies?: string; avoid?: string; childMessage?: string; mode?: string; conversation_id?: string; childId?: string };const val = (v?: string | string[]) => Array.isArray(v) ? v[0] : v;
+type Params = { situationSummary?: string; regulateAction?: string; regulateScript?: string; regulateCoaching?: string; regulateStrategies?: string; connectAction?: string; connectScript?: string; connectCoaching?: string; connectStrategies?: string; guideAction?: string; guideScript?: string; guideCoaching?: string; guideStrategies?: string; avoid?: string; childMessage?: string; mode?: string; conversation_id?: string; childId?: string; source?: string };const val = (v?: string | string[]) => Array.isArray(v) ? v[0] : v;
 function parseStrategies(raw?: string): string[] { if (!raw) return []; try { const p = JSON.parse(raw); return Array.isArray(p) ? p : []; } catch { return []; } }
 
 // ─── Voice Player ───
@@ -273,6 +273,7 @@ export default function ResultScreen() {
   const handleCopy = () => { const text = [`Regulate: ${script.regulate.script}`, `Connect: ${script.connect.script}`, `Guide: ${script.guide.script}`].join('\n\n'); Clipboard.setStringAsync(text); setCopied(true); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); setTimeout(() => setCopied(false), 2000); };
 const handleRetry = () => {
   voice.stop();
+  if (val(params.source) === 'home') { router.replace('/(tabs)'); return; }
   const cid = typeof params.childId === 'string' ? params.childId : null;
   if (cid) navigation.push(`/child/${cid}` as any);
   else router.replace('/(tabs)');
@@ -307,7 +308,7 @@ const handleRetry = () => {
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         {/* Back */}
         <View style={s.backRow}>
-          <Pressable onPress={() => { voice.stop(); const cid = typeof params.childId === 'string' ? params.childId : null; if (cid) router.replace(`/child/${cid}` as any); else router.back(); }} style={s.back}><Text style={s.backText}>← Back</Text></Pressable>
+          <Pressable onPress={() => { voice.stop(); if (val(params.source) === 'home') { router.replace('/(tabs)'); return; } const cid = typeof params.childId === 'string' ? params.childId : null; if (cid) router.replace(`/child/${cid}` as any); else router.back(); }} style={s.back}><Text style={s.backText}>← Back</Text></Pressable>
           <Pressable onPress={() => { voice.stop(); router.replace('/(tabs)'); }} style={s.homeBtn}><Text style={s.homeBtnText}>🏠</Text></Pressable>
         </View>
 
