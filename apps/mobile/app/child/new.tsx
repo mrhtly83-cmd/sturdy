@@ -4,7 +4,7 @@
 // Arrow age picker + slider + contextual hint + optional personality notes.
 // Per docs/PRODUCT_PRINCIPLES.md §1: no neurotype selection UI.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dimensions,
   KeyboardAvoidingView,
@@ -24,6 +24,7 @@ import * as Haptics         from 'expo-haptics';
 import { useAuth }          from '../../src/context/AuthContext';
 import { useChildProfile }  from '../../src/context/ChildProfileContext';
 import { useSubscription }  from '../../src/hooks/useSubscription';
+import { PaywallSheet }     from '../../src/components/ui/PaywallSheet';
 import { supabase }         from '../../src/lib/supabase';
 import { colors as C, fonts as F } from '../../src/theme/colors';
 
@@ -55,6 +56,13 @@ export default function NewChildScreen() {
   const [saving, setSaving] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [nameFocused, setNameFocused] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+
+  useEffect(() => {
+    if (!isPremium && Array.isArray(children) && children.length >= 1) {
+      setShowPaywall(true);
+    }
+  }, [isPremium, children]);
 
   const canSave = name.trim().length > 0;
   const sliderProgress = (age / MAX_AGE) * 100;
@@ -267,6 +275,15 @@ export default function NewChildScreen() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      <PaywallSheet
+        visible={showPaywall}
+        onClose={() => {
+          setShowPaywall(false);
+          router.back();
+        }}
+        feature="Add more children"
+      />
     </SafeAreaView>
   );
 }
