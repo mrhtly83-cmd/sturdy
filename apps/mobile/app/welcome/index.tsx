@@ -150,7 +150,8 @@ export default function WelcomeScreen() {
                   <View style={s.imageCrop}>
                     <Image source={beat.image} style={s.beatImage} resizeMode="cover" />
                     <LinearGradient
-                      colors={['transparent', 'rgba(13,11,8,0.5)']}{/* TODO: update rgba stop to new base rgb(14,12,8) */}
+                      // TODO: update rgba stop to new base rgb(14,12,8)
+                      colors={['transparent', 'rgba(13,11,8,0.5)']}
                       style={StyleSheet.absoluteFill}
                     />
                   </View>
