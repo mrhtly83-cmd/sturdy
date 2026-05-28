@@ -865,7 +865,7 @@ const s = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(255,248,231,0.07)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: C.surface,
     minHeight: 120,
     padding: 16,
     paddingBottom: 60,
@@ -873,8 +873,8 @@ const s = StyleSheet.create({
     marginBottom: 12,
   },
   thinkingCardFocused: {
-    borderColor: 'rgba(200,136,58,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderColor: C.divider,
+    backgroundColor: 'rgba(255,255,255,0.08)', // TODO: check token (no surface variant at 0.08)
   },
   thinkingInput: {
     fontFamily: F.body,
@@ -925,7 +925,7 @@ const s = StyleSheet.create({
   // ─── Divider ───
   zoneDivider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: C.divider,
     marginVertical: 18,
   },
 
@@ -943,7 +943,7 @@ const s = StyleSheet.create({
     borderColor: 'transparent',
   },
   childPillActive: {
-    backgroundColor: 'rgba(200,136,58,0.15)',
+    backgroundColor: 'rgba(200,136,58,0.15)', // TODO: check token (no exact match at 0.15 opacity)
     borderColor: C.amber,
     shadowColor: C.amber,
     shadowOffset: { width: 0, height: 0 },
@@ -982,7 +982,7 @@ const s = StyleSheet.create({
     fontFamily: F.scriptItalic,
     fontSize: 12,
     fontStyle: 'italic',
-    color: 'rgba(200,136,58,0.45)',
+    color: 'rgba(200,136,58,0.45)', // TODO: check token (no exact match for this opacity)
     textAlign: 'right',
     marginBottom: 8,
   },
@@ -1079,12 +1079,12 @@ const s = StyleSheet.create({
     alignItems: 'center',
     padding: 8,
     borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
+    borderColor: C.border,
   },
   tonePillSelected: {
-    backgroundColor: 'rgba(200,136,58,0.15)',
+    backgroundColor: 'rgba(200,136,58,0.15)', // TODO: check token (no exact match at 0.15)
     borderColor: C.amber,
   },
   tonePillName: {
@@ -1145,7 +1145,7 @@ const s = StyleSheet.create({
   emptyBody: {
     fontFamily: F.body,
     fontSize: 15,
-    color: 'rgba(255,255,255,0.50)',
+    color: C.textSecondary,
     lineHeight: 22,
     marginBottom: 8,
   },

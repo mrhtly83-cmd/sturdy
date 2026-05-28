@@ -108,7 +108,7 @@ export default function DeleteAccountScreen() {
             placeholderTextColor={C.textMuted}
             style={[
               s.input,
-              { borderColor: confirmText ? 'rgba(232,116,97,0.40)' : 'rgba(255,255,255,0.07)' },
+              { borderColor: confirmText ? 'rgba(232,116,97,0.40)' : C.border },
             ]}
           />
         </View>
@@ -155,7 +155,7 @@ const s = StyleSheet.create({
   subTextBold: { fontFamily: F.bodySemi, color: C.text },
 
   input: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: C.surface,
     borderWidth: 1,
     borderRadius: 12,
     padding: 14,
@@ -175,10 +175,10 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   ctaDisabled: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: C.surface,
   },
-  ctaText:         { fontFamily: F.subheading, fontSize: 16, color: '#FFFFFF', letterSpacing: 0.3 },
-  ctaTextDisabled: { color: 'rgba(255,255,255,0.20)' },
+  ctaText:         { fontFamily: F.subheading, fontSize: 16, color: C.text, letterSpacing: 0.3 },
+  ctaTextDisabled: { color: C.textMuted },
 
   errorText: { fontFamily: F.body, fontSize: 14, color: C.sos, textAlign: 'center' },
 

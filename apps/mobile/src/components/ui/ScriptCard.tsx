@@ -184,7 +184,7 @@ const st = StyleSheet.create({
   stepNum: {
     width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
   },
-  stepNumText: { fontFamily: F.bold, fontSize: 13, color: '#FFFFFF' },
+  stepNumText: { fontFamily: F.bold, fontSize: 13, color: C.text },
 
   badge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,

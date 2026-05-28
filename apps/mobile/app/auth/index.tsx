@@ -271,7 +271,7 @@ export default function AuthScreen() {
       {/* Sticky CTA — hidden on confirm-email screen */}
       {screenState !== 'confirm-email' && <View style={s.stickyWrap}>
         <LinearGradient
-          colors={['transparent', 'rgba(2,2,2,0.88)', '#020202']}
+          colors={['transparent', 'rgba(2,2,2,0.88)', C.gradientTop]}
           locations={[0, 0.45, 0.85]}
           style={s.stickyFade}
           pointerEvents="none"
@@ -408,5 +408,5 @@ const s = StyleSheet.create({
     elevation:      4,
   },
   ctaDisabled: { backgroundColor: C.disabled, shadowOpacity: 0, elevation: 0 },
-  ctaText:     { fontFamily: F.subheading, fontSize: 16, color: '#FFFFFF', letterSpacing: 0.3 },
+  ctaText:     { fontFamily: F.subheading, fontSize: 16, color: C.textInverse, letterSpacing: 0.3 },
 });

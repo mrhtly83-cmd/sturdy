@@ -279,7 +279,7 @@ const s = StyleSheet.create({
     marginBottom:   8,
   },
   avatarText: {
-    fontFamily: F.heading, fontSize: 32, color: '#FFFFFF', letterSpacing: -0.4,
+    fontFamily: F.heading, fontSize: 32, color: C.text, letterSpacing: -0.4,
   },
   childName: {
     fontFamily: F.heading, fontSize: 24, color: C.text,
@@ -326,7 +326,7 @@ const s = StyleSheet.create({
   triggerLabel: { fontFamily: F.bodyMedium, fontSize: 14, color: C.text },
   triggerCount: { fontFamily: F.body, fontSize: 13, color: C.textSecondary },
   triggerBarBg: {
-    height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.06)',
+    height: 6, borderRadius: 3, backgroundColor: C.surface,
     overflow: 'hidden',
   },
   triggerBarFill: {

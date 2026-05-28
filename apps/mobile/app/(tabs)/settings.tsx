@@ -379,7 +379,7 @@ const s = StyleSheet.create({
   accountAvaText: {
     fontFamily: F.subheading,
     fontSize:   16,
-    color:      '#FFFFFF',
+    color:      C.text,
   },
   accountEmail: { fontFamily: F.bodyMedium, fontSize: 14, color: C.text },
   accountPlan:  { fontFamily: F.body,       fontSize: 12, color: C.textMuted },
@@ -388,7 +388,7 @@ const s = StyleSheet.create({
     width:           28,
     height:          28,
     borderRadius:    14,
-    backgroundColor: 'rgba(200,136,58,0.15)',
+    backgroundColor: 'rgba(200,136,58,0.15)', // TODO: check token (no exact match at 0.15)
     alignItems:      'center',
     justifyContent:  'center',
   },
@@ -436,7 +436,7 @@ const s = StyleSheet.create({
     alignItems:     'center',
     justifyContent: 'center',
   },
-  upgradeBtnText: { fontSize: 16, color: '#FFFFFF', fontFamily: F.bodySemi },
+  upgradeBtnText: { fontSize: 16, color: C.textInverse, fontFamily: F.bodySemi },
 
   version: {
     fontFamily: F.body,

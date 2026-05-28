@@ -538,7 +538,7 @@ const s = StyleSheet.create({
   emptyCtaText: {
     fontFamily: F.bodySemi,
     fontSize: 15,
-    color: '#FFFFFF',
+    color: C.text,
     letterSpacing: 0.2,
   },
 });

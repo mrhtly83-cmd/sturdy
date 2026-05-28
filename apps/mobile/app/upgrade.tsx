@@ -28,17 +28,15 @@ import { useSubscription } from '../src/hooks/useSubscription';
 import { colors as C, fonts as F } from '../src/theme';
 
 // ═══════════════════════════════════════════════
-// File-local non-theme tokens (rgb-glass surfaces specific to this screen).
-// Brand colors come from `C.*` (theme) so the paywall stays in sync with
-// the rest of the Deep Warm v5.2 system.
+// File-local aliases — all values pulled from theme tokens.
 // ═══════════════════════════════════════════════
 
-const SURFACE     = 'rgba(255,255,255,0.055)';
-const BORDER      = 'rgba(255,255,255,0.07)';
-const BORDER_HI   = 'rgba(255,255,255,0.13)';
-const TEXT        = 'rgba(255,255,255,0.92)';
-const TEXT_SEC    = 'rgba(255,255,255,0.52)';
-const TEXT_MUTED  = 'rgba(255,255,255,0.28)';
+const SURFACE     = C.surface;          // rgba(255,255,255,0.04) frosted veil
+const BORDER      = C.border;           // rgba(184,142,74,0.22) gold-tinted
+const BORDER_HI   = C.borderHi;         // rgba(220,185,110,0.10) inset highlight
+const TEXT        = C.text;             // rgba(240,225,185,0.95) warm white
+const TEXT_SEC    = C.textSecondary;    // rgba(220,195,145,0.70) warm secondary
+const TEXT_MUTED  = C.textFaint;        // rgba(200,180,130,0.28) very faint
 const SAGE        = '#8DB89A';                       // checkmarks + savings badge
 const SAGE_BG     = 'rgba(141,184,154,0.12)';
 
@@ -336,7 +334,7 @@ const s = StyleSheet.create({
   },
   planCardActive: {
     borderColor: C.amberBorder,
-    backgroundColor: 'rgba(200,136,58,0.06)',
+    backgroundColor: C.amberBadge,
   },
   planRow:   { flexDirection: 'row', alignItems: 'center', gap: 12 },
   planName:  { fontFamily: F.bodySemi, fontSize: 16, color: TEXT },
@@ -374,8 +372,8 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 3,
   },
-  ctaText: { fontFamily: F.subheading, fontSize: 17, color: '#FFFFFF', letterSpacing: 0.3 },
-  ctaSub:  { fontFamily: F.body, fontSize: 12, color: 'rgba(255,255,255,0.78)' },
+  ctaText: { fontFamily: F.subheading, fontSize: 17, color: C.textInverse, letterSpacing: 0.3 },
+  ctaSub:  { fontFamily: F.body, fontSize: 12, color: C.textInverse },
 
   // Fine print
   fine:        { alignItems: 'center', gap: 10, paddingTop: 4 },

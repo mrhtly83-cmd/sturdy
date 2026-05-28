@@ -22,7 +22,7 @@ export default function TabLayout() {
         },
         tabBarBackground: () => null,
         tabBarActiveTintColor: C.tabActive,
-        tabBarInactiveTintColor: 'rgba(255,255,255,0.28)',
+        tabBarInactiveTintColor: C.tabInactive,
         tabBarLabelStyle: {
           fontFamily: F.bodySemi,
           fontSize: 10,

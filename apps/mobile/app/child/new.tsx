@@ -340,7 +340,7 @@ const st = StyleSheet.create({
     flexDirection:     'row',
     alignItems:        'center',
     gap:               8,
-    backgroundColor:   'rgba(200,136,58,0.08)',
+    backgroundColor:   C.amberBadge,
     borderRadius:      12,
     borderWidth:       1,
     borderColor:       C.amberBorder,
@@ -384,7 +384,7 @@ const st = StyleSheet.create({
     elevation:      4,
   },
   saveBtnDisabled: { backgroundColor: C.disabled, shadowOpacity: 0, elevation: 0 },
-  saveBtnText:     { fontFamily: F.subheading, fontSize: 16, color: '#FFFFFF', letterSpacing: 0.3 },
+  saveBtnText:     { fontFamily: F.subheading, fontSize: 16, color: C.textInverse, letterSpacing: 0.3 },
   skipBtn:         { paddingVertical: 8 },
   skipText:        { fontFamily: F.body, fontSize: 14, color: C.textMuted },
 });

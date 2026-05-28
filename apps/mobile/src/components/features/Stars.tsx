@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { View } from 'react-native';
+import { colors as C } from '../../theme';
 
 interface Props {
   count?: number;
@@ -42,7 +43,7 @@ export function Stars({ count = 30, heightPercent = 50 }: Props) {
             height: s.size,
             opacity: s.opacity,
             borderRadius: 10,
-            backgroundColor: '#FFF',
+            backgroundColor: C.text,
           }}
         />
       ))}

@@ -11,9 +11,9 @@ import { useAuth }         from '../../context/AuthContext';
 import { colors as C, fonts as F } from '../../theme';
 
 const AMBER     = C.amber;
-const AMBER_DIM = 'rgba(200,136,58,0.45)';
-const MUTED     = 'rgba(255,248,230,0.28)';
-const TRACK_BG  = 'rgba(255,255,255,0.06)';
+const AMBER_DIM = 'rgba(200,136,58,0.45)'; // TODO: check token
+const MUTED     = C.textMuted;
+const TRACK_BG  = C.surface;
 
 export function QuotaBar() {
   const { session }   = useAuth();

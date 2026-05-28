@@ -119,8 +119,8 @@ const s = StyleSheet.create({
     borderColor: 'transparent',
   },
   dotsWrapExpanded: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: C.surface,
+    borderColor: C.border,
   },
   dotCol: { alignItems: 'center', gap: 2 },
   dot: { width: 8, height: 8, borderRadius: 4 },
@@ -132,7 +132,7 @@ const s = StyleSheet.create({
     marginTop: 6,
     backgroundColor: 'rgba(20,15,10,0.95)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
+    borderColor: C.border,
     borderRadius: 12,
     padding: 14,
     minWidth: 180,
@@ -152,7 +152,7 @@ const s = StyleSheet.create({
   tooltipValue: { fontFamily: F.bodySemi, fontSize: 12 },
   tooltipTrack: {
     height: 3,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: C.surface,
     borderRadius: 2,
     overflow: 'hidden',
   },

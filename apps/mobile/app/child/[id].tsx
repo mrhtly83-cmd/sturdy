@@ -678,7 +678,7 @@ const s = StyleSheet.create({
     shadowOffset:   { width: 0, height: 6 },
     elevation:      4,
   },
-  avatarText: { fontFamily: F.heading, fontSize: 36, color: '#FFFFFF', letterSpacing: -0.5 },
+  avatarText: { fontFamily: F.heading, fontSize: 36, color: C.text, letterSpacing: -0.5 },
   childName:  { fontFamily: F.heading, fontSize: 28, color: C.text, letterSpacing: -0.3, marginTop: 4 },
   childAge:   { fontFamily: F.body, fontSize: 14, color: C.textSecondary },
 
@@ -766,7 +766,7 @@ const s = StyleSheet.create({
     elevation:      4,
   },
   ctaBtnDisabled: { backgroundColor: C.disabled, shadowOpacity: 0, elevation: 0 },
-  ctaLabel:       { fontFamily: F.subheading, fontSize: 17, color: '#FFFFFF', letterSpacing: 0.3 },
+  ctaLabel:       { fontFamily: F.subheading, fontSize: 17, color: C.textInverse, letterSpacing: 0.3 },
 
   emergencyBtn:  { alignSelf: 'center', paddingVertical: 6 },
   emergencyText: { fontFamily: F.body, fontSize: 12, color: C.sos, textDecorationLine: 'underline' },
@@ -821,7 +821,7 @@ const s = StyleSheet.create({
     borderTopColor:  C.borderHi,
   },
   tonePillSelected: {
-    backgroundColor: 'rgba(200,136,58,0.08)',
+    backgroundColor: C.amberBadge,
     borderColor:     C.amber,
   },
   toneTopRow:            { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
