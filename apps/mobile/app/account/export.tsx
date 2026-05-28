@@ -124,7 +124,7 @@ const s = StyleSheet.create({
   actions: { gap: 12, marginTop: 12 },
 
   cta:     { borderRadius: 18, paddingVertical: 16, alignItems: 'center' },
-  ctaText: { fontFamily: F.subheading, fontSize: 16, color: '#FFFFFF', letterSpacing: 0.3 },
+  ctaText: { fontFamily: F.subheading, fontSize: 16, color: C.textInverse, letterSpacing: 0.3 },
 
   errorText:   { fontFamily: F.body, fontSize: 14, color: C.sos,    textAlign: 'center' },
   successText: { fontFamily: F.body, fontSize: 14, color: C.textSecondary, textAlign: 'center' },

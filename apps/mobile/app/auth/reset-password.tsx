@@ -284,5 +284,5 @@ const s = StyleSheet.create({
     elevation:      4,
   },
   ctaDisabled: { backgroundColor: C.disabled, shadowOpacity: 0, elevation: 0 },
-  ctaText:     { fontFamily: F.subheading, fontSize: 16, color: '#FFFFFF', letterSpacing: 0.3 },
+  ctaText:     { fontFamily: F.subheading, fontSize: 16, color: C.textInverse, letterSpacing: 0.3 },
 });

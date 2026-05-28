@@ -166,8 +166,8 @@ const s = StyleSheet.create({
     marginBottom: 24,
   },
   card: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderColor: 'rgba(184,142,74,0.22)',
+    backgroundColor: C.surface,
+    borderColor: C.border,
     borderRadius: 14,
     borderWidth: 0.5,
     paddingVertical: 14,
@@ -189,7 +189,7 @@ const s = StyleSheet.create({
   avatarInitial: {
     fontFamily: F.heading,
     fontSize: 20,
-    color: '#FFFFFF',
+    color: C.text,
     fontWeight: '600',
   },
   cardInfo: {
@@ -208,7 +208,7 @@ const s = StyleSheet.create({
     color: 'rgba(240,225,185,0.95)',
   },
   triggerBadge: {
-    backgroundColor: 'rgba(184,142,74,0.08)',
+    backgroundColor: C.amberBadge,
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -221,11 +221,11 @@ const s = StyleSheet.create({
   childMeta: {
     fontFamily: F.body,
     fontSize: 13,
-    color: 'rgba(255,255,255,0.40)',
+    color: C.textSecondary,
   },
   chevron: {
     fontSize: 20,
-    color: 'rgba(255,255,255,0.20)',
+    color: C.textMuted,
     lineHeight: 24,
   },
   emptyWrap: {
@@ -235,7 +235,7 @@ const s = StyleSheet.create({
   emptyText: {
     fontFamily: F.body,
     fontSize: 14,
-    color: 'rgba(255,255,255,0.30)',
+    color: C.textSecondary,
     fontStyle: 'italic',
   },
   footer: {

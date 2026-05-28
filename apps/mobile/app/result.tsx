@@ -150,14 +150,14 @@ const rf = StyleSheet.create({
   root:     { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4, alignItems: 'center' },
   quiet:    { fontSize: 12, color: 'rgba(255,248,230,0.28)', fontFamily: 'DMSans_400Regular' },
   card:     { marginHorizontal: 20, marginTop: 8, marginBottom: 4, backgroundColor: C.amberMuted,
-               borderWidth: 1, borderColor: 'rgba(200,136,58,0.15)', borderRadius: 12, padding: 14 },
+               borderWidth: 1, borderColor: 'rgba(200,136,58,0.15)', borderRadius: 12, padding: 14 }, // TODO: check token for borderColor
   cardTop:  { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   cardCount:{ fontSize: 13, color: C.amber, fontFamily: 'DMSans_600SemiBold' },
-  cardReset:{ fontSize: 11, color: 'rgba(200,136,58,0.5)', fontFamily: 'DMSans_400Regular' },
-  track:    { height: 3, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2,
+  cardReset:{ fontSize: 11, color: 'rgba(200,136,58,0.5)', fontFamily: 'DMSans_400Regular' }, // TODO: check token
+  track:    { height: 3, backgroundColor: C.surface, borderRadius: 2,
                overflow: 'hidden', marginBottom: 10 },
   fill:     { height: '100%', backgroundColor: C.amber, borderRadius: 2 },
-  cardCta:  { fontSize: 12, color: 'rgba(200,136,58,0.7)', fontFamily: 'DMSans_400Regular', lineHeight: 18 },
+  cardCta:  { fontSize: 12, color: 'rgba(200,136,58,0.7)', fontFamily: 'DMSans_400Regular', lineHeight: 18 }, // TODO: check token
   ctaLink:  { color: C.amber, fontFamily: 'DMSans_600SemiBold' },
 });
 
@@ -340,7 +340,7 @@ const handleRetry = () => {
         <Pressable onPress={() => voiceLocked ? setVoicePaywall(true) : voice.toggle()}>
           <View style={s.voiceCard}>
             <View style={[s.playBtn, isPlaying && s.playBtnActive, voiceLocked && s.playBtnLocked]}>
-              <Text style={{ color: '#FFF', fontSize: 14, marginLeft: isPlaying ? 0 : 2 }}>
+              <Text style={{ color: C.text, fontSize: 14, marginLeft: isPlaying ? 0 : 2 }}>
                 {voiceLocked ? '🔒' : isPlaying ? '⏹' : '▶'}
               </Text>
             </View>
@@ -495,7 +495,7 @@ const s = StyleSheet.create({
   summary: { fontFamily: F.scriptItalic, fontSize: 21, color: C.text, lineHeight: 30, marginBottom: 8 },
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   ava: { width: 22, height: 22, borderRadius: 11, backgroundColor: C.sage, alignItems: 'center', justifyContent: 'center' },
-  avaText: { fontFamily: F.bodySemi, fontSize: 10, color: '#FFFFFF' },
+  avaText: { fontFamily: F.bodySemi, fontSize: 10, color: C.text },
   tagText: { fontFamily: F.body, fontSize: 12, color: C.textSecondary },
 
   safetyLink: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 2 },
@@ -552,7 +552,7 @@ const s = StyleSheet.create({
   footerGhost: { flex: 1, borderRadius: 16, minHeight: 50, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderTopWidth: 1, borderTopColor: C.borderHi },
   footerGhostText: { fontFamily: F.bodyMedium, fontSize: 14, color: C.text },
   footerPrimary: { flex: 1, borderRadius: 16, minHeight: 50, minWidth: 100, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, backgroundColor: C.sos },
-  footerPrimaryText: { fontFamily: F.subheading, fontSize: 14, color: '#FFFFFF', letterSpacing: 0.3 },
+  footerPrimaryText: { fontFamily: F.subheading, fontSize: 14, color: C.text, letterSpacing: 0.3 },
 });
 
 

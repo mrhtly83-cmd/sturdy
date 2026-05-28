@@ -48,6 +48,6 @@ const s = StyleSheet.create({
   inactive: {
     width: 6,
     height: 6,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.15)', // TODO: check token
   },
 });

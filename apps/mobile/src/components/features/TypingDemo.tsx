@@ -136,22 +136,22 @@ const s = StyleSheet.create({
   wrap: { gap: 10 },
 
   dots: { flexDirection: 'row', gap: 6, justifyContent: 'center', marginBottom: 4 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.12)' },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.12)' }, // TODO: check token
   dotActive: { backgroundColor: C.coral },
 
   inputCard: {
-    backgroundColor: 'rgba(255,255,255,0.055)',
+    backgroundColor: C.surface,
     borderRadius: 18, padding: 16, gap: 8,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
+    borderWidth: 1, borderColor: C.border,
   },
-  inputLabel: { fontFamily: F.label, fontSize: 10, letterSpacing: 0.8, color: 'rgba(255,255,255,0.25)' },
-  inputText: { fontFamily: F.bodyMedium, fontSize: 16, color: 'rgba(255,255,255,0.92)', lineHeight: 24, minHeight: 40 },
+  inputLabel: { fontFamily: F.label, fontSize: 10, letterSpacing: 0.8, color: 'rgba(255,255,255,0.25)' }, // TODO: check token
+  inputText: { fontFamily: F.bodyMedium, fontSize: 16, color: C.text, lineHeight: 24, minHeight: 40 },
   cursor: { fontFamily: F.body, color: C.coral },
 
   stepCard: { borderRadius: 18, padding: 16, gap: 6, borderWidth: 1 },
   stepHeader: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   stepDot: { width: 7, height: 7, borderRadius: 4 },
   stepLabel: { fontFamily: F.label, fontSize: 10, letterSpacing: 0.7, fontWeight: '700' },
-  stepAction: { fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.45)', fontStyle: 'italic' },
-  stepScript: { fontFamily: F.bodyMedium, fontSize: 16, color: 'rgba(255,255,255,0.88)', lineHeight: 24 },
+  stepAction: { fontFamily: F.body, fontSize: 13, color: 'rgba(255,255,255,0.45)', fontStyle: 'italic' }, // TODO: check token
+  stepScript: { fontFamily: F.bodyMedium, fontSize: 16, color: C.text, lineHeight: 24 },
 });
