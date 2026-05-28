@@ -1,3 +1,7 @@
+// app/(tabs)/family.tsx
+// v2 — Twilight × Obsidian Gold
+// Background: night sky gradient. All logic preserved from v1.
+
 import { useCallback, useState } from 'react';
 import {
   Pressable,
@@ -45,6 +49,16 @@ export default function FamilyScreen() {
 
   return (
     <View style={s.root}>
+      <LinearGradient
+        colors={['#020202','#060604','#0a0906','#0d0b08','#0c0a06','#050402']}
+        locations={[0, 0.16, 0.40, 0.58, 0.76, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <LinearGradient
+        colors={['transparent','rgba(120,80,10,0.22)']}
+        locations={[0.45, 1]}
+        style={StyleSheet.absoluteFill}
+      />
       <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
         <ScrollView
           contentContainerStyle={s.scroll}
@@ -136,7 +150,7 @@ export default function FamilyScreen() {
 const s = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#1E1D25',
+    backgroundColor: '#020202',
   },
   safe: { flex: 1 },
   scroll: {
@@ -147,15 +161,15 @@ const s = StyleSheet.create({
   header: {
     fontFamily: F.headingItalic,
     fontSize: 30,
-    color: 'rgba(255,248,230,0.92)',
+    color: 'rgba(240,225,185,0.95)',
     letterSpacing: -0.5,
     marginBottom: 24,
   },
   card: {
     backgroundColor: 'rgba(255,255,255,0.04)',
-    borderColor: 'rgba(255,255,255,0.07)',
+    borderColor: 'rgba(184,142,74,0.22)',
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 0.5,
     paddingVertical: 14,
     paddingHorizontal: 16,
     marginBottom: 12,
@@ -191,10 +205,10 @@ const s = StyleSheet.create({
   childName: {
     fontFamily: F.bodySemi,
     fontSize: 15,
-    color: 'rgba(255,248,230,0.92)',
+    color: 'rgba(240,225,185,0.95)',
   },
   triggerBadge: {
-    backgroundColor: 'rgba(200,136,58,0.22)',
+    backgroundColor: 'rgba(184,142,74,0.08)',
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 2,

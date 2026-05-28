@@ -1,4 +1,5 @@
 // app/history.tsx
+// v6 — Twilight × Obsidian Gold. Theme only.
 // v5 — Conversation history list
 
 import { useCallback, useState } from 'react';
@@ -141,7 +142,7 @@ export default function HistoryScreen() {
       {/* Loading */}
       {loading ? (
         <View style={st.center}>
-          <ActivityIndicator color={colors.sos} size="large" />
+          <ActivityIndicator color={colors.amber} size="large" />
         </View>
       ) : error ? (
         <View style={st.center}>
@@ -235,7 +236,7 @@ const st = StyleSheet.create({
     textAlign: 'center', lineHeight: 20, maxWidth: 260,
   },
   emptyBtn: {
-    backgroundColor: colors.sos,
+    backgroundColor: colors.amber,
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 24,

@@ -1,4 +1,5 @@
 // app/thought/[id].tsx
+// v2 — Twilight × Obsidian Gold. Theme only.
 // v1 — Question mode result screen.
 // Loads a parent_thoughts row by id from Supabase, shows skeleton
 // while loading, then renders the response in flowing prose.
@@ -217,8 +218,13 @@ export default function ThoughtScreen() {
       <StatusBar style="light" />
 
       <LinearGradient
-        colors={[C.gradientResultTop, C.gradientResultMid1, C.gradientResultMid2, C.gradientResultMid3, C.gradientMid4, C.gradientBottom]}
-        locations={[0, 0.10, 0.25, 0.42, 0.58, 1]}
+        colors={['#020202','#060604','#0a0906','#0d0b08','#0c0a06','#050402']}
+        locations={[0, 0.16, 0.40, 0.58, 0.76, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <LinearGradient
+        colors={['transparent','rgba(120,80,10,0.22)']}
+        locations={[0.45, 1]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -338,7 +344,7 @@ export default function ThoughtScreen() {
 // ═══════════════════════════════════════════════
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.background },
+  root: { flex: 1, backgroundColor: '#020202' },
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 24, paddingBottom: 20, gap: 22 },
 
@@ -390,7 +396,7 @@ const s = StyleSheet.create({
   // Skeleton
   skeletonLine: {
     height: 14, borderRadius: 7,
-    backgroundColor: 'rgba(0,0,0,0.08)',
+    backgroundColor: 'rgba(184,142,74,0.10)',
     marginVertical: 4,
   },
 

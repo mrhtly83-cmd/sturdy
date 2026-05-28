@@ -1,4 +1,5 @@
 // app/result.tsx
+// v10 — Twilight × Obsidian Gold. Theme only, type fixes applied.
 // v9 — Journal identity: pastel gradient, frosted glass, rose accents
 // All logic preserved: progressive disclosure, voice, feedback, follow-up, safety
 
@@ -430,7 +431,7 @@ const handleRetry = () => {
       {/* Footer */}
       <View style={s.footer}>
         <LinearGradient
-          colors={['transparent', 'rgba(12,12,12,0.85)', C.background]}
+          colors={['transparent', 'rgba(2,2,2,0.88)', '#020202']}
           locations={[0, 0.35, 0.75]}
           style={s.footerFade}
           pointerEvents="none"
@@ -478,7 +479,7 @@ const card = {
 } as const;
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.background },
+  root: { flex: 1, backgroundColor: '#020202' },
   scroll: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40, gap: 14 },
 
   backRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -546,7 +547,7 @@ const s = StyleSheet.create({
 
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10 },
   footerFade: { height: 40 },
-  footerContent: { backgroundColor: C.background, paddingHorizontal: 24, paddingBottom: 28, paddingTop: 4 },
+  footerContent: { backgroundColor: '#020202', paddingHorizontal: 24, paddingBottom: 28, paddingTop: 4 },
   footerRow: { flexDirection: 'row', gap: 10 },
   footerGhost: { flex: 1, borderRadius: 16, minHeight: 50, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderTopWidth: 1, borderTopColor: C.borderHi },
   footerGhostText: { fontFamily: F.bodyMedium, fontSize: 14, color: C.text },

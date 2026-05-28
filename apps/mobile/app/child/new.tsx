@@ -1,4 +1,5 @@
 // app/child/new.tsx
+// v9 — Twilight × Obsidian Gold. Theme only — structure identical to v8.
 // v8 — Add child profile
 // Arrow age picker + slider + contextual hint + optional personality notes.
 // Per docs/PRODUCT_PRINCIPLES.md §1: no neurotype selection UI.
@@ -6,7 +7,6 @@
 import { useState } from 'react';
 import {
   Dimensions,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -25,7 +25,7 @@ import { useAuth }          from '../../src/context/AuthContext';
 import { useChildProfile }  from '../../src/context/ChildProfileContext';
 import { useSubscription }  from '../../src/hooks/useSubscription';
 import { supabase }         from '../../src/lib/supabase';
-import { colors as C, fonts as F, particlesBg, particlesOverlay, particlesOverlayLocations } from '../../src/theme/colors';
+import { colors as C, fonts as F } from '../../src/theme/colors';
 
 const { width: W } = Dimensions.get('window');
 const MIN_AGE = 0;
@@ -103,15 +103,15 @@ export default function NewChildScreen() {
     <SafeAreaView style={st.root} edges={['top', 'bottom']}>
       <StatusBar style="light" />
 
-      {/* Background — golden particles + dark overlay */}
-      <Image
-        source={require('../../assets/golden-particles-bg.png')}
+      {/* Background — Twilight × Obsidian Gold */}
+      <LinearGradient
+        colors={['#020202','#060604','#0a0906','#0d0b08','#0c0a06','#050402']}
+        locations={[0, 0.16, 0.40, 0.58, 0.76, 1]}
         style={StyleSheet.absoluteFill}
-        resizeMode="cover"
       />
       <LinearGradient
-        colors={particlesOverlay}
-        locations={particlesOverlayLocations}
+        colors={['transparent','rgba(120,80,10,0.22)']}
+        locations={[0.45, 1]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -273,7 +273,7 @@ export default function NewChildScreen() {
 
 // ─── Styles ───
 const st = StyleSheet.create({
-  root: { flex: 1, backgroundColor: particlesBg },
+  root: { flex: 1, backgroundColor: '#020202' },
   scroll: { paddingHorizontal: 24, paddingTop: 12, paddingBottom: 24, gap: 20 },
 
   back:     { alignSelf: 'flex-start', paddingVertical: 6 },

@@ -1,4 +1,5 @@
 // app/child/[id].tsx
+// v3 — Twilight × Obsidian Gold. Theme only — structure identical to v2.
 // v2 — Child hub. Each child has their own SOS experience.
 // Journal identity: pastel gradient, frosted glass, rose accents.
 // Replaces the old standalone now.tsx — SOS lives here, scoped per child.
@@ -6,7 +7,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -32,7 +32,7 @@ import { incrementScriptCount } from '../../src/utils/profileNudge';
 import { useSubscription } from '../../src/hooks/useSubscription';
 import { getTone, setTone, type Tone, TONE_DEFAULT } from '../../src/utils/tone';
 import { PaywallSheet } from '../../src/components/ui/PaywallSheet';
-import { colors as C, fonts as F, particlesBg, particlesOverlay, particlesOverlayLocations } from '../../src/theme';
+import { colors as C, fonts as F } from '../../src/theme';
 
 
 // ═══════════════════════════════════════════════
@@ -117,14 +117,15 @@ function isHubMode(v: unknown): v is HubMode {
 function Background() {
   return (
     <>
-      <Image
-        source={require('../../assets/golden-particles-bg.png')}
+      {/* Twilight × Obsidian Gold */}
+      <LinearGradient
+        colors={['#020202','#060604','#0a0906','#0d0b08','#0c0a06','#050402']}
+        locations={[0, 0.16, 0.40, 0.58, 0.76, 1]}
         style={StyleSheet.absoluteFill}
-        resizeMode="cover"
       />
       <LinearGradient
-        colors={particlesOverlay}
-        locations={particlesOverlayLocations}
+        colors={['transparent','rgba(120,80,10,0.22)']}
+        locations={[0.45, 1]}
         style={StyleSheet.absoluteFill}
       />
     </>
@@ -653,7 +654,7 @@ const card = {
 } as const;
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: particlesBg },
+  root: { flex: 1, backgroundColor: '#020202' },
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 24, paddingBottom: 20, gap: 22 },
 

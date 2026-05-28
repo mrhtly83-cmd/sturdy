@@ -1,4 +1,5 @@
 // app/(tabs)/index.tsx
+// v9 — Twilight × Obsidian Gold. Theme only — structure identical to v8.
 // v8 — Two Textbox Layout (final home screen before F&F test)
 //
 // Two clear zones:
@@ -35,7 +36,7 @@ import { useChildProfile } from '../../src/context/ChildProfileContext';
 import { supabase } from '../../src/lib/supabase';
 import { getParentingScript, getQuestionResponse, CrisisDetectedError, RateLimitError, QuotaExceededError, type ParentingScriptRequest } from '../../src/lib/api';
 import { incrementScriptCount } from '../../src/utils/profileNudge';
-import { colors as C, fonts as F, TAB_BAR_HEIGHT, particlesOverlay, particlesOverlayLocations, particlesBg } from '../../src/theme';
+import { colors as C, fonts as F, TAB_BAR_HEIGHT } from '../../src/theme';
 import { detectCrisis } from '../../src/hooks/useCrisisMode';
 import { TrafficDots } from '../../src/components/ui/TrafficDots';
 import { useSubscription } from '../../src/hooks/useSubscription';
@@ -275,17 +276,15 @@ function Background() {
 
   return (
     <>
-      <Animated.Image
-        source={require('../../assets/golden-particles-bg.png')}
-        style={[
-          StyleSheet.absoluteFill,
-          { width: '100%', height: '100%', transform: [{ translateY }, { scale }] },
-        ]}
-        resizeMode="cover"
+      {/* Twilight × Obsidian Gold */}
+      <LinearGradient
+        colors={['#020202','#060604','#0a0906','#0d0b08','#0c0a06','#050402']}
+        locations={[0, 0.16, 0.40, 0.58, 0.76, 1]}
+        style={StyleSheet.absoluteFill}
       />
       <LinearGradient
-        colors={particlesOverlay}
-        locations={particlesOverlayLocations}
+        colors={['transparent','rgba(120,80,10,0.22)']}
+        locations={[0.45, 1]}
         style={StyleSheet.absoluteFill}
       />
     </>
@@ -820,7 +819,7 @@ export default function HomeScreen() {
 // ═══════════════════════════════════════════════
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: particlesBg },
+  root: { flex: 1, backgroundColor: '#020202' },
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 20 },
   centerGate: { flex: 1, alignItems: 'center', justifyContent: 'center' },

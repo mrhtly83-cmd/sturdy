@@ -1,4 +1,5 @@
 // app/child-profile/[id].tsx
+// v2 — Twilight × Obsidian Gold. Theme only.
 // "Your Child" profile screen — Master Blueprint's explicit conversion
 // trigger ("parents pay when they see Sturdy knows their child").
 //
@@ -116,15 +117,8 @@ export default function ChildProfileScreen() {
     <View style={s.root}>
       <StatusBar style="light" />
       <LinearGradient
-        colors={[
-          C.gradientTop,
-          C.gradientMid1,
-          C.gradientMid2,
-          C.gradientMid3,
-          C.gradientMid4,
-          C.gradientBottom,
-        ]}
-        locations={[0, 0.14, 0.28, 0.42, 0.58, 1]}
+        colors={['#020202','#060604','#0a0906','#0d0b08','#0c0a06','#050402']}
+        locations={[0, 0.16, 0.40, 0.58, 0.76, 1]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -258,7 +252,7 @@ export default function ChildProfileScreen() {
 // ═══════════════════════════════════════════════
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.background },
+  root: { flex: 1, backgroundColor: '#020202' },
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 32, gap: 22 },
   centerGate: { flex: 1, alignItems: 'center', justifyContent: 'center' },
