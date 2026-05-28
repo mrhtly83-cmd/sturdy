@@ -75,7 +75,8 @@ const Background = () => {
         resizeMode="cover"
       />
       <LinearGradient
-        colors={['rgba(13,11,8,0.4)', 'rgba(13,11,8,0.6)', 'rgba(13,11,8,0.85)', C.background]}{/* TODO: update rgba stops to new base rgb(14,12,8) */}
+        // TODO: update rgba stops to new base rgb(14,12,8)
+        colors={['rgba(13,11,8,0.4)', 'rgba(13,11,8,0.6)', 'rgba(13,11,8,0.85)', C.background]}
         locations={[0, 0.4, 0.7, 1]}
         style={StyleSheet.absoluteFill}
       />
