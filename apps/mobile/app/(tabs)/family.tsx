@@ -18,6 +18,8 @@ import * as Haptics from 'expo-haptics';
 import { useChildProfile } from '../../src/context/ChildProfileContext';
 import { loadChildInsights, type ChildInsights } from '../../src/lib/loadChildInsights';
 import { colors as C, fonts as F, TAB_BAR_HEIGHT } from '../../src/theme';
+import { useSubscription } from '../../src/hooks/useSubscription';
+import { PaywallSheet } from '../../src/components/ui/PaywallSheet';
 
 const CHILD_GRADIENTS: Array<[string, string]> = [
   [C.iconTalkStart, C.iconTalkEnd],
@@ -30,6 +32,8 @@ export default function FamilyScreen() {
   const { children } = useChildProfile() as any;
   const kidList = Array.isArray(children) ? children : [];
   const [childInsights, setChildInsights] = useState<Record<string, ChildInsights>>({});
+  const { isPremium } = useSubscription();
+  const [showPaywall, setShowPaywall] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -78,7 +82,7 @@ export default function FamilyScreen() {
                 key={kid.id}
                 onPress={() => {
                   Haptics.selectionAsync();
-                  router.push(`/child/${kid.id}` as any);
+                  router.push(`/child-profile/${kid.id}` as any);
                 }}
                 style={({ pressed }) => [s.card, pressed && { opacity: 0.85 }]}
                 accessibilityRole="button"
@@ -128,6 +132,10 @@ export default function FamilyScreen() {
           <Pressable
             onPress={() => {
               Haptics.selectionAsync();
+              if (!isPremium && kidList.length >= 1) {
+                setShowPaywall(true);
+                return;
+              }
               router.push('/child/new');
             }}
             style={({ pressed }) => [pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] }]}
@@ -143,6 +151,12 @@ export default function FamilyScreen() {
           </Pressable>
         </View>
       </SafeAreaView>
+
+      <PaywallSheet
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        feature="Add more children"
+      />
     </View>
   );
 }
