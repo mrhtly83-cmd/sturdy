@@ -46,8 +46,8 @@ export function PaywallSheet({ visible, onClose, feature, body }: Props) {
           <Text style={s.title}>{feature} is part of Sturdy+</Text>
           {body ? <Text style={s.body}>{body}</Text> : null}
           <Text style={s.body}>
-            Sturdy+ unlocks tone, voice playback, weekly insights, and the full
-            child profile. Try it free, cancel any time.
+            Sturdy+ unlocks the full child profile, session history, saved scripts,
+            tone selector, and unlimited scripts. Try it free, cancel any time.
           </Text>
           <Pressable
             onPress={handlePurchase}
