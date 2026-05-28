@@ -47,7 +47,7 @@ import { getTone as loadTone, setTone as saveTone, type Tone, TONE_DEFAULT } fro
 // ═══════════════════════════════════════════════
 
 const ASK_PLACEHOLDERS = [
-  'Ask Sturdy anything…',
+  "What's on your mind?",
   'Why does he completely shut down when I try to talk to him?',
   'Am I making things worse by giving in sometimes?',
   'How do I stop losing my temper before I even realise it?',
@@ -408,6 +408,7 @@ export default function HomeScreen() {
 
   // ─── Helpers ───
   const displayName = firstName ?? 'there';
+  const activeChildName = kidList.find((k: any) => k.id === activeChildId)?.name ?? null;
   const canSend = question.trim().length > 0 && !sending;
   const sosIsCrisis = detectCrisis(sosInputText);
   const canSosSend = sosInputText.trim().length > 0 && !sosSending && !sosIsCrisis.isCrisis;
@@ -616,9 +617,15 @@ export default function HomeScreen() {
 
               <View style={s.zoneLabelRow}>
                 <Text style={s.zoneEmoji}>💬</Text>
-                <Text style={s.zoneLabel}>Ask Sturdy</Text>
+                <Text style={s.zoneLabel}>
+                  {activeChildName ? `Ask about ${activeChildName}` : 'Ask Sturdy'}
+                </Text>
               </View>
-              <Text style={s.questionIntro}>The quiet questions matter too.</Text>
+              <Text style={s.questionIntro}>
+                {activeChildName
+                  ? `What's on your mind about ${activeChildName}?`
+                  : 'The quiet questions matter too.'}
+              </Text>
 
               <Animated.View style={[s.thinkingCard, questionFocused && s.thinkingCardFocused]}>
                 {!question && (
@@ -657,6 +664,39 @@ export default function HomeScreen() {
                 </View>
               </Animated.View>
               {error ? <Text style={s.errorText}>{error}</Text> : null}
+
+              {/* ─── Directed mode chips — calm-state entry points ─── */}
+              <View style={s.modeChipRow}>
+                {(
+                  [
+                    { mode: 'reconnect',    label: 'Reconnect',   emoji: '🔁' },
+                    { mode: 'understand',   label: 'Understand',  emoji: '🔍' },
+                    { mode: 'conversation', label: 'Conversation', emoji: '💬' },
+                  ] as const
+                ).map(({ mode, label, emoji }) => {
+                  const targetId = activeChildId ?? kidList[0]?.id;
+                  return (
+                    <Pressable
+                      key={mode}
+                      onPress={() => {
+                        if (!targetId) { router.push('/child/new'); return; }
+                        Haptics.selectionAsync();
+                        router.push({
+                          pathname: `/child/${targetId}` as any,
+                          params: { mode },
+                        });
+                      }}
+                      style={({ pressed }) => [
+                        s.modeChip,
+                        pressed && { opacity: 0.75, transform: [{ scale: 0.97 }] },
+                      ]}
+                    >
+                      <Text style={s.modeChipEmoji}>{emoji}</Text>
+                      <Text style={s.modeChipLabel}>{label}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
 
               {/* ─── Divider between zones ─── */}
               <View style={s.zoneDivider} />
@@ -920,6 +960,36 @@ const s = StyleSheet.create({
     marginTop: -8,
     marginBottom: 12,
     paddingHorizontal: 4,
+  },
+
+  // ─── Directed mode chips ───
+  modeChipRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  modeChip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,248,231,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,248,231,0.08)',
+  },
+  modeChipEmoji: {
+    fontSize: 13,
+  },
+  modeChipLabel: {
+    fontFamily: F.bodyMedium,
+    fontSize: 12,
+    color: 'rgba(255,248,230,0.55)',
+    letterSpacing: 0.2,
   },
 
   // ─── Divider ───
