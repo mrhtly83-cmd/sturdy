@@ -20,6 +20,11 @@ This sentence is the product. Every feature, screen, prompt, and design
 decision is in service of building that bridge — in the moment, and over 
 years. When a feature doesn't serve the bridge, it doesn't ship.
 
+Sturdy began as an emergency SOS tool and is becoming a daily thinking 
+partner. The SOS remains the safety net, but the deeper promise is a better 
+parent, one moment at a time: Sturdy gives you the words — use them exactly, 
+or make them yours.
+
 ## 1. Neurotype invisibility
 
 Sturdy detects neurotype (ADHD, Autism, Anxiety, Sensory, PDA, 2e) silently
@@ -159,6 +164,14 @@ commitment disclosed in the privacy policy.
 - `safety_events` or any other table uses `SET NULL` instead of `CASCADE`
 
 ---
+
+## The standard
+
+If a stressed parent opens Sturdy in a hard moment, the product should feel:
+**Fast. Calm. Clear. Human. Useful within seconds.**
+
+If a returning parent opens Sturdy on a calm evening, the product should feel:
+**Warm. Knowing. Personal. Worth keeping.**
 
 ## How to use this file
 

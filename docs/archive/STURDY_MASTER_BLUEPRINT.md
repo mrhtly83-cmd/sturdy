@@ -1,3 +1,9 @@
+> **ARCHIVED 2026-05-30.** Historical product vision. No longer maintained and
+> not a current source of truth. Durable vision and the experiential standard
+> were harvested into docs/PRODUCT_PRINCIPLES.md. Current mechanism lives in the
+> code (file headers + src/theme/colors.ts) and is indexed by CLAUDE.md. Kept
+> for historical reference only.
+
 # Sturdy Master Blueprint
 
 **Version:** v6 (V1 Launch Edition)
