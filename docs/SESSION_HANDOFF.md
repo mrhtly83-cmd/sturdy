@@ -76,3 +76,156 @@ Neither undermines the voice; both are addressable in the prompt and now have me
 - `docs/SCRIPT QUALITY STANDARDS.md` — the SOS voice bar the eval grades against
 - `docs/SESSION_END_CHECKLIST.md` — run before closing any session
 - `CLAUDE.md` — repo architecture guide (corrected this session)
+
+---
+
+# DOCUMENTATION MODEL (designed 2026-05-30, migration NOT yet executed)
+
+This is a complete, agreed model for how Sturdy's documentation works going forward.
+It was designed but not yet applied. The migration steps below are the next major
+body of work. Execute it with fresh, focused attention — it touches the documents
+nearest the heart of the product.
+
+## The problem this solves
+
+Docs went stale because truth migrated into code (especially file-header comments)
+while documents drifted. Thai's changes cluster heavily in **visual design / theme**;
+the **AI prompt / voice layer is deliberately stable and rarely touched**. The model
+must therefore be rigorous where change is rare and consequential, and light where
+change is frequent and exploratory.
+
+## Governing principle
+
+Each fact has exactly ONE authoritative home, chosen by the nature of the fact:
+- **Mechanism** lives in code (file headers + the tokens file).
+- **Intent, constraint, history, scope** live in documents.
+- Nothing is described authoritatively in two places. When a document would compete
+  with code, the document yields and instead POINTS to the code.
+
+## The governance core (highest protection — the two documents everything descends from)
+
+- `docs/PRODUCT_PRINCIPLES.md` — the locked principles (constraints the code obeys).
+- `docs/SCRIPT QUALITY STANDARDS.md` — **THE SOURCE OF THE PRODUCT.** Thai has stated
+  this document is the distillation of his personal thinking about how a parent should
+  speak to a child, and it is what makes the app. It is ELEVATED to the governance core,
+  not the contract tier. It is locked: it changes only through a deliberate, logged
+  OPERATIONS.md decision, with the same gravity as amending a principle. The SOS eval
+  harness exists specifically to defend this document against silent erosion, and must
+  be run before any prompt-layer change that could affect voice.
+
+## The four tiers
+
+1. **Governance** (authoritative, actively maintained, never duplicated in code):
+   PRODUCT_PRINCIPLES.md, SCRIPT QUALITY STANDARDS.md (elevated — see above),
+   OPERATIONS.md, V1_FREEZE.md, SESSION_END_CHECKLIST.md.
+2. **Contract** (authoritative, changes rarely): the 4 legal docs, QUESTION_MODE_QUALITY_STANDARDS.md.
+3. **Navigation** (points, does not describe): CLAUDE.md, reconceived as a map (see below).
+4. **Archive** (`docs/archive/` — preserved, not maintained, understood as historical):
+   completed smoke test, strategy notes, harvested Master Blueprint.
+
+## The two zones (asymmetric rigor)
+
+- **Stable governed core (AI / backend):** prompt builders, safety filter, validators,
+  Edge Function, quality standards. Full five-field headers + rigorous decision logging.
+  Changed only deliberately. This is the moat.
+- **Visual / theme layer:** frequent, exploratory iteration. Authoritative truth = the
+  code, especially `src/theme/colors.ts` (the tokens file). Documents describe only the
+  ENDURING INTENT (e.g. the purpose-coding rule: urgent/tactile tools = coral/amber;
+  insight/growth = cooler gold), never the current pixels. Lighter header (purpose +
+  intent reference only). Routine visual iteration is NOT logged; only a SYSTEM-level
+  design decision (a new purpose-coding rule, a palette philosophy shift) earns an
+  OPERATIONS.md entry. Rule of thumb: log at the level of principle, never of pixels.
+
+## The five-field header format (for stable-core files owning meaningful mechanism)
+
+A file earns a full header if CLAUDE.md's truth map would ever point to it. Trivial
+helpers need only a purpose line.
+
+```
+/**
+ * <FILE PURPOSE — one sentence: what this file is and does.>
+ *
+ * OWNS: <What this file is the authoritative source of truth for. This is what
+ *        CLAUDE.md's navigation tier points to.>
+ *
+ * KEY BEHAVIOUR: <Non-obvious mechanics — sequence, gotchas, why something is done
+ *                 a particular way. Omit anything obvious from reading the code.>
+ *
+ * DEPENDS ON / DRIFTS WITH: <Cross-file couplings NOT enforced by the compiler that
+ *                            break silently if one side changes. e.g. validateResponse.ts
+ *                            <-> api.ts guards.>
+ *
+ * CONSTRAINTS: <Any Product Principle, legal rule, or safety rule this file must honour.
+ *               Reference the governing doc by name.>
+ */
+```
+
+## The divergence-logging rule (addresses the deepest staleness cause)
+
+Thai sometimes conceives something different/unique mid-build and implements it,
+which orphans the documented plan. The fix: a divergence from a documented plan is a
+DECISION. At the moment of deciding (not at feature-end), log one line in OPERATIONS.md
+(context → decision → reasoning) and correct whatever document asserted the old plan.
+Trigger is the moment of INVENTION, not of finishing — that is where the energy is.
+Applied ASYMMETRICALLY: always in the stable core; in the visual layer only when the
+divergence changes the SYSTEM, never for routine iteration. Note: these divergences are
+often Thai's BEST product decisions — the log becomes a record of product judgment, not
+mere hygiene.
+
+## CLAUDE.md navigation structure (five sections — points, never describes)
+
+1. **Orientation** — what Sturdy is + top-level repo layout. (May describe; stable.)
+2. **Truth map** — a table: each domain → its single authoritative home (a file header,
+   the tokens file, or a governance doc). ENTRIES ARE POINTERS, NEVER SUMMARIES. This is
+   the heart of the navigation tier and the structural cure for drift. Carry a note to
+   its maintainer: an entry names a domain and its location, nothing more.
+3. **Two-zone section** — states which parts are stable-core (full headers + logging)
+   vs visual layer (code-as-truth + system-only logging).
+4. **Constraints index** — the locked principles + non-negotiables, each pointing to its
+   governing doc and where in code it is honoured.
+5. **Operational guidance** — common commands, branch/commit conventions, pointer to
+   SESSION_END_CHECKLIST.
+
+## SESSION_END_CHECKLIST amendment (the model's enforcement)
+
+Add three closing checks:
+- File headers were updated alongside code changes.
+- Any divergence from a documented plan was logged AND the stale document corrected.
+- No document was made to duplicate mechanism that belongs in a header.
+- (Plus the two-zone rule: visual iteration needs no log; system-level design shifts do.)
+- (Consider: a line to refresh SESSION_HANDOFF.md before closing.)
+
+## THE MIGRATION — seven steps, execute in order (harvest before any deletion)
+
+1. **Harvest into PRODUCT_PRINCIPLES.md, then archive the Blueprint.** The durable vision
+   is ALREADY in PRODUCT_PRINCIPLES.md ("the bridge from chaos to connection"). Only TWO
+   fragments from STURDY_MASTER_BLUEPRINT.md still need harvesting: (a) the
+   emergency-tool → daily-thinking-partner shift (one sentence into "What Sturdy is"),
+   and (b) the dual standard at the Blueprint's close (hard-moment feel + calm-evening
+   feel). Everything else in the Blueprint is either already held better in the principles
+   or is mechanical narration the code now owns (navigation, modes, AI config, design
+   values, schema) — do NOT harvest those. Then move the Blueprint to docs/archive/.
+2. **Reconceive CLAUDE.md** into the five-section navigation structure above. Remove the
+   mechanical narration the code now owns; build the truth map and constraints index.
+3. **Hierarchy for planning docs:** make STURDY_V1_LAUNCH_PLAN_v2.md authoritative for
+   launch scope; reduce ROADMAP.md to post-launch (V2+) horizons only so it stops
+   competing with the launch plan.
+4. **Date-stamp FEATURE_INVENTORY.md** clearly as a point-in-time snapshot, not a living
+   reference.
+5. **Create docs/archive/** and move into it: SMOKE_TEST_account_lifecycle.md (feature
+   shipped), STURDY_STRATEGY_notes.md (captured session — but FIRST confirm its core
+   conclusions about voice-as-moat and stay-solo are preserved in a maintained location),
+   and the harvested Master Blueprint.
+6. **Amend SESSION_END_CHECKLIST.md** with the three closing checks above.
+7. **Apply the five-field header** to load-bearing stable-core files (Edge Function,
+   prompt builders, validators, safety filter, subscription hook, context providers).
+   Largest mechanical task; gives the truth map its targets. Example header for the Edge
+   Function was drafted in the design session — reconstruct from the format above.
+
+## Caution carried forward
+
+The model's principal risk: headers and the divergence log depend on being maintained
+under time pressure, the same discipline that let docs drift before. The model is more
+robust because it removes the COMPETING system (docs no longer describe mechanism), but
+it is not self-enforcing without the checklist amendment. The checklist change (step 6)
+is therefore not optional housekeeping — it is what holds the model together.
