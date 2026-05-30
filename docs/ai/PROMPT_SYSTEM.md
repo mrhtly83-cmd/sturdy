@@ -1,5 +1,18 @@
 # Sturdy AI Prompt System
 
+> **Maintenance note (2026-05-30).** This document narrates the SOS prompt logic
+> for human readers, but the authoritative source of that logic is the code in
+> `supabase/functions/_shared/buildPrompt.ts`. Where this document and the code
+> differ, the code governs. Two enforcement nuances added on 2026-05-30 are not
+> yet fully reflected below and are recorded in `docs/OPERATIONS.md` (entry of
+> that date): the banned-phrase prohibition is now bound specifically to the
+> Connect field, and the `avoid` array is explicitly mandatory at every intensity,
+> including intensity 5. This document is pending reconciliation in the
+> documentation migration (see `docs/SESSION_HANDOFF.md`), at which point its
+> enduring content — particularly the worked examples of good output — will be
+> harvested before any thinning, and its mechanical narration will yield to the
+> file header on `buildPrompt.ts`.
+
 ## Purpose
 
 This document defines how Sturdy generates parenting scripts — what the AI knows, how it thinks, and what good output looks like.
