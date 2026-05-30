@@ -18,6 +18,41 @@ const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 const ANTHROPIC_MODEL   = "claude-sonnet-4-6";
 const SUPABASE_URL      = Deno.env.get("SUPABASE_URL");
 const SUPABASE_KEY      = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const SENTRY_DSN = Deno.env.get("SENTRY_DSN");
+
+// Fire-and-forget error reporting to Sentry via direct POST (no SDK).
+// Sends ONLY the error message + safe tags — never user content / parent
+// messages. Silent no-op if DSN is missing or reporting itself fails, so
+// monitoring can never break the function for a parent.
+async function reportError(err: unknown, tags: Record<string, string> = {}) {
+  if (!SENTRY_DSN) return;
+  try {
+    // DSN form: https://<publicKey>@<host>/<projectId>
+    const m = SENTRY_DSN.match(/^https:\/\/([^@]+)@([^/]+)\/(.+)$/);
+    if (!m) return;
+    const [, publicKey, host, projectId] = m;
+    const endpoint = `https://${host}/api/${projectId}/store/`;
+    const message = err instanceof Error ? err.message : String(err);
+
+    await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Sentry-Auth": `Sentry sentry_version=7, sentry_key=${publicKey}`,
+      },
+      body: JSON.stringify({
+        platform: "javascript",
+        level: "error",
+        message,
+        tags: { service: "chat-parenting-assistant", ...tags },
+        timestamp: Date.now() / 1000,
+      }),
+    });
+  } catch {
+    // Never let error reporting break the request path.
+    console.warn("[STURDY_SENTRY] Failed to report error");
+  }
+}
 
 function cors() {
   return {
@@ -375,8 +410,9 @@ serve(async (req) => {
           });
 
           return jsonRes({ response_type: "question", response: result.response, thought_id: thoughtId }, 200);
-        } catch (err) {
+       } catch (err) {
           console.error("[STURDY_ERROR]", err);
+          reportError(err, { mode: "question", model: ANTHROPIC_MODEL });
           return jsonRes({ error: "Couldn't generate a response right now." }, 500);
         }
       }
@@ -425,8 +461,9 @@ serve(async (req) => {
     });
 
     return jsonRes({ response_type: "normal", ...result as object }, 200);
-  } catch (err) {
+ } catch (err) {
     console.error("[STURDY_ERROR]", err);
+    reportError(err, { mode: "sos", model: ANTHROPIC_MODEL });
     return jsonRes({ error: "Couldn't generate a script right now." }, 500);
   }
 });
