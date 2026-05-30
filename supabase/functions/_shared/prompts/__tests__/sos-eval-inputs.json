@@ -1,0 +1,112 @@
+[
+  {
+    "id": "cookie_meltdown_age3",
+    "scenario": "Cookie meltdown",
+    "input": { "childName": "Mia", "childAge": 3, "message": "she's screaming on the kitchen floor because i said no more cookies before dinner", "intensity": 3 },
+    "checks": {
+      "regulate_max_words": 8,
+      "guide_single_step": true,
+      "no_okay_suffix": true,
+      "note": "Doc: Regulate 4 words max-ish at this age, Guide one step, no 'okay?' suffix."
+    }
+  },
+  {
+    "id": "leaving_park_age4_mild",
+    "scenario": "Leaving the park (intensity 1)",
+    "input": { "childName": "Sam", "childAge": 4, "message": "we need to leave the park and he wants to stay, starting to whine and drag his feet but not melting down yet", "intensity": 1 },
+    "checks": {
+      "connect_names_feeling_and_limit": true,
+      "specificity_mentions_park": true,
+      "note": "Doc: Connect must name feeling AND hold limit. Intensity 1 allows warmth. Should reference the park specifically."
+    }
+  },
+  {
+    "id": "leaving_park_age4_severe",
+    "scenario": "Leaving the park (intensity 5 — same scenario, contrast test)",
+    "input": { "childName": "Sam", "childAge": 4, "message": "we need to leave the park RIGHT NOW he is on the ground screaming kicking flailing total meltdown people are staring", "intensity": 5 },
+    "checks": {
+      "all_sections_max_words": 6,
+      "connect_names_feeling_and_limit": true,
+      "note": "Doc: Intensity 5 = 4-6 words absolute max per section. Contrast vs mild version must be dramatic."
+    }
+  },
+  {
+    "id": "hitting_sibling_age7",
+    "scenario": "Hitting sibling",
+    "input": { "childName": "Leo", "childAge": 7, "message": "he just hit his little sister hard because she knocked over his lego build, she's crying and he's furious", "intensity": 4 },
+    "checks": {
+      "regulate_names_specific_feeling": true,
+      "guide_short_and_directive": true,
+      "connect_names_feeling_and_limit": true,
+      "note": "Doc: Regulate names the specific feeling (about the lego), Guide short and direct, Connect = feeling + clear limit on hitting."
+    }
+  },
+  {
+    "id": "bedtime_resistance_age5",
+    "scenario": "Bedtime resistance",
+    "input": { "childName": "Ava", "childAge": 5, "message": "every night it's the same fight, she won't get in bed, keeps getting up asking for water then the bathroom then one more story, it's 9pm", "intensity": 2 },
+    "checks": {
+      "guide_real_binary_choice": true,
+      "note": "Doc: Guide offers a real binary choice for age 5."
+    }
+  },
+  {
+    "id": "screen_time_refusal_age10",
+    "scenario": "Screen time refusal",
+    "input": { "childName": "Noah", "childAge": 10, "message": "i told him to turn off the tablet and he ignored me completely, just kept playing like i wasn't even there", "intensity": 2 },
+    "checks": {
+      "respectful_not_babyish": true,
+      "note": "Doc: Language respectful, not babyish, for age 10. No 'good job' / feelings-chart tone."
+    }
+  },
+  {
+    "id": "teen_silent_treatment_age14",
+    "scenario": "Teen silent treatment",
+    "input": { "childName": "Zoe", "childAge": 14, "message": "she's furious i wouldn't let her go to the party and now she won't speak to me, just slammed her door and is giving me total silence", "intensity": 2 },
+    "checks": {
+      "no_therapy_speak": true,
+      "sounds_human_not_corporate": true,
+      "note": "Doc: No therapy speak ('feelings are valid'), no corporate ('constructive conversation'). Must sound like a real parent."
+    }
+  },
+  {
+    "id": "adhd_keyword_variant_age6",
+    "scenario": "ADHD keyword variant (neurotype stealth test)",
+    "input": { "childName": "Finn", "childAge": 6, "message": "he can't sit still at all, so impulsive, he just bolted out of the shop into the car park and won't listen when i call him", "intensity": 4 },
+    "checks": {
+      "guide_includes_movement_option": true,
+      "no_neurotype_label_in_output": true,
+      "note": "Doc: ADHD keywords → Guide should include a movement option. STEALTH: output must never name ADHD/neurotype/clinical terms."
+    }
+  },
+  {
+    "id": "autism_indicator_variant_age8",
+    "scenario": "Autism indicator variant (neurotype stealth test)",
+    "input": { "childName": "Ivy", "childAge": 8, "message": "the plans changed last minute and she covers her ears and shuts down completely, she hates transitions and takes everything so literally", "intensity": 3 },
+    "checks": {
+      "connect_sequential_and_concrete": true,
+      "no_neurotype_label_in_output": true,
+      "note": "Doc: Autism indicators → Connect sequential and concrete. STEALTH: never name autism/neurotype/clinical terms."
+    }
+  },
+  {
+    "id": "short_message_age4",
+    "scenario": "Short 5-word message (length-discipline test)",
+    "input": { "childName": "Kai", "childAge": 4, "message": "he won't put shoes on", "intensity": 2 },
+    "checks": {
+      "focused_not_padded": true,
+      "note": "Doc: Short message gets a focused, concise script — not padded out."
+    }
+  },
+  {
+    "id": "long_message_age7",
+    "scenario": "Long 60-word message (specificity test)",
+    "input": { "childName": "Ruby", "childAge": 7, "message": "so it's homework time again and she completely lost it, she threw her pencil across the room and said she hates school and hates me and that she's stupid and can't do any of it, she was crying really hard and saying the maths is too hard and everyone else gets it and she doesn't, i don't know whether to push or back off", "intensity": 3 },
+    "checks": {
+      "situation_summary_names_actual_trigger": true,
+      "connect_references_specific_situation": true,
+      "not_generic": true,
+      "note": "Doc: Detailed message MUST reflect specifics (homework/maths/self-worth). Generic output for a detailed message is a failure. But script still stays short."
+    }
+  }
+]

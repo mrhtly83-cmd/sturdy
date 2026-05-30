@@ -37,7 +37,7 @@ import { buildQuestionPrompt } from '../question.ts';
 // ─────────────────────────────────────────────
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
-const ANTHROPIC_MODEL   = 'claude-sonnet-4-20250514';   // matches the live Edge Function
+const ANTHROPIC_MODEL   = 'claude-sonnet-4-6';   // matches the live Edge Function
 const HERE              = new URL('.', import.meta.url).pathname;
 const INPUTS_PATH       = `${HERE}eval-inputs.json`;
 const PROMPT_FILE_PATH  = `${HERE}../question.ts`;

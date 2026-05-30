@@ -15,7 +15,7 @@ import { validateQuestionResponse } from "../_shared/validateQuestionResponse.ts
 import { validateInput, extractContent, type RequestBody } from "../_shared/requestHelpers.ts";
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-const ANTHROPIC_MODEL   = "claude-sonnet-4-20250514";
+const ANTHROPIC_MODEL   = "claude-sonnet-4-6";
 const SUPABASE_URL      = Deno.env.get("SUPABASE_URL");
 const SUPABASE_KEY      = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -175,40 +175,62 @@ async function logInteractionEvent(data: {
 async function generateScript(prompt: string) {
   if (!ANTHROPIC_API_KEY) throw new Error("Missing ANTHROPIC_API_KEY.");
 
-  const controller = new AbortController();
+const controller = new AbortController();
   const timeoutId  = setTimeout(() => controller.abort(), 30000);
 
+  // Attempt the call up to twice. A structurally invalid response (bad JSON
+  // or a failed shape check, e.g. a dropped `avoid` field) triggers one retry
+  // before failing to the parent. Network errors and non-OK HTTP responses are
+  // NOT retried here — only malformed-but-returned output, which is the rare
+  // intermittent case observed in eval. A valid response returns immediately.
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type":      "application/json",
-        "x-api-key":         ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model:      ANTHROPIC_MODEL,
-        max_tokens: 1024,
-        system:     "You are Sturdy — a calm parenting guide. You write human-sounding parenting scripts parents can say out loud. Return strict JSON only. No markdown. No explanation. No preamble.",
-        messages:   [{ role: "user", content: prompt }],
-      }),
-    });
+    const MAX_ATTEMPTS = 2;
+    let lastError: Error | null = null;
 
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(`Anthropic error: ${response.status} ${err}`);
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type":      "application/json",
+          "x-api-key":         ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model:      ANTHROPIC_MODEL,
+          max_tokens: 1024,
+          system:     "You are Sturdy — a calm parenting guide. You write human-sounding parenting scripts parents can say out loud. Return strict JSON only. No markdown. No explanation. No preamble.",
+          messages:   [{ role: "user", content: prompt }],
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.text();
+        throw new Error(`Anthropic error: ${response.status} ${err}`);
+      }
+
+      const payload  = await response.json();
+      const jsonText = extractContent(payload);
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(jsonText);
+      } catch {
+        lastError = new Error("Invalid JSON from Claude.");
+        console.warn(`[STURDY_SOS] Malformed JSON on attempt ${attempt}/${MAX_ATTEMPTS}`);
+        continue;
+      }
+
+      if (!validateResponse(parsed)) {
+        lastError = new Error("Invalid response shape.");
+        console.warn(`[STURDY_SOS] Failed shape check on attempt ${attempt}/${MAX_ATTEMPTS}`);
+        continue;
+      }
+
+      return parsed;
     }
 
-    const payload = await response.json();
-    const jsonText = extractContent(payload);
-
-    let parsed: unknown;
-    try { parsed = JSON.parse(jsonText); }
-    catch { throw new Error("Invalid JSON from Claude."); }
-
-    if (!validateResponse(parsed)) throw new Error("Invalid response shape.");
-    return parsed;
+    throw lastError ?? new Error("Invalid response shape.");
   } finally {
     clearTimeout(timeoutId);
   }
