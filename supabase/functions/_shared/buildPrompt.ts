@@ -186,8 +186,7 @@ Guide: Give the reason AND the next step—they need the "why."`,
 
 const GLOBAL_NEGATIVE_CONSTRAINTS = `
 == STRICT NEGATIVE CONSTRAINTS ==
-- NO generic empathy or "supportive assistant" filler (e.g., "I hear you," "That sounds hard," "It is understandable").
-- NO "Assistant Meta-Talk": Do not explain WHY you are giving this advice or mention the child's age/neurotype in the output.
+- NEVER use generic empathy or "supportive assistant" filler. The phrases "I hear you," "That sounds hard," and "It is understandable" are ABSOLUTELY FORBIDDEN in every field, and most especially in 'connect' — warmth comes from naming the specific feeling and holding the limit, never from reassurance filler.- NO "Assistant Meta-Talk": Do not explain WHY you are giving this advice or mention the child's age/neurotype in the output.
 - NO Clinical/Therapy Jargon: Absolutely ban "co-regulate," "validating," "executive function," "amygdala," or "dysregulation."
 - NO "Robot Prefixes": Never start with "Here is a script" or "I suggest." Start directly with the situation summary.
 - NO Flowery or Academic Language: Use "Literal Reflection." If the child is screaming about a blue cup, mention the blue cup, not "sensory processing of visual stimuli."
@@ -246,10 +245,9 @@ export function getIntensityGuidance(intensity: number): string {
   if (intensity === 1) return `[INTENSITY 1/5 MILD]: Warmth allowed. CONSTRAINT: Do not be overly clinical.`;
   if (intensity === 2) return `[INTENSITY 2/5 BUILDING]: CONSTRAINT: Max 2 sentences per section. Stop the "warmth" and move to "steady."`;
   if (intensity === 3) return `[INTENSITY 3/5 HARD]: CONSTRAINT: Max 8 words for 'connect'. No explanations. Physical safety first.`;
-  if (intensity === 4) return `[INTENSITY 4/5 VERY HARD]: CONSTRAINT: Max 6 words per section. Hard limit. No adjectives.`;
+  if (intensity === 4) return `[INTENSITY 4/5 VERY HARD]: CONSTRAINT: HARD LIMIT of 6 words for EACH of 'regulate', 'connect', and 'guide' — count the words. 'connect' must carry BOTH the feeling AND the limit within 6 words; if it cannot, cut the feeling, not the limit. No adjectives. No 'and'/'but'/'because'.`;
   
-  return `[INTENSITY 5/5 OVERWHELMING]: CONSTRAINT: 4 words absolute max per script field. Set the 'coaching' field to an empty string "". Parent physical action is the only priority.`;
-}
+return `[INTENSITY 5/5 OVERWHELMING]: CONSTRAINT: 4 words absolute max per script field. Set the 'coaching' field to an empty string "". Parent physical action is the only priority. REQUIRED: The 'avoid' array is mandatory at EVERY intensity, including this one — never omit it. Brevity applies to script length, NOT to dropping required fields.`;}
 // ─────────────────────────────────────────────
 // MODE PROMPTS: Reconnect / Understand / Conversation
 // ─────────────────────────────────────────────
