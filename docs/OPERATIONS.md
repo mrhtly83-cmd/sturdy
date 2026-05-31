@@ -632,3 +632,35 @@ Reasoning: The findings were not missing rules but rules of insufficient salienc
 Follow-up: None required for this pass; the three findings are resolved on the mechanical bar and the production retry handles residual structural variance. The broader watch-list items remain: extending eval coverage to the Reconnect, Understand, and Conversation modes, and adding error alerting to the Edge Function. Going forward, eval runs should be batched as an end-of-work checkpoint rather than run after each individual prompt change, to manage API cost while preserving the harness's protective value.
 Once this entry is appended and committed, the prompt-refinement pass is complete and fully recorded. A suggested commit message is "Log SOS prompt refinement and verification in OPERATIONS.md."
 This closes a substantial and well-executed piece of work. The two findings you prioritised are resolved, the structural reinforcement you elected to add is verified, and the decision is recorded in the stable-core log with its reasoning and its relationship to the production retry made explicit. The session's prompt work now rests on measured evidence rather than impression, which is precisely what the eval was built to provide.
+
+t to provide.
+
+
+## 2026-05-30 (evening) — Edge Function error monitoring (Sentry) added
+**Context:** The model-string outage earlier today was caught by an eval run, not by monitoring — the Edge Function logs errors via `console.error`/`console.warn`, but nothing watches those logs, so failures sit in the Supabase log stream unobserved. The gap was monitoring, not logging. Out-of-band alerting was the highest-priority launch-adjacent item.
+
+**Decision:** Added Sentry error reporting to `chat-parenting-assistant` via a lightweight direct POST to Sentry's ingestion endpoint rather than the `@sentry/deno` SDK. Rationale: a single function with two known catch sites does not need the SDK's automatic context, and a minimal dependency keeps full control over what is transmitted — which matters for a parenting app where error payloads must not leak user content. Conscious divergence from Sentry's default onboarding (which recommends the SDK).
+- Added a `reportError` helper that reads `SENTRY_DSN`, parses it, and sends ONLY the error message + safe tags (`service`, `mode`, `model`). No `input`, no parent message, no user content. Silent no-op if the DSN is missing or if reporting itself fails, so monitoring can never break the request path for a parent.
+- Wired `reportError` into the two parent-facing catch sites (question-mode, tagged `mode: question`; SOS/script, tagged `mode: sos`). The two `console.warn` sites inside `generateScript` were deliberately NOT instrumented — they are the normal one-retry mechanism; only a both-attempts failure throws to the instrumented outer catch.
+- Created a Sentry project (Deno platform, "alert on high priority issues", email on). Stored `SENTRY_DSN` as a Supabase secret on the live "Sturdy" project (`lwmzfhigommayvmvqzvf`).
+- Type-checked clean (`deno check`) and deployed.
+
+**Reasoning:** This adds no feature and alters no parent-facing behaviour — it adds out-of-band reporting to existing failure paths. Operational hardening permitted under the freeze, and a direct response to the silent-outage lesson.
+
+**Incidental:** Identified three similarly-named Supabase projects. The live one hosting all five deployed functions is "Sturdy" (`lwmzfhigommayvmvqzvf`); "Sturdy-Mobile" and "Mr-Cat25's Project" are not production.
+
+
+## 2026-05-30 (evening, session 2) — Sentry error-path verified end-to-end; key rotated
+**Context:** Resuming to complete the deferred Sentry confirmation. The deployment entry above confirmed the happy path, but error-path delivery was unproven (a successful request emits no Sentry event by design). This session ran the deliberate induced-failure test.
+
+**Pre-test anomaly investigated:** `functions list` showed all five functions redeployed overnight at an identical timestamp (06:10:09 UTC); `chat-parenting-assistant` had jumped 45 → 50. User confirmed no manual action. Initial hypothesis was an automated deploy pipeline; investigated `.github/workflows/test.yml` and found it is a CI TEST runner only (Deno + Jest) — it does NOT deploy. Hypothesis was wrong and is recorded as corrected. Most likely cause is a benign Supabase platform-side re-host (preserves deployed code). Rather than test on that assumption, redeployed the local copy (confirmed via grep to contain `reportError`/`SENTRY_DSN`) so the live function provably matched known source before inducing failure.
+
+**Decision / test executed:** Set `ANTHROPIC_API_KEY` to an invalid value on the live project, redeployed, submitted one SOS request via the app (returned the expected failure state), confirmed the Sentry event, then restored a key and redeployed. Final SOS request returned a real script — production healthy.
+
+**Result — CONFIRMED:** Sentry received the event within seconds. Payload exactly as designed: message `Anthropic error: 401 ... invalid x-api-key`, tags `mode: sos`, `model: claude-sonnet-4-6`, `service: chat-parenting-assistant`. This is the precise diagnostic that would have caught the prior silent outage at the moment it occurred. The monitoring gap is closed and proven, not merely deployed.
+
+**Key rotation:** The real Anthropic key was not present anywhere in the Codespace (consistent with the env-rebuild gap — the eval reads it inline). Rather than hunt shell history, generated a NEW key in the Anthropic Console and set it as the live secret. ACTION OUTSTANDING: revoke the prior key in the Console if not already done, and store the new key in a password manager (not a repo file) so the eval and local tooling have it after any rebuild. The brief invalid-test-key value passed through shell history this session, further motivating rotation.
+
+**Privacy finding — ACTION OUTSTANDING:** The Sentry event auto-captured the client's full IPv6 address (`user: ip:...`). Our `reportError` code does not send this — Sentry inferred it from request headers. For an app handling sensitive family situations, client IP is personal data that should not be logged against every error. Fix: disable IP storage in Sentry project settings (Project → Security & Privacy, "Prevent Storing of IP Addresses"), and/or ensure `reportError` sends no request context. Deferred to next session; non-blocking.
+
+**Git state:** The `index.ts` Sentry change and the doc updates remain UNCOMMITTED by user choice. The live function is therefore ahead of the git repository — a code-drift-from-git condition to close when ready to commit.

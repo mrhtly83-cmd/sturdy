@@ -1,6 +1,6 @@
 # Session Handoff — Sturdy
 
-**Last session date:** 2026-05-30
+**Last session date:** 2026-05-30 (evening, session 2)
 **Purpose:** Paste this into a new chat to resume exactly where the previous session ended.
 **How to use:** Open a new conversation, attach or paste this file, and say "resume from this handoff."
 
@@ -22,57 +22,77 @@ I am acting as your Fractional CPO and Launch/ASO specialist for Sturdy. The ope
 
 ## Where the project stands
 
-Sturdy is in fine-tuning for a V1 Google Play launch (target was June 15, treated as flexible — ship-right over ship-fast). A feature freeze is in effect, documented in `docs/V1_FREEZE.md`. The discovery of the freeze audit was that **the code is generally ahead of the docs**, so most remaining work is correcting docs to match shipped reality, not building features.
+Sturdy is in fine-tuning for a V1 Google Play launch (target was June 15, treated as flexible — ship-right over ship-fast). A feature freeze is in effect, documented in `docs/V1_FREEZE.md`. The freeze-audit finding stands: **the code is generally ahead of the docs**, so most remaining work is correcting docs to match shipped reality, not building features.
 
-The ship gate is defined as: the SOS voice clears a measured bar (eval green), the freeze fix-list is closed, and ~10 real parents have used the app without a trust-breaking bug. The date moves to meet that, not a calendar.
-
----
-
-## What was accomplished in the last session
-
-1. **Built and calibrated an SOS evaluation harness** (`supabase/functions/_shared/prompts/__tests__/sos.eval.ts` + `sos-eval-inputs.json`), modelled on the existing Question-mode eval. Run with: `ANTHROPIC_API_KEY=<key> npm run eval:sos`. It is a manual, human-graded tool, not a CI gate. Strict tier (mechanical pass/fail): banned phrases, neurotype/clinical leak, high-intensity length cap, structural validity. Advisory tier (human judgment): limit-clause presence, specific-emotion naming, sounds-like-a-real-parent, one-step Guide.
-
-2. **Discovered and fixed a retired model string.** `claude-sonnet-4-20250514` was deprecated and 404ing — meaning production SOS and Question paths were silently failing for parents. Corrected to `claude-sonnet-4-6` in the Edge Function and both eval harnesses, verified against a live API call.
-
-3. **Added a one-retry resilience measure** to `generateScript` in `chat-parenting-assistant/index.ts`: structurally invalid model output (e.g. a dropped `avoid` field) now retries once before failing to the parent.
-
-4. **Committed all of the above** plus an OPERATIONS.md entry (dated 2026-05-30), and a follow-up commit correcting CLAUDE.md (model ID + retry note).
+The ship gate: the SOS voice clears a measured bar (eval green), the freeze fix-list is closed, and ~10 real parents have used the app without a trust-breaking bug. The date moves to meet that, not a calendar.
 
 ---
 
-## What the eval established about the SOS voice
+## ▶ START HERE NEXT SESSION — two outstanding follow-ups
 
-Across four runs, the voice held to the Script Quality Standards: intensity contrast strong, situation specificity strong, neurotype stealth intact throughout. The eval surfaced two genuine, narrow findings on the hero path — both deferred to a prompt-refinement pass:
+The Sentry error-monitoring work is COMPLETE and verified end-to-end (see below). Two non-blocking follow-ups remain from it:
 
-- **Occasional banned-phrase intrusion** — "I hear you" appeared in one Connect script.
-- **Recurring high-intensity length drift** — the Connect line runs 1–2 words over the cap at intensity 4–5.
+1. **Sentry IP-capture privacy fix.** The verification event auto-captured the client's full IPv6 address (`user: ip:...`). Our `reportError` code does not send this — Sentry inferred it from request headers. For an app handling sensitive family situations, client IP is personal data that should not be logged against every error. Fix: disable IP storage in the Sentry project settings (Project → Security & Privacy, "Prevent Storing of IP Addresses"), and/or confirm `reportError` sends no request context. Quick, worth doing for the product's values.
 
-Neither undermines the voice; both are addressable in the prompt and now have measured evidence behind them.
+2. **Key rotation cleanup.** A new Anthropic key was generated and set live this session. Confirm the OLD key is revoked in the Anthropic Console, and store the NEW key in a password manager (NOT a repo file). The key currently lives only in the Supabase secret — it is nowhere in the Codespace, so the eval will have no key after any rebuild until you re-supply it.
 
----
-
-## Next steps (the watch list — in recommended order)
-
-1. **Prompt-refinement pass on `buildPrompt.ts` (SOS):** tighten the Connect line at higher intensities and reinforce the banned-phrase prohibition (especially "I hear you" and relational-reassurance phrasing). Verify by re-running the SOS eval and confirming the banned phrase is gone and length holds. This is the natural next step and the eval is already in place to grade it.
-2. **Extend eval coverage** to the Reconnect, Understand, and Conversation modes, which remain unmeasured. Lower priority than the SOS prompt pass; arguably V2-quality work.
-3. **Add error alerting to the Edge Function** so a future model deprecation or outage is caught by monitoring rather than by chance. Direct lesson from this session's silent outage.
-4. **Composed-vs-spoken Connect tendency** (watch-list item from earlier): some Connect lines read elegantly but are a mouthful to say mid-moment. Same prompt pass as item 1 likely resolves it.
+After those: resume the **documentation migration (steps 2–7)** — see watch list.
 
 ---
 
-## Open environment notes
+## What was accomplished (sessions 1 + 2, 2026-05-30)
 
-- Working in a GitHub Codespace; `.env` does not persist across Codespace rebuilds and is git-ignored by design. The eval reads the key inline from the command, so it does not need `.env`.
-- The production Edge Function gets its key from Supabase secrets (`supabase secrets set ANTHROPIC_API_KEY=...`), a separate path from the eval. If billing or the live function is touched next, the `.env` rebuild (Supabase URL + anon key + Anthropic key) is still outstanding from this session and was deliberately deferred.
-- Eval output reports land in `eval-outputs/` and are git-ignored — they are run artefacts, not source.
+**Error monitoring (Sentry) — built, deployed, VERIFIED:**
+- Added `reportError` to `chat-parenting-assistant` (lightweight direct POST, not the SDK). Sends only error message + safe tags (`service`, `mode`, `model`) — never user content. Wired into the two parent-facing catch sites (question + SOS); the `generateScript` retry `console.warn` sites left uninstrumented (normal retry, not an incident).
+- Created Sentry project (Deno, alert-on-high-priority, email on). Stored `SENTRY_DSN` as a Supabase secret on the live project.
+- **Verified end-to-end via deliberate induced-failure test:** set an invalid Anthropic key, confirmed the app failed gracefully AND a correctly-tagged event reached Sentry within seconds (`mode: sos`, `model: claude-sonnet-4-6`), then restored a working key. Production confirmed healthy with a real script afterward. The silent-outage gap is closed and proven.
+
+**Confirmed earlier (session 1):** production happy path works — live SOS request returns a real, well-formed script; the corrected model string and voice hold in production against Script Quality Standards.
+
+**Anomaly investigated & resolved:** an overnight redeploy of all five functions (identical timestamp) was NOT a deploy pipeline — `.github/workflows/test.yml` is CI tests only (Deno + Jest), no deploy. Likely a benign Supabase platform re-host. Redeployed local source before testing to remove the uncertainty.
+
+**Live Supabase project (unambiguous):** "Sturdy" = `lwmzfhigommayvmvqzvf` (hosts all five deployed functions). "Sturdy-Mobile" and "Mr-Cat25's Project" are NOT production.
 
 ---
 
-## Key reference files in the repo
+## ⚠ Git state — uncommitted by choice
 
-- `docs/V1_FREEZE.md` — the active feature freeze and fix-list
-- `docs/OPERATIONS.md` — decision log (newest entry: 2026-05-30, the model-string fix + eval)
+The `chat-parenting-assistant/index.ts` Sentry change and the OPERATIONS.md + SESSION_HANDOFF.md updates are UNCOMMITTED. The live function is ahead of git (code-drift-from-git). Commit when ready. Suggested message:
+`Add + verify Sentry error monitoring on Edge Function; log + handoff`
+
+---
+
+## Watch list (after the two follow-ups)
+
+1. **Documentation migration steps 2–7** (the agreed DOCUMENTATION MODEL): reconceive CLAUDE.md into the five-section navigation tier; planning-doc hierarchy; date-stamp Feature Inventory; archive smoke test + strategy notes; amend SESSION_END_CHECKLIST; apply five-field headers to stable-core files. Step 1 (Blueprint harvest + archive) done.
+2. **Extend eval coverage** to Reconnect, Understand, Conversation modes (currently unmeasured). Lower priority; arguably V2-quality.
+
+The SOS prompt-refinement pass is COMPLETE (session 1) and the voice held in production.
+
+---
+
+## Fresh-Codespace rebuild checklist
+
+A rebuild wipes non-persistent state. In order:
+1. `npx supabase login` (token does not persist).
+2. Recreate `apps/mobile/.env` (both vars required or the app throws on startup):
+   - `EXPO_PUBLIC_SUPABASE_URL=https://lwmzfhigommayvmvqzvf.supabase.co`
+   - `EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon public key from dashboard → Project Settings → API>`
+3. `cd apps/mobile && npm install`, then `npx expo start -c --tunnel` (bare `expo` fails — must use `npx`).
+4. The Anthropic key for the eval is NOT in the Codespace — re-supply it inline from your password manager when running `npm run eval:sos`.
+
+Notes:
+- Edge Function secrets are server-side, separate from the app `.env`. Live function reads `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and now `SENTRY_DSN` from Supabase secrets.
+- Eval reads its key inline from the command; eval reports land in `eval-outputs/` (git-ignored).
+- Supabase CLI upgrade notice (2.78.1 → 2.102.0) deliberately ignored mid-task; future housekeeping only.
+
+---
+
+## Key reference files
+
+- `docs/V1_FREEZE.md` — active feature freeze and fix-list
+- `docs/OPERATIONS.md` — decision log (newest: 2026-05-30 evening, Sentry verified + key rotation)
 - `docs/PRODUCT_PRINCIPLES.md` — the 8 locked principles
 - `docs/SCRIPT QUALITY STANDARDS.md` — the SOS voice bar the eval grades against
 - `docs/SESSION_END_CHECKLIST.md` — run before closing any session
-- `CLAUDE.md` — repo architecture guide (corrected this session)
+- `CLAUDE.md` — repo architecture guide
