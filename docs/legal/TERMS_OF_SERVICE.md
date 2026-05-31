@@ -27,7 +27,7 @@ You must be at least 18 years old to create an account and use the Service. By u
 
 You are responsible for maintaining the security of your account credentials. You agree to provide accurate information when creating your account and to update it if it changes. You are responsible for all activity that occurs under your account.
 
-You may use the Service as a guest without creating an account. Guest usage is stored locally on your device and cannot be recovered if you uninstall the app. You can create an account at any time to sync and back up your data.
+Creating an account is free. Your account is required to use the Service, and it lets your data sync and back up across sessions.
 
 ---
 
@@ -46,8 +46,6 @@ Sturdy+ removes the monthly limit on all modes and unlocks additional features s
 Sturdy+ subscriptions are billed through the Google Play Store or Apple App Store (each a "Store"). By subscribing, you agree to the payment terms presented at the time of purchase.
 
 Subscriptions automatically renew at the end of each billing period unless you cancel at least 24 hours before the renewal date. You can manage or cancel your subscription through your Store account settings.
-
-Free trial periods, if offered, begin when you subscribe. If you do not cancel before the trial ends, you will be charged at the standard rate for your selected plan.
 
 Refunds are handled by the applicable Store in accordance with their refund policies. We do not process refunds directly.
 

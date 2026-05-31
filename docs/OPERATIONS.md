@@ -717,3 +717,27 @@ t to provide.
 Applied locked copy + layout fix to apps/mobile/app/welcome/index.tsx (full-file replace). Renamed asset welcome-wc-think.png.png → welcome-wc-think.png (git mv) to match corrected code. Verified on-device: all three beats render correctly, amber emphasis lands as intended, Beat 2 image loads, Beat 1 overflow resolved, composition consistent across slides. Welcome screen audit + build COMPLETE.
 Minor note (not actioned): headlines break to 3–4 visual lines from controlled \n + wrapping; fine on test device, eyeball on smaller screens later.
 Still open from Welcome audit (deferred, not blocking): 4× gradient-token TODOs (hardcoded rgba(13,11,8) → Deep Warm base) — part of theme migration, address separately.
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LEGAL — Terms of Service reconciliation (kept as a standalone legal record)
+# ═══════════════════════════════════════════════════════════════════════════
+
+## 2026-05-31 — Terms of Service reconciled to shipped reality (Pass 1 of 2)
+**Context:** During the UI/UX launch audit, the Terms of Service was found to assert capabilities the app does not have — a legal-honesty issue and a Google Play policy risk (reviewers read linked policies), and a direct conflict with the trust mandate (Principle 7). The Terms exist in TWO independently-hardcoded places that drift separately: the source-of-truth `docs/legal/TERMS_OF_SERVICE.md` and the in-app screen `apps/mobile/app/legal/terms-of-service.tsx` (the screen does NOT import the markdown — it has its own inline copy). Both had to be fixed. The web/privacy docs did not carry these claims.
+
+Three contradictions were identified:
+1. **Guest-without-account claim** — both files promised guest use with local storage. The app has guest *scaffolding* but no guest *entry point* (no signInAnonymously / "continue as guest"); signup-first is the locked V1 model. The claim was false.
+2. **Free-trial language** — both files described "free trials begin when you subscribe… you will be charged after the trial." Onboarding is locked as no-trial (the free tier IS the product). This trial-then-charge language is exactly the pattern that erodes trust and draws Play scrutiny; it describes a feature that does not exist.
+3. **Free-plan / quota description** — both files state "unlimited SOS scripts; other modes limited to 50," which describes Principle 6's INTENDED model. Shipped code (migration 009) uses dual buckets where the script quota counts SOS and questions are separate. The Terms promise ("unlimited SOS") may not match what the code honors.
+
+**Decision (Pass 1 — applied now, no dependencies):** Removed the guest claim and the free-trial language from BOTH files (full-file replacements).
+- Accounts section now states plainly: creating an account is free and required, and the account syncs/backs up data. No guest language.
+- Billing section now describes auto-renew + store-handled refunds only. No trial language.
+- Rationale: both are unambiguous honesty fixes for features that do not exist; no pending decision blocks them. A Terms doc that accurately describes a genuinely-free account tier is itself a small trust asset, not just risk-removal.
+
+**Deferred (Pass 2 — HARD DEPENDENCY on the quota decision):** The free-plan/quota paragraph was deliberately LEFT UNCHANGED in both files. It cannot be finalized until the deferred quota-logic decision is locked (SOS unlimited per Principle 6, vs SOS counts toward 50 per Launch Plan). Once locked: rewrite the free-plan paragraph in BOTH files to match the SHIPPED code, and verify the code matches the words. Writing it now would mean rewriting it after the decision.
+
+**Caveat recorded:** This work makes the document HONEST (matches what the app does) — squarely a product/trust fix. It is NOT a legal review. Liability, governing-law, and billing clauses warrant a genuine legal review before launch. Claude is not a lawyer.
+
+**Files changed:** docs/legal/TERMS_OF_SERVICE.md, apps/mobile/app/legal/terms-of-service.tsx. Suggested commit: "Reconcile Terms of Service to shipped reality (remove guest + trial claims); quota language pending quota decision".
