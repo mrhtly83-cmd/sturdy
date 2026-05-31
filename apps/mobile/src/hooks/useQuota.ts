@@ -18,7 +18,7 @@ export interface QuotaCounts {
 
 const EMPTY: QuotaCounts = {
   scriptsUsed:   0,
-  scriptsCap:    50,
+  scriptsCap:    75,
   questionsUsed: 0,
   questionsCap:  25,
   resetDate:     '',
@@ -48,7 +48,7 @@ export function useQuota() {
       if (error || !data) throw error;
       setCounts({
         scriptsUsed:   data.scripts_used   ?? 0,
-        scriptsCap:    data.scripts_cap    ?? 50,
+        scriptsCap:    data.scripts_cap    ?? 75,
         questionsUsed: data.questions_used ?? 0,
         questionsCap:  data.questions_cap  ?? 25,
         resetDate:     getResetDate(),

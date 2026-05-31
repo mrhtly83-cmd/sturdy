@@ -120,7 +120,7 @@ function QuotaResultFooter({
 }) {
   const remaining = mode === 'question' ? questionsRemaining : scriptsRemaining;
   const label     = mode === 'question' ? 'questions' : 'scripts';
-  const cap       = mode === 'question' ? 25 : 50;
+  const cap       = mode === 'question' ? 25 : 75;
 
   if (!isLow && remaining > 10) {
     return (
@@ -554,5 +554,3 @@ const s = StyleSheet.create({
   footerPrimary: { flex: 1, borderRadius: 16, minHeight: 50, minWidth: 100, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, backgroundColor: C.sos },
   footerPrimaryText: { fontFamily: F.subheading, fontSize: 14, color: C.text, letterSpacing: 0.3 },
 });
-
-

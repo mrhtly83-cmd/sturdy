@@ -741,3 +741,50 @@ Three contradictions were identified:
 **Caveat recorded:** This work makes the document HONEST (matches what the app does) — squarely a product/trust fix. It is NOT a legal review. Liability, governing-law, and billing clauses warrant a genuine legal review before launch. Claude is not a lawyer.
 
 **Files changed:** docs/legal/TERMS_OF_SERVICE.md, apps/mobile/app/legal/terms-of-service.tsx. Suggested commit: "Reconcile Terms of Service to shipped reality (remove guest + trial claims); quota language pending quota decision".
+
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SESSION 2026-05-31 (cont.) — Auth screen audit
+# ═══════════════════════════════════════════════════════════════════════════
+
+## 2026-05-31 — Auth screen (auth/index.tsx) audit + copy LOCKED
+**Context:** Auth is the front door to value under signup-first. Full read of the 412-line screen. Mechanics are strong (a11y labels, keyboard handling, autocomplete hints, disabled/loading CTA, inline error clearing, a genuinely good confirm-email state). Findings flagged by type; copy locked via side-by-side mockup (sturdy-auth-mockup.html).
+
+**LOCKED — copy changes (conversion + trust, freeze-safe):**
+- Headline: "Create account" → "Let's get you set up." (warmer, Welcome-voice; transactional → friend register)
+- Subhead: "Save scripts and personalise for your child." → "Free to start. No trial, no card — just your scripts, saved." (answers the parent's signup-wall fear "am I about to be charged?"; now TRUE because trial language was removed from ToS this session; trust-led conversion = remove fear, not manufacture urgency)
+- CTA: "Create account" → "Create my free account." ("my free" reinforces no-cost at the commit pixel)
+- Added free-tier note above CTA: "50 free scripts every month. Upgrade only if you want more."
+
+**⚠ SOFT-LOCK / QUOTA DEPENDENCY:** The "50 free scripts every month" note touches the unresolved quota question. If SOS ends up UNLIMITED with only other modes capped at 50 (Principle 6 model), this line is imprecise and must be reworded (e.g. "Unlimited SOS. 50 free scripts a month for everything else."). This element is BLOCKED on the same quota decision as ToS Pass 2. Do not ship this line until quota is locked. The headline/subhead/CTA changes have NO such dependency and can ship now.
+
+**Confirm "no card" matches reality:** signup must genuinely require no payment method (it does for a free account) — verify before shipping.
+
+**Logged, NOT actioned (deferred):**
+- BUG: pending-child migration (lines 79–80) writes stale `age_band` ('2-4'/'5-7'/'8-12') — contradicts exact-age architecture (Principle 3) AND doesn't cover teens (15yo → '8-12'). Part of the guest-migration path that has no entry point. Pull during quota/data pass.
+- STATE: markOnboardingComplete() fires before email confirmation succeeds (line 88) — force-close after signup could skip Welcome assuming a confirmed account. Minor edge case.
+- V1.1 GROWTH: no social/Apple/Google sign-in. Known conversion lever; email-only is honest + shippable for V1. Scope-creep flag, not a now-fix. (Note: adding Google later triggers Apple sign-in requirement per App Store rules.)
+- POLISH: hardcoded gradient hex (lines 129,134) — same Deep Warm token-migration debt as Welcome.
+
+**Still TO DECIDE before build:** whether the welcome-aboard moment attaches after the confirm-email step or after first successful sign-in (confirm-email state means there may be a gap between signup and an active session).
+
+---
+
+## 2026-05-31 — Quota model SHIPPED (75 scripts / 25 questions) + migration-history reconciliation
+**QUOTA DECISION (locked, shipped, verified on-device):**
+Free tier = 100 free generations/month, dual buckets: **75 scripts** (SOS + Reconnect + Understand + Conversation + follow-ups) + **25 questions**. Crisis-detected messages free + uncounted (safety filter runs before quota check — Principle 4, already enforced in code, verified). Unlimited was rejected on cost grounds (Thai's call, math done). SOS counts toward the 75 (not unlimited per Principle 6's original wording) — this is a deliberate revision of Principle 6, justified by cost reality + crisis-exemption protecting the safety net.
+- Ground-truth check: live `get_quota_counts` had scripts_cap 50; migration 009 dual-bucket model WAS live despite history drift. Changed cap 50→75 in 4 places: new migration `20260531000010_quota_caps_75_25.sql` (get_quota_counts), Edge Function `SCRIPT_QUOTA_LIMIT` (line 37), `useQuota.ts` (EMPTY default + fallback), `result.tsx` (line 123 hardcoded cap). Verified on-device: bar reads "X of 75".
+- Question cap stays 25 (unchanged).
+
+**MIGRATION-HISTORY RECONCILIATION (significant infra fix):**
+Root cause found: migration files used 8-digit DATE-ONLY versions (e.g. `20260521`), invalid for the CLI which expects 14-digit `YYYYMMDDHHMMSS`. Worked by accident until TWO files shared a date (008 + 009 both `20260521`) — the collision made the ledger untrackable and `db push` fail. Also an orphan history entry `20260520090648` (an early auto-named application of the same work) had no local file.
+- Fix (minimal, surgical — did NOT re-version the 10 healthy migrations): reverted orphan `20260520090648`; reconciled the 8 synced migrations via `migration repair --status applied`; renamed the 2 colliding files to unique 14-digit versions `20260521000800` (008) + `20260521000900` (009) and 010 → `20260531000010`; reverted the stale `20260521` ledger row; marked the 2 renamed versions applied (schema already live); `db push` applied only 010.
+- **DURABLE RULE (adopt going forward):** ALL new migrations MUST use full 14-digit timestamp versions. Use `supabase migration new <name>` which generates them automatically — never hand-name with date-only. This permanently prevents the collision class.
+- Healthy 10 migrations deliberately left at 8-digit versions: they're unique, applied, working; re-versioning applied production migrations = risk for cosmetic gain. Conflict is resolved by fixing the 2 that collided + the forward rule, NOT by touching working history.
+
+**NOW UNBLOCKED (were waiting on quota decision):**
+1. ToS Pass 2 — rewrite the free-plan paragraph in both legal files to: "75 script generations + 25 questions per month free; crisis support always free." (Replaces the stale "unlimited SOS + 50 others" language.)
+2. Auth free-tier note — finalize as e.g. "75 free scripts + 25 questions a month. Upgrade only if you want more." (the soft-locked element from the auth copy).
+
+**Files to commit (one coherent unit):** renamed migrations 008/009 (git mv), new 010, Edge Function index.ts, useQuota.ts, result.tsx.
