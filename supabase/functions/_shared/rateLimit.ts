@@ -19,8 +19,22 @@
 // and would close that gap. For honest abuse + accidental loops this is
 // already enough to prevent billing shock.
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-const SUPABASE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const env = (() => {
+  const deno = (globalThis as unknown as Record<string, unknown>)["Deno"] as
+    | { env: Record<string, string> }
+    | undefined;
+  if (deno?.env) return deno.env;
+
+  const proc = (globalThis as unknown as Record<string, unknown>)["process"] as
+    | { env: Record<string, string> }
+    | undefined;
+  if (proc?.env) return proc.env;
+
+  return {} as Record<string, string>;
+})();
+
+const SUPABASE_URL = env["SUPABASE_URL"] ?? "";
+const SUPABASE_KEY = env["SUPABASE_SERVICE_ROLE_KEY"] ?? "";
 
 // ─── Caps ─────────────────────────────────────────────────────────────────────
 //
