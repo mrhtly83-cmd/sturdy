@@ -1,98 +1,88 @@
 # Session Handoff — Sturdy
 
-**Last session date:** 2026-05-30 (evening, session 2)
-**Purpose:** Paste this into a new chat to resume exactly where the previous session ended.
+**Last session date:** 2026-05-31 (UI/UX launch audit — Welcome screen complete)
+**Purpose:** Paste into a new chat to resume exactly where we left off.
 **How to use:** Open a new conversation, attach or paste this file, and say "resume from this handoff."
 
 ---
 
 ## How to work with me on this project
 
-I am acting as your Fractional CPO and Launch/ASO specialist for Sturdy. The operating contract:
-
-- **Code is ground truth.** Verify against the shipped codebase, not the docs, which drift.
-- **Ruthless prioritization.** Every feature must serve the core promise and earn its complexity now, or it goes to the V2 parking lot.
-- **The 8 Product Principles are hard constraints**, not suggestions. Surface conflicts; do not quietly override.
-- **Protect against scope creep.** This is a solo first project; "park it" and "ship what's real" are valid answers.
-- **Honest pushback over agreeableness.** Tell me when I am wrong.
+Acting as Fractional CPO + Lead Product Strategist for Sturdy. Operating contract:
+- **Code is ground truth.** Verify against the shipped codebase, not the docs.
+- **Ruthless prioritization.** Every feature earns its place toward the core promise, or goes to the V2 parking lot.
+- **The 8 Product Principles are hard constraints.** Surface conflicts; never quietly override.
+- **Protect against scope creep.** Solo first project; "park it" is a valid answer.
+- **Honest pushback over agreeableness.**
 - **Log material decisions** in OPERATIONS.md (context → decision → reasoning).
-- **For step-by-step technical instructions, go slow, one command at a time**, state what each command does and what output to expect, and do not assume prior command-line fluency. I work in a GitHub Codespace at `/workspaces/sturdy`, on a Chromebook, using Deno for Edge Function evals.
+- **Step-by-step, one command at a time.** GitHub Codespace at /workspaces/sturdy, Chromebook, Deno for Edge Function evals. Don't assume CLI fluency.
 
 ---
 
-## Where the project stands
+## ▶ START HERE NEXT SESSION — audit the AUTH screen
 
-Sturdy is in fine-tuning for a V1 Google Play launch (target was June 15, treated as flexible — ship-right over ship-fast). A feature freeze is in effect, documented in `docs/V1_FREEZE.md`. The freeze-audit finding stands: **the code is generally ahead of the docs**, so most remaining work is correcting docs to match shipped reality, not building features.
+We are mid-way through a **systematic screen-by-screen UI/UX launch audit**, locking each screen against one master lens: **does every element build trust and earn the subscription, without trading trust for conversion (Principle 7)?** Rhythm: audit → lock decisions → build → verify on-device → commit, one screen at a time.
 
-The ship gate: the SOS voice clears a measured bar (eval green), the freeze fix-list is closed, and ~10 real parents have used the app without a trust-breaking bug. The date moves to meet that, not a calendar.
+**Welcome screen is DONE (audited, built, shipped, verified).** Next screen: **`apps/mobile/app/auth/index.tsx`** — the true front door now that signup-first is locked. Every new parent passes through it.
 
----
-
-## ▶ START HERE NEXT SESSION — two outstanding follow-ups
-
-The Sentry error-monitoring work is COMPLETE and verified end-to-end (see below). Two non-blocking follow-ups remain from it:
-
-1. **Sentry IP-capture privacy fix.** The verification event auto-captured the client's full IPv6 address (`user: ip:...`). Our `reportError` code does not send this — Sentry inferred it from request headers. For an app handling sensitive family situations, client IP is personal data that should not be logged against every error. Fix: disable IP storage in the Sentry project settings (Project → Security & Privacy, "Prevent Storing of IP Addresses"), and/or confirm `reportError` sends no request context. Quick, worth doing for the product's values.
-
-2. **Key rotation cleanup.** A new Anthropic key was generated and set live this session. Confirm the OLD key is revoked in the Anthropic Console, and store the NEW key in a password manager (NOT a repo file). The key currently lives only in the Supabase secret — it is nowhere in the Codespace, so the eval will have no key after any rebuild until you re-supply it.
-
-After those: resume the **documentation migration (steps 2–7)** — see watch list.
+When auditing auth, specifically check: the post-signup state (is there an email-confirmation step?), where the **welcome-aboard moment** would attach (see below), and whether the "pending-child migration" comment there reflects working code or dead scaffolding.
 
 ---
 
-## What was accomplished (sessions 1 + 2, 2026-05-30)
+## Two governing principles established this session (apply to EVERY screen)
 
-**Error monitoring (Sentry) — built, deployed, VERIFIED:**
-- Added `reportError` to `chat-parenting-assistant` (lightweight direct POST, not the SDK). Sends only error message + safe tags (`service`, `mode`, `model`) — never user content. Wired into the two parent-facing catch sites (question + SOS); the `generateScript` retry `console.warn` sites left uninstrumented (normal retry, not an incident).
-- Created Sentry project (Deno, alert-on-high-priority, email on). Stored `SENTRY_DSN` as a Supabase secret on the live project.
-- **Verified end-to-end via deliberate induced-failure test:** set an invalid Anthropic key, confirmed the app failed gracefully AND a correctly-tagged event reached Sentry within seconds (`mode: sos`, `model: claude-sonnet-4-6`), then restored a working key. Production confirmed healthy with a real script afterward. The silent-outage gap is closed and proven.
-
-**Confirmed earlier (session 1):** production happy path works — live SOS request returns a real, well-formed script; the corrected model string and voice hold in production against Script Quality Standards.
-
-**Anomaly investigated & resolved:** an overnight redeploy of all five functions (identical timestamp) was NOT a deploy pipeline — `.github/workflows/test.yml` is CI tests only (Deno + Jest), no deploy. Likely a benign Supabase platform re-host. Redeployed local source before testing to remove the uncertainty.
-
-**Live Supabase project (unambiguous):** "Sturdy" = `lwmzfhigommayvmvqzvf` (hosts all five deployed functions). "Sturdy-Mobile" and "Mr-Cat25's Project" are NOT production.
+1. **In-app = recognition + voice (long-walk register); web landing page = benefit + differentiation selling.** Hard-sell energy has a home, and it is NOT the app. Resolves future copy debates.
+2. **Onboarding ENACTS the voice; it does not describe the product.** No "how smart we are" boasts in-app. Differentiators (exact-age specificity, your-child fit) are SHOWN via the first SOS script and setup flow, never claimed. Naming neurotype = Principle 1 violation.
 
 ---
 
-## ⚠ Git state — uncommitted by choice
+## Open build items generated this session
 
-The `chat-parenting-assistant/index.ts` Sentry change and the OPERATIONS.md + SESSION_HANDOFF.md updates are UNCOMMITTED. The live function is ahead of git (code-drift-from-git). Commit when ready. Suggested message:
-`Add + verify Sentry error monitoring on Edge Function; log + handoff`
+| Item | Status | Priority | Notes |
+|------|--------|----------|-------|
+| Welcome carousel copy + layout | ✅ SHIPPED | — | Verified on-device |
+| **Terms of Service reconciliation** | 📋 TODO | **BLOCKING** | ToS promises guest-without-account use the app doesn't deliver. Legal-honesty + Play Store policy risk. Fix ToS to describe actual signup-first free tier. |
+| **Welcome-aboard moment** (post-signup) | 📋 TO BUILD | V1 | Where "how smart Sturdy is" signals land (exact age, your-child fit). Locked copy direction = Option B: "Glad you're here… what's their name?" Build AFTER auth audit (need the post-signup insertion point). |
+| Gradient-token TODOs (Welcome) | 📋 Parked | LOW | 4× hardcoded rgba(13,11,8) → Deep Warm base. Part of theme migration; address separately. |
+| Value-first guest flow | 📋 V1.1 | — | Top post-launch conversion experiment. Guest → first SOS → signup prompt after result. Scaffolding exists; entry point + tested migration needed. |
 
 ---
 
-## Watch list (after the two follow-ups)
+## ⚠ KNOWN LAUNCH BLOCKER — quota logic contradiction (decision deferred by Thai)
 
-1. **Documentation migration steps 2–7** (the agreed DOCUMENTATION MODEL): reconceive CLAUDE.md into the five-section navigation tier; planning-doc hierarchy; date-stamp Feature Inventory; archive smoke test + strategy notes; amend SESSION_END_CHECKLIST; apply five-field headers to stable-core files. Step 1 (Blueprint harvest + archive) done.
-2. **Extend eval coverage** to Reconnect, Understand, Conversation modes (currently unmeasured). Lower priority; arguably V2-quality.
+Three sources disagree on whether SOS counts toward the free 50/month quota:
+- **Principle 6** (governance): SOS unlimited, excluded at DB level (`!= 'sos'`).
+- **Launch Plan**: SOS counts toward 50 (all modes equal, $0.50/mo max).
+- **Code**: migration 008 excluded SOS; migration 009 replaced it with DUAL buckets where the script quota counts SOS again (`!= 'question'`).
 
-The SOS prompt-refinement pass is COMPLETE (session 1) and the voice held in production.
+This is the economic + ethical core of the free tier and touches Principle 4 (crisis never paywalled) and Principle 6. Thai chose to finish the UI audit before deciding. **Must be resolved before launch.** Decision pending: SOS unlimited (Principle 6 as written) vs counts toward 50 (Launch Plan economics).
+
+---
+
+## Prior completed work (context)
+
+- **Sentry error monitoring** on the Edge Function: built, deployed, verified end-to-end (induced-failure test confirmed a tagged event reaches the dashboard + email). Production healthy on a rotated Anthropic key.
+- **Outstanding from Sentry work:** (a) disable IP-address capture in Sentry settings (privacy — it auto-logs client IPv6); (b) confirm old Anthropic key revoked + new key stored in a password manager (it lives only in the Supabase secret, nowhere in the Codespace).
+- SOS prompt-refinement pass complete; eval green; voice holds in production.
 
 ---
 
 ## Fresh-Codespace rebuild checklist
 
-A rebuild wipes non-persistent state. In order:
-1. `npx supabase login` (token does not persist).
-2. Recreate `apps/mobile/.env` (both vars required or the app throws on startup):
-   - `EXPO_PUBLIC_SUPABASE_URL=https://lwmzfhigommayvmvqzvf.supabase.co`
-   - `EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon public key from dashboard → Project Settings → API>`
-3. `cd apps/mobile && npm install`, then `npx expo start -c --tunnel` (bare `expo` fails — must use `npx`).
-4. The Anthropic key for the eval is NOT in the Codespace — re-supply it inline from your password manager when running `npm run eval:sos`.
-
-Notes:
-- Edge Function secrets are server-side, separate from the app `.env`. Live function reads `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and now `SENTRY_DSN` from Supabase secrets.
-- Eval reads its key inline from the command; eval reports land in `eval-outputs/` (git-ignored).
-- Supabase CLI upgrade notice (2.78.1 → 2.102.0) deliberately ignored mid-task; future housekeeping only.
+1. `npx supabase login` (token doesn't persist).
+2. Recreate `apps/mobile/.env` (both required or app throws): `EXPO_PUBLIC_SUPABASE_URL=https://lwmzfhigommayvmvqzvf.supabase.co` and `EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon public key>`.
+3. `cd apps/mobile && npm install`, then `npx expo start -c --tunnel` (bare `expo` fails — use `npx`).
+4. Anthropic key for the eval is NOT in the Codespace — re-supply inline from your password manager.
+- Live Supabase project: **"Sturdy" = `lwmzfhigommayvmvqzvf`** (hosts all 5 functions). NOT "Sturdy-Mobile".
 
 ---
 
 ## Key reference files
 
-- `docs/V1_FREEZE.md` — active feature freeze and fix-list
-- `docs/OPERATIONS.md` — decision log (newest: 2026-05-30 evening, Sentry verified + key rotation)
-- `docs/PRODUCT_PRINCIPLES.md` — the 8 locked principles
-- `docs/SCRIPT QUALITY STANDARDS.md` — the SOS voice bar the eval grades against
-- `docs/SESSION_END_CHECKLIST.md` — run before closing any session
+- `docs/STURDY_V1_LAUNCH_PLAN_v2.md` — authoritative launch scope (NOTE: dated May 27, several statuses now stale — e.g. Sentry is done; reconcile when convenient)
+- `docs/PRODUCT_PRINCIPLES.md` — the 8 locked principles (master lens for the audit)
+- `docs/FEATURE_INVENTORY.md` — ground-truth "what ships today" (dated May 21)
+- `docs/STURDY_STRATEGY_notes.md` — voice-as-moat thesis (grounds the audit's copy philosophy)
+- `docs/SCRIPT QUALITY STANDARDS.md` — SOS voice bar
+- `docs/OPERATIONS.md` — decision log (newest: 2026-05-31 Welcome audit)
 - `CLAUDE.md` — repo architecture guide

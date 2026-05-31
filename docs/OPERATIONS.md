@@ -664,3 +664,56 @@ t to provide.
 **Privacy finding — ACTION OUTSTANDING:** The Sentry event auto-captured the client's full IPv6 address (`user: ip:...`). Our `reportError` code does not send this — Sentry inferred it from request headers. For an app handling sensitive family situations, client IP is personal data that should not be logged against every error. Fix: disable IP storage in Sentry project settings (Project → Security & Privacy, "Prevent Storing of IP Addresses"), and/or ensure `reportError` sends no request context. Deferred to next session; non-blocking.
 
 **Git state:** The `index.ts` Sentry change and the doc updates remain UNCOMMITTED by user choice. The live function is therefore ahead of the git repository — a code-drift-from-git condition to close when ready to commit.
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SESSION 2026-05-31 — UI/UX Launch Audit begins (Welcome screen)
+# ═══════════════════════════════════════════════════════════════════════════
+
+## 2026-05-31 — V1 onboarding locked: signup-first; ToS reconciliation; welcome-aboard moment; value-first → V1.1
+**Context:** UI audit (starting with the Welcome screen) surfaced a contradiction between the locked Launch Plan decision ("Guest path stays — let parents feel value before signup") and what is actually shipped. Welcome routes only to signup; code review found guest *scaffolding* present but no guest *entry point*: ToS promises guest-without-account use, auth/index.tsx has a "pending-child migration" that is a no-op if guest mode never wrote a child, QuotaBar/TrafficDots/Settings all have guest-aware branches and a `sturdy_guest_seen_v1` flag exists — but nothing starts a guest session (no signInAnonymously / "continue as guest"). So the app is built to *accommodate* guests while offering no door to *become* one.
+
+**Decision (locked, no reversal for V1):**
+1. **Signup-first stays for V1.** Welcome → signup → free tier (50 scripts/month, no hassle). This is an honest model and violates no principle, provided the docs match it. Not changing auth/migration/guest paths during the freeze.
+2. **Reconcile the Terms of Service to match what's built.** ToS currently promises "use Sturdy as a guest without an account — guest data stored locally," which the product does not deliver from the entry point. A legal doc promising an unbuilt capability is the real trust issue here (Principle 7) and a Play Store policy risk (reviewers read linked policies). Fix the ToS language to describe the actual signup-first free tier. THIS IS THE ONLY MANDATORY CODE/DOC CHANGE from this decision for V1.
+3. **Add a "welcome aboard" moment** after first successful signup — a warm, on-voice (Principle 5, long-walk register) confirmation that the parent is in and the free tier is real (not a trial). Reinforces Principle 6 (free tier is a real product) and starts the relationship on warmth rather than a cold drop into the tabs. Must avoid therapy-speak / "great choice!" energy.
+4. **Value-first becomes the top V1.1 conversion experiment.** Guest reaches first SOS script → signup prompt appears *after* the result, framed as preservation ("keep your scripts, add [name]"), never as a toll. Deferred to V1.1 because it touches auth + an untested migration path — freeze-inappropriate now, and it is a conversion *optimization* that should wait for real funnel data per Sturdy's own data-driven V2 philosophy. The existing guest scaffolding lowers the future build cost.
+
+**Reasoning:** Resolves the contradiction honestly, ships nothing risky into the freeze, and parks the optimization where strategy says optimizations belong (post-launch, data-driven). The trust principle is the master lens: signup-first is honest; a mismatched legal doc is not. Fix the doc, keep the flow.
+
+**Follow-up / build items generated:** (a) ToS copy reconciliation [V1, BLOCKING — legal honesty + store risk]; (b) welcome-aboard post-signup moment [V1, design + copy]; (c) value-first guest flow [V1.1, top conversion experiment].
+
+---
+
+## 2026-05-31 — Welcome screen copy + layout (audit, line-by-line workshop)
+**Layout (must-fix before store screenshots):** Rendered screens confirmed a composition bug — Beat 1 (longest headline) overflows: title (34px/44px line-height) + `textContainer flex:1.2` vs halo `flex:1` crams the desc against the home indicator. Beats 2/3 are balanced. Adopt the mockup's fix: halo `flex:1`, text-zone `flex:1` centered, title nudged ~33px/43px. Also fix the malformed asset filename `welcome-wc-think.png.png` (doubled extension) on Beat 2.
+
+**Copy — Beat 1 (SOS hero), LOCKED:** "For the moment right before you lose it."
+- Rationale: Thai's call to lead with raw recognition in the parent's own inner voice. Defensible against Principle 5 because the rawness is aimed at the *moment*, not the parent — a wise friend names the real thing plainly. Tightened from "the app you open before you start to lose it" by cutting the outside-the-app marketing framing ("the app you open"). Rejected en route: "Calm words to prevent your guilty conscience" — inverts posture (accuses the parent), assigns a psychological state (Principle 5 therapy-speak), "prevent" is an outcome-promise (AI Limitations), and guilt-framing is the exact dark-pattern Sturdy's Principle 7 rejects. Drops the "words not a script" thread from the old line; accepted as a trade for attention on the hero.
+
+**Copy — Beat 2 & Beat 3:** pending workshop (next).
+
+---
+
+## 2026-05-31 — Welcome carousel copy LOCKED (voice-true) + governing principles
+
+**Final locked copy (all three beats, voice-true descriptors):**
+- Beat 1 (SOS): headline "For the moment right before you lose it." / desc "The right words, while it still matters."
+- Beat 2 (Question): headline "The questions you'd never say out loud." / desc "Ask anything. No judgment, no jargon."
+- Beat 3 (CTA): headline "From chaos. To connection." / desc "One hard moment at a time." + Get started.
+
+**Why voice-true over benefit-clause:** Grounded in STURDY_STRATEGY_notes ("the voice is the moat") and FEATURE_INVENTORY (confirmed the benefits are real, not vaporware). The welcome screen's strategic job is to ENACT the voice, not describe the product — a parent can't be told the voice is better, only feel it. Marketing/benefit clauses ("in seconds") were rejected from the carousel because a feature boast on the one screen built to demonstrate voice undercuts the moat. "While it still matters" replaced "in seconds" (mother-language vs stopwatch-language). "Ask anything" chosen over "Ask Sturdy anything..." — keeps friend-permission register, signals the feature scope ("anything") without switching to product-instruction voice. "No judgment, no jargon" retained as a promise about the voice itself, not a feature claim.
+
+**Two governing principles established (apply to ALL screens going forward):**
+1. **In-app = recognition + voice; web landing = benefit + differentiation selling.** Principle 5's voice constraints govern the product surface. The landing page is the front door for cold/skeptical traffic and may carry the full benefit-and-differentiation sell. This resolves future copy debates: hard-sell energy has a home, and it's not the app.
+2. **The welcome (and onboarding) ENACTS the voice; it does not describe the product.** No "how smart we are" boasts in the carousel. Differentiators (exact-age specificity, your-child fit) are SHOWN through the first SOS script and the setup flow, never claimed. Naming neurotype detection is also a Principle 1 violation, so "adapts to your child"-type claims stay out.
+
+**Smartness signals relocated:** Thai's request to surface "how smart Sturdy is" (exact age, etc.) was redirected OUT of the carousel and INTO (a) the post-signup welcome-aboard / first-setup moment, where exact-age can be shown honestly by asking for it and explaining the why in one quiet line, and (b) the web landing page for the full list. Next build item: workshop the welcome-aboard setup-moment copy (Option B base: "Glad you're here… what's their name?").
+
+**Layout fixes still required (from earlier in this entry):** Beat 1 overflow (adopt mockup flex/font fix); malformed asset filename welcome-wc-think.png.png.
+
+---
+
+## 2026-05-31 — Welcome carousel: SHIPPED & verified on-device
+Applied locked copy + layout fix to apps/mobile/app/welcome/index.tsx (full-file replace). Renamed asset welcome-wc-think.png.png → welcome-wc-think.png (git mv) to match corrected code. Verified on-device: all three beats render correctly, amber emphasis lands as intended, Beat 2 image loads, Beat 1 overflow resolved, composition consistent across slides. Welcome screen audit + build COMPLETE.
+Minor note (not actioned): headlines break to 3–4 visual lines from controlled \n + wrapping; fine on test device, eyeball on smaller screens later.
+Still open from Welcome audit (deferred, not blocking): 4× gradient-token TODOs (hardcoded rgba(13,11,8) → Deep Warm base) — part of theme migration, address separately.

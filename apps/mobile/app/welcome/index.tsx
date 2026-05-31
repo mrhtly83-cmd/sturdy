@@ -29,24 +29,26 @@ const BEATS = [
   {
     id: 'beat1',
     image: require('../../assets/welcome-wc-chaos.png'),
-    line1: 'When the moment\nhits,',
-    highlight: "you don't need a script —",
-    line2: 'you need words.',
-    desc: 'Calm, age-specific words you can say out\nloud, before it escalates.',
+    line1: 'For the moment',
+    highlight: 'right before\nyou lose it.',
+    line2: '',
+    desc: 'The right words, while it still matters.',
   },
   {
     id: 'beat2',
-    image: require('../../assets/welcome-wc-think.png.png'),
-    line1: 'When the question is',
-    highlight: 'too quiet',
-    line2: 'to ask out loud.',
-    desc: 'Ask Sturdy. No judgment, no jargon — just\nthe answer you needed.',
+    image: require('../../assets/welcome-wc-think.png'),
+    line1: 'The questions you’d',
+    highlight: 'never say\nout loud.',
+    line2: '',
+    desc: 'Ask anything. No judgment, no jargon.',
   },
   {
     id: 'beat3',
     image: require('../../assets/welcome-wc-connection.png'),
     line1: 'From chaos.',
     highlight: 'To connection.',
+    line2: '',
+    desc: 'One hard moment at a time.',
     isCta: true,
   }
 ];
@@ -246,18 +248,18 @@ const s = StyleSheet.create({
   beatImage: { width: '100%', height: '100%' },
 
   textContainer: {
-    flex: 1.2,
+    flex: 1,
     paddingHorizontal: 32,
     paddingTop: 24,
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
   },
   titleText: {
     fontFamily: F.heading,
-    fontSize: 34,
+    fontSize: 33,
     color: '#FFF8E7',
     textAlign: 'center',
-    lineHeight: 44,
+    lineHeight: 43,
     letterSpacing: -0.5,
   },
   highlightText: {
