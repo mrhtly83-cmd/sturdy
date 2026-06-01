@@ -846,3 +846,11 @@ Root cause found: migration files used 8-digit DATE-ONLY versions (e.g. `2026052
 
 ## 2026-05-31 — Terms Pass 2 + auth free-tier note FINALIZED (quota unblocked these)
 Once 75/25 was locked, the two soft-locked copy items were completed and committed: ToS free-plan paragraph (both legal files) now reads '75 script generations + 25 questions per month, tracked separately; crisis support always free' (replaced stale 'unlimited SOS + 50 others'). Auth free-tier note finalized: '75 free scripts and 25 questions every month. Upgrade only if you want more.' Auth headline/subhead/CTA also shipped (Let's get you set up / Free to start, no trial, no card / Create my free account). All committed to main as 6000d26.
+
+## 2026-05-31 — Warm Ember palette shipped + auth seam fixes
+- Merged claude/warm-palette-shift-v1-AHuI3 → main (merge 46b5657, pushed).
+- Palette: Twilight → Warm Ember. Gradient top/mids warmed #020202→#1a1206; bottom kept #050402; gold accent + all copy unchanged. 9 hardcoded screens repointed to tokens (recurring "truth in screens not tokens" drift).
+- Verified on device: Family/Home lifted out of gloomy without good screens (result/child profile) going muddy. textMuted readability held (0.55→0.62 bump NOT needed/applied).
+- Auth fixes (commit 7844fd3): (a) stickyContent footer #050402→gradientTop — removed horizon seam where flat block met warmed fade; (b) stickyFade mid-stop rgba(2,2,2,0.88)→rgba(26,18,6,0.88) — removed dark dip line above Sign in.
+- TECH DEBT: rgba(26,18,6,0.88) hardcoded inline — should become a `gradientTopAlpha` token in colors.ts to prevent future drift.
+- NOTE: reference html (sturdy-warm-palette-reference.html) uses a faster/darker mid-falloff than shipped tokens. Reference + shipped palette should be reconciled so "locked" stays truthful — shipped is warmer through the mid-band by design.
