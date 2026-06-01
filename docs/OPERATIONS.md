@@ -854,3 +854,27 @@ Once 75/25 was locked, the two soft-locked copy items were completed and committ
 - Auth fixes (commit 7844fd3): (a) stickyContent footer #050402→gradientTop — removed horizon seam where flat block met warmed fade; (b) stickyFade mid-stop rgba(2,2,2,0.88)→rgba(26,18,6,0.88) — removed dark dip line above Sign in.
 - TECH DEBT: rgba(26,18,6,0.88) hardcoded inline — should become a `gradientTopAlpha` token in colors.ts to prevent future drift.
 - NOTE: reference html (sturdy-warm-palette-reference.html) uses a faster/darker mid-falloff than shipped tokens. Reference + shipped palette should be reconciled so "locked" stays truthful — shipped is warmer through the mid-band by design.
+
+## 2026-05-31 — Palette shift: Twilight → Warm Ember (v8)
+
+**Context:** App read as "gloomy" — gloomy screens (auth, Family) felt flat/dead
+against a pure-black night-sky base (#020202). Root cause of prior failed attempts:
+9 screens hardcoded the gradient array / #020202 instead of consuming colors.ts
+tokens, so warming the tokens alone didn't propagate (recurring "truth hardcoded
+in screens, not tokens" drift).
+
+**Decision:** Warm the gradient TOP/upper-mid stops from #020202 toward warm brown
+#1a1206 (full ramp #1a1206 → #171009 → #13100a → #100c08 → #0a0806), keeping the
+BOTTOM stop calm at warm near-black #050402. Background-only — gold accent
+(#c9a85c → #a8843a → #8a6820) untouched, no copy changed. Repointed all 9
+hardcoded screens + 3 gradient sets (main/Result/Settings) + legacy aliases +
+particlesBg to tokens. Built on branch, code-reviewed, verified on-device, merged
+(46b5657 / c18cffc).
+
+**Reasoning:** Trust-led warmth — lift the gloom without trading away the calm,
+content-focused feel on script-result and child-profile screens (hence the kept
+near-black floor). Fixing the hardcoded-screen drift means future palette changes
+propagate from tokens as intended.
+
+**Open follow-up:** textMuted opacity (0.55) was NOT changed — verify legibility
+on warm areas on-device; bump toward ~0.62 if dim, do NOT re-darken background.
