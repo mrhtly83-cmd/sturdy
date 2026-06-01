@@ -788,3 +788,61 @@ Root cause found: migration files used 8-digit DATE-ONLY versions (e.g. `2026052
 2. Auth free-tier note — finalize as e.g. "75 free scripts + 25 questions a month. Upgrade only if you want more." (the soft-locked element from the auth copy).
 
 **Files to commit (one coherent unit):** renamed migrations 008/009 (git mv), new 010, Edge Function index.ts, useQuota.ts, result.tsx.
+
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SESSION 2026-05-31 (close) — auth-security blocker, palette direction, housekeeping
+# ═══════════════════════════════════════════════════════════════════════════
+
+---
+
+## 2026-05-31 — Email-confirmation OFF: launch blocker (auth security + free-tier abuse)
+**Context:** Thai observed any fake email can sign up and get an active account. Root cause: Supabase "Confirm email" is DISABLED on the live project. With it off, signup creates an active account immediately with no verification (per Supabase docs: disabled = implicitly confirms email, returns a session). The app is ALREADY BUILT for confirmation — auth/index.tsx shows the "Check your inbox" (confirm-email) screen exactly when signUpData.session is null, which is the confirmation-required path. So this is a project SETTING, not a code change.
+
+**Why it's a launch blocker (not cosmetic):**
+- Free-tier abuse vector: we just set 75 scripts + 25 questions free per account. Fake/throwaway emails let one person farm unlimited free quota by re-registering → direct API cost + the exact abuse the quota limits exist to prevent.
+- Junk accounts inflate the "~10 real parents" ship-gate metric.
+- Unverified emails break password-reset and any future email features (can't reach the user).
+
+**⚠ CRITICAL DEPENDENCY — do NOT just flip the toggle:** Enabling "Confirm email" REQUIRES a working SMTP server to deliver confirmation emails. Supabase's built-in email service is capped at **2 emails/hour, best-effort** (per docs). Enabling Confirm email on the default SMTP would BREAK signups at launch — the 3rd+ parent in any hour gets no confirmation email and is stuck on the "Check your inbox" screen, unable to activate. That trades fake-accounts for a worse problem (real parents can't sign up).
+
+**The complete fix (its own focused session):**
+1. Set up a custom SMTP provider (Resend / SendGrid / Postmark / Amazon SES — free tiers cover launch volume).
+2. Verify the sending domain (DNS records — SPF/DKIM).
+3. In Supabase: Authentication → Providers → Email → enable "Confirm email." Also set Site URL + Redirect URLs (URL Configuration) so the confirmation link returns to the app correctly.
+4. Test the FULL flow: real email arrives → link works → account activates → confirm a fake/undeliverable email yields no usable account.
+5. Customize the confirmation email template to match Sturdy's voice (Email Templates section) — small trust touch.
+
+**Cleanup also required:** purge existing fake/test accounts created while confirmation was off (unconfirmed junk) before launch, so they don't skew the ship-gate metric.
+
+**Status:** TRACKED LAUNCH BLOCKER. Deferred to a focused session (SMTP setup has DNS + deliverability testing that shouldn't be rushed). Not a code change — no commit needed; lives in dashboard + a future SMTP account.
+
+---
+
+## 2026-05-31 — Visual "gloom" diagnosis + LOCKED palette direction (deferred build)
+**Context:** Thai felt the app was "too dark and gloomy" — initially read as app-wide. Advisor pushback after reviewing 8 live screens: the dark theme is an ASSET on content-rich screens (script result, Q&A answer, child profile all read as premium/calm/correct). The "gloom" is concentrated on EMPTY or LOW-CONTRAST screens (auth card barely separates from bg; Family screen is one card in a void). So a blanket palette-lightening was the wrong fix — it would wreck the strong screens to patch the weak ones.
+
+**What Thai found (the locked direction):** An older welcome mockup (saved as sturdy-warm-palette-reference.html) uses a WARM-BROWN gradient background — `linear-gradient(165deg,#1a1206 0%,#0d0b08 40%,#060604 70%,#020202 100%)` — i.e. a warm brown top fading to near-black. This is the "lit-from-within" warmth Thai was reaching for (≈ the "Warm 1 / subtle brown lift" option from the palette study). Thai confirmed by RECOGNITION (already built + liked it), which is strong signal. THIS is the locked visual direction: warm the background gradient app-wide from near-black toward the warm-brown top.
+
+**LOCKED (build deferred — not now):** Shift the app background gradient from pure near-black (#020202 top) toward the warm-brown direction (#1a1206-ish top → black bottom), applied via colors.ts tokens so it propagates app-wide. Goal: lift gloom on empty/low-contrast screens without flattening the content-rich screens.
+
+**Two caveats that MUST carry to build time:**
+1. The reference mockup contains OLD/REJECTED COPY ("The app you open before you lose it," "Calmer moments. Starting today."). DO NOT bring that copy back — the shipped/locked welcome copy stays. The file is a PALETTE reference only.
+2. Accent fork to resolve at build: the mockup uses a warmer CORAL accent (#F79566) vs the shipped yellow-GOLD (#c9a85c). Decide whether only the background warms (keep gold accent) or the accent warms too. Recommend: warm the background, keep shipped gold accent — smallest change, tests the hypothesis without a second variable.
+
+**Also flagged (independent of palette):** raise contrast on auth card borders + inputs (muddy, not just dark); fill the empty Family screen with warmth/content; "Conversation" tab label wraps awkwardly on home; SOS card coral-on-black runs low-contrast. These are per-screen polish items — the contrast fixes may matter MORE than the background warmth for the auth/empty screens.
+
+**Scope note:** This is a design-system change (touches colors.ts → every screen). Deferred deliberately — needs a focused pass with on-device verification across multiple screens, not a rushed end-of-session edit. Build when ready; reference file preserved.
+
+---
+
+## 2026-05-31 — Housekeeping queued (minor, non-blocking)
+**1. Deno editor noise:** VS Code's TS language server flags `Cannot find name 'Deno'` (ts2304) across supabase/functions test files (~59 "problems"). These are FALSE — the files run in the Deno runtime where `Deno` is defined; `deno test`/`deno check` pass clean. The editor is judging Deno files by Node/TS rules. FIX (cosmetic, do when convenient): install the Deno VS Code extension and enable Deno for the `supabase/functions` folder (settings: "deno.enablePaths": ["supabase/functions"] or a deno.json), so the editor uses Deno's rules there. Until then: IGNORE the Problems panel for those files; trust `deno test`.
+
+**2. Stale test fixed (2026-05-31):** `buildPrompt.test.ts` intensity-4 assertion updated "Max 6 words" → "HARD LIMIT of 6 words" to match the prompt wording strengthened in the 2026-05-30 SOS refinement pass. Test was stale, prompt was correct. Committed separately.
+
+**3. OPEN VOICE QUESTION (queued, evidence-based — do NOT decide by gut):** Thai flagged that the intensity-4 6-word cap "can sound choppy." This is a LOCKED-CORE voice question (Script Quality Standards). Resolve ONLY by running the SOS eval at intensity 4 and reading 5–10 actual regulate/connect/guide lines. If genuinely clipped/cold → loosen to 7 words with a logged decision + eval re-run to confirm warmth returns. If tight-but-warm (cf. shipped "really, really mad" line) → cap is correct, close the question. Do not change the number under CI pressure or by feel; the prompt already instructs "carry feeling AND limit; if it cannot, cut the feeling not the limit." The test fix above asserts whatever the prompt says TODAY (6) — changing the cap later is a separate logged decision + test update + eval run.
+
+## 2026-05-31 — Terms Pass 2 + auth free-tier note FINALIZED (quota unblocked these)
+Once 75/25 was locked, the two soft-locked copy items were completed and committed: ToS free-plan paragraph (both legal files) now reads '75 script generations + 25 questions per month, tracked separately; crisis support always free' (replaced stale 'unlimited SOS + 50 others'). Auth free-tier note finalized: '75 free scripts and 25 questions every month. Upgrade only if you want more.' Auth headline/subhead/CTA also shipped (Let's get you set up / Free to start, no trial, no card / Create my free account). All committed to main as 6000d26.
