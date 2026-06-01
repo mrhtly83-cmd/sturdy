@@ -68,8 +68,7 @@ function getTimeGreeting(): string {
   const h = new Date().getHours();
   if (h >= 5 && h < 12) return 'Good morning';
   if (h >= 12 && h < 17) return 'Good afternoon';
-  if (h >= 17 && h < 21) return 'Good evening';
-  return 'Good night';
+  return 'Good evening';
 }
 
 function inferIntensity(text: string): number | null {
@@ -376,18 +375,19 @@ export default function HomeScreen() {
         .select('full_name')
         .eq('id', session.user.id)
         .single();
-      if (data?.full_name) {
+     if (data?.full_name) {
         const first = String(data.full_name).trim().split(/\s+/)[0];
-        if (first) { setFirstName(first); return; }
+        const honorifics = ['mr', 'mrs', 'ms', 'miss', 'dr', 'mx'];
+        const clean = first.replace(/\.$/, '');
+        if (clean && clean.length >= 2 && !honorifics.includes(clean.toLowerCase())) {
+          setFirstName(clean);
+          return;
+        }
       }
-      const email = session.user.email ?? '';
-      const local = email.split('@')[0] ?? '';
-      const cleaned = local.split(/[._+-]/)[0] ?? '';
-      if (cleaned) {
-        setFirstName(cleaned.charAt(0).toUpperCase() + cleaned.slice(1));
-      }
+      // No real name → greet with no name. Honest beats a wrong/fake name.
+      setFirstName('');
     } catch { }
-  }, [session?.user?.id, session?.user?.email]);
+ }, [session?.user?.id]);
 
   useFocusEffect(
     useCallback(() => {
@@ -407,7 +407,7 @@ export default function HomeScreen() {
   }, [kidList.length]);
 
   // ─── Helpers ───
-  const displayName = firstName ?? 'there';
+  const displayName = firstName ?? '';
   const activeChildName = kidList.find((k: any) => k.id === activeChildId)?.name ?? null;
   const canSend = question.trim().length > 0 && !sending;
   const sosIsCrisis = detectCrisis(sosInputText);
@@ -564,7 +564,7 @@ export default function HomeScreen() {
         <StatusBar style="light" />
         <SafeAreaView style={s.safe} edges={['top']}>
           <View style={s.emptyWrap}>
-            <Text style={s.greetingText}>{getTimeGreeting()}, {displayName}.</Text>
+            <Text style={s.greetingText}>{getTimeGreeting()}{displayName ? `, ${displayName}` : ''}.</Text>
             <Text style={s.emptyTitle}>Let's add your first child.</Text>
             <Text style={s.emptyBody}>
               Sturdy tailors every response to your child's age and world.
@@ -607,7 +607,7 @@ export default function HomeScreen() {
 
               {/* ─── Header: Greeting + Traffic dots ─── */}
               <View style={s.headerRow}>
-                <Text style={s.greetingText}>{getTimeGreeting()}, {displayName}.</Text>
+                <Text style={s.greetingText}>{getTimeGreeting()}{displayName ? `, ${displayName}` : ''}.</Text>
                 <TrafficDots />
               </View>
 
