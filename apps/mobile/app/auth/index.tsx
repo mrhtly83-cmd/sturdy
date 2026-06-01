@@ -126,7 +126,7 @@ export default function AuthScreen() {
       <StatusBar style="light" />
       {/* Night sky — Twilight × Obsidian Gold */}
       <LinearGradient
-        colors={['#020202','#060604','#0a0906','#0d0b08','#0c0a06','#050402']}
+        colors={[C.gradientTop, C.gradientMid1, C.gradientMid2, C.gradientMid3, C.gradientMid4, C.gradientBottom]}
         locations={[0, 0.16, 0.40, 0.58, 0.76, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -271,7 +271,7 @@ export default function AuthScreen() {
       {/* Sticky CTA — hidden on confirm-email screen */}
       {screenState !== 'confirm-email' && <View style={s.stickyWrap}>
         <LinearGradient
-          colors={['transparent', 'rgba(2,2,2,0.88)', C.gradientTop]}
+          colors={['transparent', 'rgba(26,18,6,0.88)', C.gradientTop]}
           locations={[0, 0.45, 0.85]}
           style={s.stickyFade}
           pointerEvents="none"
@@ -319,7 +319,7 @@ export default function AuthScreen() {
 }
 
 const s = StyleSheet.create({
-  root:    { flex: 1, backgroundColor: '#020202' },
+  root:    { flex: 1, backgroundColor: C.backgroundWarm },
   content: { paddingHorizontal: 28, paddingTop: 12, paddingBottom: 110, gap: 20 },
 
   back:     { alignSelf: 'flex-start', paddingVertical: 6 },
@@ -406,7 +406,7 @@ const s = StyleSheet.create({
   stickyWrap: { position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10 },
   stickyFade: { height: 36 },
   stickyContent: {
-    backgroundColor:   '#020202',
+    backgroundColor:   C.gradientTop,
     paddingHorizontal: 28,
     paddingTop:        4,
     paddingBottom:     28,

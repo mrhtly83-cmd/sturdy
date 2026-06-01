@@ -77,8 +77,8 @@ const Background = () => {
         resizeMode="cover"
       />
       <LinearGradient
-        // TODO: update rgba stops to new base rgb(14,12,8)
-        colors={['rgba(13,11,8,0.4)', 'rgba(13,11,8,0.6)', 'rgba(13,11,8,0.85)', C.background]}
+        // Warm-ember scrim over the particles photo, fading into the warm base (#15100a = rgb(21,16,10))
+        colors={['rgba(21,16,10,0.4)', 'rgba(21,16,10,0.6)', 'rgba(21,16,10,0.85)', C.background]}
         locations={[0, 0.4, 0.7, 1]}
         style={StyleSheet.absoluteFill}
       />
