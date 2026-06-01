@@ -119,7 +119,7 @@ function Background() {
     <>
       {/* Twilight × Obsidian Gold */}
       <LinearGradient
-        colors={['#020202','#060604','#0a0906','#0d0b08','#0c0a06','#050402']}
+        colors={[C.gradientTop, C.gradientMid1, C.gradientMid2, C.gradientMid3, C.gradientMid4, C.gradientBottom]}
         locations={[0, 0.16, 0.40, 0.58, 0.76, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -654,7 +654,7 @@ const card = {
 } as const;
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#020202' },
+  root: { flex: 1, backgroundColor: C.backgroundWarm },
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 24, paddingBottom: 20, gap: 22 },
 

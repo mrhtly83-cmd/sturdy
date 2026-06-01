@@ -1,10 +1,15 @@
 // src/theme/colors.ts
-// Sturdy v7 — Twilight × Obsidian Gold (locked May 26 2026)
+// Sturdy v8 — Warm Ember × Obsidian Gold (palette warmed May 31 2026)
 //
-// Visual identity: pure black night-sky base (#020202 → #0e0c08 → #050402),
+// Visual identity: warm-brown base rising to near-black (#1a1206 → #15100a → #050402),
 // yellow-gold accent (#c9a85c → #a8843a → #8a6820), horizon glow rising
 // from the bottom. Cards are frosted-glass ultra-thin (rgba(255,255,255,0.04))
-// with gold-tinted borders. Stars animated in the night sky background.
+// with gold-tinted borders. Stars animated in the warm-ember background.
+//
+// v8 palette shift (Twilight → Warm Ember): the gradient TOP/upper-mid stops
+// warmed from pure black #020202 toward warm brown #1a1206 to lift the app's
+// "gloomy" feel, while the BOTTOM stop stays a warm near-black #050402 so
+// content-rich screens stay calm. Gold accent unchanged — background only.
 //
 // Gold shifted: #C8883A (orange-amber) → #c9a85c (yellow-gold, more celestial)
 // Card glass shifted: rgba(26,24,22,0.78) → rgba(255,255,255,0.04) (lighter veil)
@@ -16,9 +21,9 @@ export const colors = {
   // ═══════════════════════════════════════════════
   // SURFACES
   // ═══════════════════════════════════════════════
-  background:       '#0e0c08',                       // warm dark night-sky base
-  backgroundDeep:   '#050402',                       // deepest gradient stop
-  backgroundWarm:   '#020202',                       // pure black (night sky top)
+  background:       '#15100a',                       // warm ember base (flat backgrounds)
+  backgroundDeep:   '#050402',                       // deepest gradient stop (warm near-black nadir)
+  backgroundWarm:   '#1a1206',                       // warm brown (gradient top)
   surface:          'rgba(255,255,255,0.04)',         // card bg — frosted glass veil
   surfaceRaised:    'rgba(255,255,255,0.028)',        // elevated card (SOS card weight)
   surfaceSubtle:    'rgba(255,255,255,0.025)',        // barely-there separator
@@ -122,25 +127,25 @@ export const colors = {
 
   // ═══════════════════════════════════════════════
   // GRADIENTS (use with LinearGradient)
-  // Night sky: pure black top → warm dark bottom (horizon glow from bottom)
+  // Warm Ember: warm brown top → warm near-black bottom (horizon glow from bottom)
   // ═══════════════════════════════════════════════
-  gradientTop:      '#020202',                        // pure black (night sky zenith)
-  gradientMid1:     '#060604',                        // ~16%
-  gradientMid2:     '#0a0906',                        // ~40%
-  gradientMid3:     '#0d0b07',                        // ~58%
-  gradientMid4:     '#0c0a06',                        // ~70%
-  gradientBottom:   '#050402',                        // deep warm black (nadir)
+  gradientTop:      '#1a1206',                        // warm brown (zenith)
+  gradientMid1:     '#171009',                        // ~16%
+  gradientMid2:     '#13100a',                        // ~40%
+  gradientMid3:     '#100c08',                        // ~58%
+  gradientMid4:     '#0a0806',                        // ~70%
+  gradientBottom:   '#050402',                        // warm near-black (nadir, kept calm)
 
-  // Result screen gradient (same night-sky palette)
-  gradientResultTop:    '#020202',
-  gradientResultMid1:   '#060604',                    // ~10%
-  gradientResultMid2:   '#0a0906',                    // ~25%
-  gradientResultMid3:   '#0d0b07',                    // ~42%
+  // Result screen gradient (same Warm Ember palette)
+  gradientResultTop:    '#1a1206',
+  gradientResultMid1:   '#171009',                    // ~10%
+  gradientResultMid2:   '#13100a',                    // ~25%
+  gradientResultMid3:   '#100c08',                    // ~42%
 
-  // Settings gradient (same night-sky palette)
-  gradientSettingsTop:  '#020202',
-  gradientSettingsMid1: '#060604',                    // ~12%
-  gradientSettingsMid2: '#0a0906',                    // ~26%
+  // Settings gradient (same Warm Ember palette)
+  gradientSettingsTop:  '#1a1206',
+  gradientSettingsMid1: '#171009',                    // ~12%
+  gradientSettingsMid2: '#13100a',                    // ~26%
 
   // Ambient glow (radial gradient overlays — horizon warmth from bottom)
   glowAmber:        'rgba(184,142,74,0.07)',           // horizon glow (bottom bleed)
@@ -176,9 +181,9 @@ export const colors = {
   // v3/v4/v5 token names. Drop each alias when its consumer migrates.
   // ═══════════════════════════════════════════════
 
-  // Old surface names → new night-sky surfaces
-  base:             '#0e0c08',
-  backgroundLight:  '#0e0c08',
+  // Old surface names → new warm-ember surfaces
+  base:             '#15100a',
+  backgroundLight:  '#15100a',
   raised:           'rgba(255,255,255,0.04)',
   elevated:         'rgba(255,255,255,0.028)',
   subtle:           'rgba(255,255,255,0.025)',
@@ -223,10 +228,10 @@ export const colors = {
   disabledText:     'rgba(255,255,255,0.20)',
   pressed:          'rgba(255,255,255,0.04)',
 
-  // Old gradient stops → night sky
-  gradStart:        '#020202',
-  gradMid1:         '#060604',
-  gradMid2:         '#0a0906',
+  // Old gradient stops → warm ember (kept in sync with gradient* tokens)
+  gradStart:        '#1a1206',
+  gradMid1:         '#171009',
+  gradMid2:         '#13100a',
   gradEnd:          '#050402',
 
   // Old category card backgrounds (now dark card system)
@@ -292,7 +297,7 @@ export const fonts = {
 // Home, Auth, Child Hub, and Add Child screens.
 // ═══════════════════════════════════════════════
 
-export const particlesBg = '#0e0c08';
+export const particlesBg = '#15100a';
 export const particlesOverlay = [
   'rgba(0,0,0,0.50)',
   'rgba(0,0,0,0.65)',
