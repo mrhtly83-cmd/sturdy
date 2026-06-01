@@ -64,16 +64,18 @@ export default function TermsScreen() {
         <Text style={styles.sectionTitle}>Accounts</Text>
         <Text style={styles.body}>
           You are responsible for maintaining the security of your account and
-          for all activity under it. Creating an account is free and is required
-          to use Sturdy. Your account lets your data sync and back up across
-          sessions.
+          for all activity under it. You may use Sturdy as a guest without an
+          account — guest data is stored locally on your device and cannot be
+          recovered if you uninstall the app. Create an account at any time to
+          sync and back up your data.
         </Text>
 
         <Text style={styles.sectionTitle}>Free and Paid Plans</Text>
         <Text style={styles.body}>
-          The free plan includes unlimited SOS scripts, Question mode, and
-          crisis support. Other modes are limited to 50 script generations per
-          calendar month.
+          The free plan includes 75 script generations (SOS, Reconnect,
+          Understand, and Conversation) and 25 questions per calendar month,
+          tracked separately. Crisis support is always free and is never
+          counted against either limit.
           {'\n\n'}
           Sturdy+ removes the monthly limit on all modes and unlocks additional
           features such as tone selection. Pricing is displayed on the upgrade
@@ -88,7 +90,9 @@ export default function TermsScreen() {
           least 24 hours before the renewal date. Manage or cancel your
           subscription through your store account settings.
           {'\n\n'}
-          Refunds are handled by the applicable store.
+          Free trials begin when you subscribe. If you do not cancel before the
+          trial ends, you will be charged at the standard rate. Refunds are
+          handled by the applicable store.
         </Text>
 
         <Text style={styles.sectionTitle}>Acceptable Use</Text>

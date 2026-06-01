@@ -82,7 +82,7 @@ Deno.test("getIntensityGuidance — level 3 → HARD", () => {
 
 Deno.test("getIntensityGuidance — level 4 → VERY HARD", () => {
   assertStringIncludes(getIntensityGuidance(4), "VERY HARD");
-  assertStringIncludes(getIntensityGuidance(4), "Max 6 words");
+  assertStringIncludes(getIntensityGuidance(4), "HARD LIMIT of 6 words");
 });
 
 Deno.test("getIntensityGuidance — level 5 → OVERWHELMING + sets coaching empty", () => {

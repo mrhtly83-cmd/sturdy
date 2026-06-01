@@ -179,10 +179,10 @@ export default function AuthScreen() {
 
             <View style={s.hlArea}>
               <Text style={s.headline}>
-                {isSignup ? 'Create account' : 'Welcome back'}
+                {isSignup ? "Let's get you set up" : 'Welcome back'}
               </Text>
               <Text style={s.headlineSub}>
-                {isSignup ? 'Save scripts and personalise for your child.' : 'Sign in to continue'}
+                {isSignup ? 'Free to start. No trial, no card — just your scripts, saved.' : 'Sign in to continue'}
               </Text>
             </View>
 
@@ -277,6 +277,11 @@ export default function AuthScreen() {
           pointerEvents="none"
         />
         <View style={s.stickyContent}>
+          {isSignup && (
+            <Text style={s.freeNote}>
+              75 free scripts and 25 questions every month. Upgrade only if you want more.
+            </Text>
+          )}
           <Pressable
             onPress={handleSubmit}
             disabled={!canSubmit || loading}
@@ -290,7 +295,7 @@ export default function AuthScreen() {
                 <Text style={[s.ctaText, { color: C.disabledText }]}>
                   {loading
                     ? (isSignup ? 'Creating account…' : 'Signing in…')
-                    : (isSignup ? 'Create account' : 'Sign in')}
+                    : (isSignup ? 'Create my free account' : 'Sign in')}
                 </Text>
               </View>
             ) : (
@@ -301,7 +306,7 @@ export default function AuthScreen() {
                 style={s.ctaBase}
               >
                 <Text style={s.ctaText}>
-                  {isSignup ? 'Create account' : 'Sign in'}
+                  {isSignup ? 'Create my free account' : 'Sign in'}
                 </Text>
               </LinearGradient>
             )}
@@ -374,6 +379,16 @@ const s = StyleSheet.create({
   linkBtn:    { alignSelf: 'center', paddingVertical: 8 },
   linkText:   { fontFamily: F.body, fontSize: 14, color: C.textSecondary, textAlign: 'center' },
   linkAccent: { fontFamily: F.bodySemi, color: C.amberLight },
+
+  freeNote: {
+    fontFamily:    F.body,
+    fontSize:      12,
+    color:         C.textMuted,
+    textAlign:     'center',
+    lineHeight:    17,
+    marginBottom:  12,
+    paddingHorizontal: 8,
+  },
 
   // ─── Confirm-email state ───
   confirmWrap: { flex: 1, alignItems: 'center', paddingTop: 48, gap: 16 },
