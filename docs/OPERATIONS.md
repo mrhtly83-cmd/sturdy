@@ -878,3 +878,65 @@ propagate from tokens as intended.
 
 **Open follow-up:** textMuted opacity (0.55) was NOT changed — verify legibility
 on warm areas on-device; bump toward ~0.62 if dim, do NOT re-darken background.
+
+# OPERATIONS.md — Entries to append (session 2026-06-01)
+
+Paste these into docs/OPERATIONS.md.
+
+---
+
+## 2026-06-01 — Home greeting: kill email-name scrape, graceful no-name, drop "Good night"
+
+**Context:** Home greeting rendered "Good night, Mr." — it was scraping the email local-part as a first name and falling back to honorifics. A wrong/fake name on the heart screen reads as "this app doesn't know me" — a trust leak on the screen whose job is to feel like a thinking partner. Also "Good night" fired 9pm–5am, greeting a parent who just *opened* the app (often mid-crisis) with a send-off.
+
+**Decision:** In `(tabs)/index.tsx`: removed the email-scrape fallback entirely; added an honorific/junk guard (mr/mrs/ms/miss/dr/mx, <2 chars → no name); `firstName`/`displayName` resolve to empty string on no real name; render drops the comma when empty ("Good evening." not "Good evening, ."). Simplified `getTimeGreeting()` to morning/afternoon/evening (removed "Good night"; evening carries the night). Shipped + verified on-device.
+
+**Reasoning:** Honest > fake. A nameless warm greeting beats a wrong name. The REAL root — signup writing email-derived junk into `profiles.full_name` — is a capture bug to fix in the auth/welcome-aboard flow (parent's name asked properly). Logged as follow-up; not fixed in Home.
+
+**Follow-up:** Recognition-driven greeting (reference child, streak, last session) is a V2 lever — needs analytics backend. Do NOT add random greeting variation (rejected: randomness undercuts the steady "long-walk" register and doesn't create real recognition).
+
+---
+
+## 2026-06-01 — Quota numbers: launch plan was stale (50), shipped reality is 75/25
+
+**Context:** Launch plan said "50 scripts/month across all modes." Shipped app, auth copy, and ToS all say 75 scripts + 25 questions. TrafficDots on-device confirmed: Scripts 0/75, Questions 0/25, resets monthly.
+
+**Decision:** Shipped 75/25 is ground truth. The launch plan is the stale doc — update it (line ~18, Key Decision ~207) to "75 scripts + 25 questions, dual buckets," and recompute the cost line (~$0.75/mo max per free user at 75, not $0.50). NOT a launch blocker — app/legal/auth already agree; only the plan disagreed.
+
+**Reasoning:** The dangerous case (app/legal/store disagreeing) does not exist. Single docs-sync fix.
+
+---
+
+## 2026-06-01 — Home: "Always free · No paywall" line is false — must change (OPEN)
+
+**Context:** Home shows "Always free · No paywall" directly above a tone selector with two visible padlocks, and the model is 75/25-then-wall. The claim is false in the conversion-critical direction — a parent who hits the quota will remember "no paywall" → "bait and switch" 1-star risk.
+
+**Decision (pending build):** Replace with a true, warm line — e.g. "75 free scripts & 25 questions each month" or "Free to start — no card needed." Remove the "no paywall" claim. Trust-led: truth converts better than a broken promise.
+
+**Status:** OPEN — not yet shipped. Flagged as a trust leak to fix on Home.
+
+---
+
+## 2026-06-01 — Home direction: ADAPTIVE (time-of-day) layout + Twilight aesthetic [LOCKED]
+
+**Context:** Original complaint: SOS (the hero feature) sits below the fold on current Home. But Thai's insight: at 11pm it's reflection (Ask), not crisis (SOS) — intent changes by time of day. A static reorder can't serve both. Boundary confirmed with Thai: active ~6am–7pm (kids awake), calm ~7pm–6am.
+
+**Decision (LOCKED):** Build adaptive Home (scope B): one screen, two layout states sharing a single time-of-day helper. DAYTIME → SOS hero, Ask collapsed. EVENING → Ask hero, SOS collapsed. Non-hero mode always reachable as a quiet tap-row. Silent adaptation (never announced). Full Twilight aesthetic — but uses the EXISTING Fraunces + DM Sans fonts (`F.heading`, `F.scriptItalic` already wired; scriptItalic already in use line 897) — NO new fonts/deps. Timeline flexed off June 15 to build Home once, fully, since it's the visual source-of-truth for all other screens.
+
+**Reasoning:** Reconciles Thai's 11pm-reflection insight with the plan's "SOS is the hero" — SOS leads when crisis is likely, recedes when it isn't. Doing (a) layout-only now would force a third pass at Home to add the aesthetic later; flex bought = build (b) once.
+
+**Rejected:** (a) layout-only; static "always SOS-first"; day/night manual lighting toggle (would require a whole second light theme = scope creep; dark-by-default is correct for edge-of-day use).
+
+**Brief:** BRIEF_home_adaptive_B.md — ready for Claude Code. Has flag-don't-guess stop points (flat `<Background />`, greeting/boundary contradiction) → needs Thai available, not unattended overnight.
+
+---
+
+## 2026-06-01 — Home child identity: inline switcher in eyebrow + Add-a-child in sheet [LOCKED, brief ready]
+
+**Context:** Standalone "Emma · 6" pill floated below the Ask input. "+ Add" (the #1 conversion lever, 1-child→paywall) sat passively in that row.
+
+**Decision (LOCKED):** Move child name into the eyebrow as a tappable chip ("Ask about [Emma ▾]"). Tapping opens a Modal sheet: switch child (checkmark on active) + a distinct "Add a child" row. Removes the floating pill (kills an element vs. relocating). "Add a child" routes through existing `handleAddChild` → `/child/new`; the 1-child gate fires at the destination (mount-level `useEffect` in child/new.tsx, added by the Family-tab PR). NO duplicate gate logic. Built with built-in `Modal`, no new dep.
+
+**Reasoning:** Cleaner top-of-screen; a deliberate tap into the switcher is higher-intent than a passive "+", and keeping the gate at one destination avoids the recurring "logic hardcoded in multiple places" drift.
+
+**Brief:** BRIEF_home_inline_child_switcher.md — gate question resolved, ready for Claude Code. Independent of the adaptive-layout brief (can land before or after).
