@@ -41,6 +41,7 @@ import { detectCrisis } from '../../src/hooks/useCrisisMode';
 import { TrafficDots } from '../../src/components/ui/TrafficDots';
 import { useSubscription } from '../../src/hooks/useSubscription';
 import { getTone as loadTone, setTone as saveTone, type Tone, TONE_DEFAULT } from '../../src/utils/tone';
+import { getDayPeriod, getTimeGreeting, type DayPeriod } from '../../src/utils/dayPeriod';
 
 // ═══════════════════════════════════════════════
 // CONSTANTS
@@ -63,13 +64,6 @@ const SOS_SCENARIOS: string[] = [
   "She threw herself on the floor and I'm losing patience",
   "He said he hates me and slammed his door",
 ];
-
-function getTimeGreeting(): string {
-  const h = new Date().getHours();
-  if (h >= 5 && h < 12) return 'Good morning';
-  if (h >= 12 && h < 17) return 'Good afternoon';
-  return 'Good evening';
-}
 
 function inferIntensity(text: string): number | null {
   const lower = text.toLowerCase();
@@ -324,6 +318,15 @@ export default function HomeScreen() {
   // ─── Tone ───
   const [tone, setTone] = useState<Tone>(TONE_DEFAULT);
 
+  // ─── Time-adaptive layout ───
+  // period + greeting derive from the same helpers (src/utils/dayPeriod) so the
+  // layout flip and the greeting copy can never contradict. Computed on focus —
+  // a parent isn't watching the clock flip at 7:00:00.
+  const [period, setPeriod] = useState<DayPeriod>(() => getDayPeriod());
+  const [greeting, setGreeting] = useState<string>(() => getTimeGreeting());
+  // The non-hero mode collapses to a quiet tap-row; this tracks its expansion.
+  const [secondaryOpen, setSecondaryOpen] = useState(false);
+
   // ─── Entry animation ───
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
@@ -392,6 +395,11 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchName();
+      // Recompute time-of-day each time Home regains focus.
+      const now = new Date();
+      setPeriod(getDayPeriod(now));
+      setGreeting(getTimeGreeting(now));
+      setSecondaryOpen(false);
       let cancelled = false;
       loadTone().then((t) => { if (!cancelled) setTone(t); });
       return () => { cancelled = true; };
@@ -564,7 +572,7 @@ export default function HomeScreen() {
         <StatusBar style="light" />
         <SafeAreaView style={s.safe} edges={['top']}>
           <View style={s.emptyWrap}>
-            <Text style={s.greetingText}>{getTimeGreeting()}{displayName ? `, ${displayName}` : ''}.</Text>
+            <Text style={s.greetingText}>{greeting}{displayName ? `, ${displayName}` : ''}.</Text>
             <Text style={s.emptyTitle}>Let's add your first child.</Text>
             <Text style={s.emptyBody}>
               Sturdy tailors every response to your child's age and world.
@@ -588,6 +596,270 @@ export default function HomeScreen() {
   }
 
   // ─── Main: 1+ children ───
+  const targetChildId = activeChildId ?? kidList[0]?.id;
+  const heroChildName = kidList.find((k: any) => k.id === activeChildId)?.name ?? 'your child';
+
+  const toggleSecondary = () => {
+    Haptics.selectionAsync();
+    setSecondaryOpen((v) => !v);
+  };
+
+  // ─── Shared building blocks (composed differently per period) ───
+
+  const childPills = (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={s.pillRow}
+    >
+      {kidList.map((kid: any, index: number) => {
+        const isActive = activeChildId === kid.id;
+        const grad = CHILD_GRADIENTS[index % CHILD_GRADIENTS.length];
+        const initial = (kid?.name?.trim()?.[0] ?? '?').toUpperCase();
+        return (
+          <Pressable
+            key={kid.id}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setActiveChildId(kid.id);
+            }}
+            style={[s.childPill, isActive && s.childPillActive]}
+          >
+            <LinearGradient
+              colors={grad}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              style={s.pillAvatar}
+            >
+              <Text style={s.pillInitial}>{initial}</Text>
+            </LinearGradient>
+            <Text style={[s.pillName, isActive && s.pillNameActive]}>
+              {kid.name} · {kid.childAge}
+            </Text>
+          </Pressable>
+        );
+      })}
+      <Pressable onPress={handleAddChild} style={s.childPill}>
+        <View style={s.pillAddCircle}>
+          <Text style={s.pillAddPlus}>+</Text>
+        </View>
+        <Text style={s.pillName}>Add</Text>
+      </Pressable>
+    </ScrollView>
+  );
+
+  // Ask (Question mode) ----------------------------------------------------
+  const askEyebrow = (
+    <View style={s.heroEyebrowWrap}>
+      <Text style={s.heroKicker}>ASK STURDY</Text>
+      <Text style={s.heroTitleAsk}>
+        {activeChildName ? (
+          <>What's on your mind about <Text style={s.heroName}>{activeChildName}</Text>?</>
+        ) : (
+          'The quiet questions matter too.'
+        )}
+      </Text>
+    </View>
+  );
+
+  const renderAskCard = (hero: boolean) => (
+    <>
+      <Animated.View style={[s.thinkingCard, hero && s.heroCardLift, questionFocused && s.thinkingCardFocused]}>
+        {!question && (
+          <Animated.View style={[s.placeholderWrap, { opacity: placeholderFade }]} pointerEvents="none">
+            <Text style={s.placeholderText}>{ASK_PLACEHOLDERS[placeholderIdx]}</Text>
+          </Animated.View>
+        )}
+        <TextInput
+          multiline
+          value={question}
+          onChangeText={(t) => { setQuestion(t); if (error) setError(''); }}
+          onFocus={() => setQuestionFocused(true)}
+          onBlur={() => setQuestionFocused(false)}
+          style={s.thinkingInput}
+          textAlignVertical="top"
+          editable={!sending}
+          selectionColor={C.amber}
+        />
+        <View style={s.thinkingSendWrap}>
+          <Pressable
+            onPress={handleSend}
+            disabled={!canSend}
+            style={({ pressed }) => [
+              !canSend && { opacity: 0.32 },
+              pressed && canSend && { transform: [{ scale: 0.94 }] },
+            ]}
+          >
+            <LinearGradient
+              colors={[C.amber, C.amberMid]}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              style={s.thinkingSendBtn}
+            >
+              <Text style={s.thinkingSendArrow}>{sending ? '…' : '→'}</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
+      </Animated.View>
+      {error ? <Text style={s.errorText}>{error}</Text> : null}
+    </>
+  );
+
+  const askModeChips = (
+    <View style={s.modeChipRow}>
+      {(
+        [
+          { mode: 'reconnect',    label: 'Reconnect',   emoji: '🔁' },
+          { mode: 'understand',   label: 'Understand',  emoji: '🔍' },
+          { mode: 'conversation', label: 'Conversation', emoji: '💬' },
+        ] as const
+      ).map(({ mode, label, emoji }) => (
+        <Pressable
+          key={mode}
+          onPress={() => {
+            if (!targetChildId) { router.push('/child/new'); return; }
+            Haptics.selectionAsync();
+            router.push({
+              pathname: `/child/${targetChildId}` as any,
+              params: { mode },
+            });
+          }}
+          style={({ pressed }) => [
+            s.modeChip,
+            pressed && { opacity: 0.75, transform: [{ scale: 0.97 }] },
+          ]}
+        >
+          <Text style={s.modeChipEmoji}>{emoji}</Text>
+          <Text style={s.modeChipLabel}>{label}</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+
+  // SOS (script generation) ------------------------------------------------
+  const sosEyebrow = (
+    <View style={s.heroEyebrowWrap}>
+      <View style={s.sosBadgeRow}>
+        <View style={s.sosBadge}><Text style={s.sosBadgeText}>SOS</Text></View>
+        <Text style={s.sosTaglineInline}>From chaos to connection</Text>
+      </View>
+      <Text style={s.heroTitleSos}>
+        {'What\'s happening with '}
+        <Text style={s.heroName}>{heroChildName}</Text>
+        {' right now?'}
+      </Text>
+    </View>
+  );
+
+  const sosCrisisBanner = sosIsCrisis.isCrisis ? (
+    <Pressable
+      onPress={() => router.push({ pathname: '/crisis', params: { crisisType: sosIsCrisis.crisisType ?? undefined, riskLevel: sosIsCrisis.riskLevel ?? undefined } })}
+      style={s.crisisBanner}
+    >
+      <Text style={s.crisisIcon}>⚠️</Text>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={s.crisisTitle}>This sounds serious</Text>
+        <Text style={s.crisisSub}>Tap here if you need immediate help →</Text>
+      </View>
+    </Pressable>
+  ) : null;
+
+  const renderSosCard = (hero: boolean) => (
+    <>
+      <Animated.View style={[s.sosCard, hero && s.heroCardLift, sosInputFocused && s.sosCardFocused]}>
+        {!sosInputText && (
+          <Animated.View style={[s.placeholderWrap, { opacity: sosScenarioFade }]} pointerEvents="none">
+            <Text style={s.sosPlaceholder}>
+              {SOS_SCENARIOS[sosScenarioIdx]}
+            </Text>
+          </Animated.View>
+        )}
+        <TextInput
+          multiline
+          value={sosInputText}
+          onChangeText={(t) => { setSosInputText(t); if (sosError) setSosError(''); }}
+          onFocus={() => setSosInputFocused(true)}
+          onBlur={() => setSosInputFocused(false)}
+          style={s.sosInput}
+          textAlignVertical="top"
+          editable={!sosSending}
+          selectionColor={C.sos}
+        />
+        <View style={s.thinkingSendWrap}>
+          <Pressable
+            onPress={handleSosSend}
+            disabled={!canSosSend}
+            style={({ pressed }) => [
+              !canSosSend && { opacity: 0.32 },
+              pressed && canSosSend && { transform: [{ scale: 0.94 }] },
+            ]}
+          >
+            <View style={[s.getScriptBtn, canSosSend && s.getScriptBtnActive]}>
+              <Text style={s.getScriptText}>{sosSending ? '…' : 'Get Script'}</Text>
+            </View>
+          </Pressable>
+        </View>
+      </Animated.View>
+      {sosError ? <Text style={s.errorText}>{sosError}</Text> : null}
+    </>
+  );
+
+  const toneSelector = (
+    <>
+      <Text style={s.toneLabel}>TONE</Text>
+      <View style={s.toneRow}>
+        {(['soft', 'gentle', 'direct'] as const).map((t) => {
+          const isSelected = tone === t;
+          const isLocked = !isPremium && t !== 'gentle';
+          return (
+            <Pressable
+              key={t}
+              onPress={() => {
+                if (isLocked) { router.push('/upgrade' as any); return; }
+                Haptics.selectionAsync();
+                setTone(t);
+                saveTone(t).catch(() => {});
+              }}
+              style={[s.tonePill, isSelected && s.tonePillSelected]}
+            >
+              <Text style={[s.tonePillName, isSelected && s.tonePillNameSelected]}>
+                {t.charAt(0).toUpperCase() + t.slice(1)}{isLocked ? ' 🔒' : ''}
+              </Text>
+              <Text style={s.tonePillDesc}>
+                {t === 'soft' ? 'Warm' : t === 'gentle' ? 'Calm, clear' : 'Short, firm'}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </>
+  );
+
+  // ─── Collapsed secondary rows (the non-hero mode, always one tap away) ───
+  const collapsedAskRow = (
+    <Pressable onPress={toggleSecondary} style={s.secondaryRow}>
+      <Text style={s.secondaryIcon}>💬</Text>
+      <View style={s.secondaryTextWrap}>
+        <Text style={s.secondaryTitle}>
+          {activeChildName ? `Ask about ${activeChildName}` : 'Ask Sturdy'}
+        </Text>
+        <Text style={s.secondarySub}>Reflect on a quieter moment</Text>
+      </View>
+      <Text style={s.secondaryChevron}>{secondaryOpen ? '⌄' : '›'}</Text>
+    </Pressable>
+  );
+
+  const collapsedSosRow = (
+    <Pressable onPress={toggleSecondary} style={[s.secondaryRow, s.secondaryRowSos]}>
+      <View style={s.sosBadge}><Text style={s.sosBadgeText}>SOS</Text></View>
+      <View style={s.secondaryTextWrap}>
+        <Text style={s.secondaryTitle}>
+          {activeChildName ? `In the moment with ${activeChildName}` : 'In the moment'}
+        </Text>
+        <Text style={s.secondarySub}>Get a script for right now</Text>
+      </View>
+      <Text style={s.secondaryChevron}>{secondaryOpen ? '⌄' : '›'}</Text>
+    </Pressable>
+  );
+
   return (
     <View style={s.root}>
       <Background />
@@ -607,241 +879,64 @@ export default function HomeScreen() {
 
               {/* ─── Header: Greeting + Traffic dots ─── */}
               <View style={s.headerRow}>
-                <Text style={s.greetingText}>{getTimeGreeting()}{displayName ? `, ${displayName}` : ''}.</Text>
+                <Text style={s.greetingText}>{greeting}{displayName ? `, ${displayName}` : ''}.</Text>
                 <TrafficDots />
               </View>
 
-              {/* ══════════════════════════════════════════ */}
-              {/* ZONE 1: QUESTION MODE                     */}
-              {/* ══════════════════════════════════════════ */}
+              {/* ══════════════════════════════════════════════════════ */}
+              {/* TIME-ADAPTIVE LAYOUT                                    */}
+              {/*   active (daytime) → SOS hero, Ask collapsed           */}
+              {/*   calm (evening)   → Ask hero, SOS collapsed           */}
+              {/* One hero per state; the other is always one tap away.  */}
+              {/* ══════════════════════════════════════════════════════ */}
 
-              <View style={s.zoneLabelRow}>
-                <Text style={s.zoneEmoji}>💬</Text>
-                <Text style={s.zoneLabel}>
-                  {activeChildName ? `Ask about ${activeChildName}` : 'Ask Sturdy'}
-                </Text>
-              </View>
-              <Text style={s.questionIntro}>
-                {activeChildName
-                  ? `What's on your mind about ${activeChildName}?`
-                  : 'The quiet questions matter too.'}
-              </Text>
+              {period === 'active' ? (
+                <>
+                  {/* HERO: SOS */}
+                  {sosEyebrow}
+                  {sosCrisisBanner}
+                  {renderSosCard(true)}
+                  {childPills}
+                  {toneSelector}
 
-              <Animated.View style={[s.thinkingCard, questionFocused && s.thinkingCardFocused]}>
-                {!question && (
-                  <Animated.View style={[s.placeholderWrap, { opacity: placeholderFade }]} pointerEvents="none">
-                    <Text style={s.placeholderText}>{ASK_PLACEHOLDERS[placeholderIdx]}</Text>
-                  </Animated.View>
-                )}
-                <TextInput
-                  multiline
-                  value={question}
-                  onChangeText={(t) => { setQuestion(t); if (error) setError(''); }}
-                  onFocus={() => setQuestionFocused(true)}
-                  onBlur={() => setQuestionFocused(false)}
-                  style={s.thinkingInput}
-                  textAlignVertical="top"
-                  editable={!sending}
-                  selectionColor={C.amber}
-                />
-                <View style={s.thinkingSendWrap}>
-                  <Pressable
-                    onPress={handleSend}
-                    disabled={!canSend}
-                    style={({ pressed }) => [
-                      !canSend && { opacity: 0.32 },
-                      pressed && canSend && { transform: [{ scale: 0.94 }] },
-                    ]}
-                  >
-                    <LinearGradient
-                      colors={[C.amber, C.amberMid]}
-                      start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                      style={s.thinkingSendBtn}
-                    >
-                      <Text style={s.thinkingSendArrow}>{sending ? '…' : '→'}</Text>
-                    </LinearGradient>
-                  </Pressable>
-                </View>
-              </Animated.View>
-              {error ? <Text style={s.errorText}>{error}</Text> : null}
-
-              {/* ─── Directed mode chips — calm-state entry points ─── */}
-              <View style={s.modeChipRow}>
-                {(
-                  [
-                    { mode: 'reconnect',    label: 'Reconnect',   emoji: '🔁' },
-                    { mode: 'understand',   label: 'Understand',  emoji: '🔍' },
-                    { mode: 'conversation', label: 'Conversation', emoji: '💬' },
-                  ] as const
-                ).map(({ mode, label, emoji }) => {
-                  const targetId = activeChildId ?? kidList[0]?.id;
-                  return (
-                    <Pressable
-                      key={mode}
-                      onPress={() => {
-                        if (!targetId) { router.push('/child/new'); return; }
-                        Haptics.selectionAsync();
-                        router.push({
-                          pathname: `/child/${targetId}` as any,
-                          params: { mode },
-                        });
-                      }}
-                      style={({ pressed }) => [
-                        s.modeChip,
-                        pressed && { opacity: 0.75, transform: [{ scale: 0.97 }] },
-                      ]}
-                    >
-                      <Text style={s.modeChipEmoji}>{emoji}</Text>
-                      <Text style={s.modeChipLabel}>{label}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-
-              {/* ─── Divider between zones ─── */}
-              <View style={s.zoneDivider} />
-
-              {/* ══════════════════════════════════════════ */}
-              {/* ZONE 2: SOS MODE                          */}
-              {/* ══════════════════════════════════════════ */}
-
-              {/* Child pills */}
-              {kidList.length > 0 && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={s.pillRow}
-                >
-                  {kidList.map((kid: any, index: number) => {
-                    const isActive = activeChildId === kid.id;
-                    const grad = CHILD_GRADIENTS[index % CHILD_GRADIENTS.length];
-                    const initial = (kid?.name?.trim()?.[0] ?? '?').toUpperCase();
-                    return (
-                      <Pressable
-                        key={kid.id}
-                        onPress={() => {
-                          Haptics.selectionAsync();
-                          setActiveChildId(kid.id);
-                        }}
-                        style={[s.childPill, isActive && s.childPillActive]}
-                      >
-                        <LinearGradient
-                          colors={grad}
-                          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                          style={s.pillAvatar}
-                        >
-                          <Text style={s.pillInitial}>{initial}</Text>
-                        </LinearGradient>
-                        <Text style={[s.pillName, isActive && s.pillNameActive]}>
-                          {kid.name} · {kid.childAge}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                  <Pressable onPress={handleAddChild} style={s.childPill}>
-                    <View style={s.pillAddCircle}>
-                      <Text style={s.pillAddPlus}>+</Text>
-                    </View>
-                    <Text style={s.pillName}>Add</Text>
-                  </Pressable>
-                </ScrollView>
-              )}
-
-              {/* SOS tagline */}
-              <Text style={s.sosTagline}>From chaos to connection</Text>
-
-              {/* SOS header */}
-              <View style={s.sosHeader}>
-                <View style={s.sosBadge}>
-                  <Text style={s.sosBadgeText}>SOS</Text>
-                </View>
-                <Text style={s.sosQuestion}>
-                  {'What\'s happening with '}
-                  <Text style={s.sosChildName}>
-                    {kidList.find((k: any) => k.id === activeChildId)?.name ?? 'your child'}
-                  </Text>
-                  {' right now?'}
-                </Text>
-              </View>
-
-              {/* SOS crisis banner — shown when input contains crisis content */}
-              {sosIsCrisis.isCrisis && (
-                <Pressable
-                  onPress={() => router.push({ pathname: '/crisis', params: { crisisType: sosIsCrisis.crisisType ?? undefined, riskLevel: sosIsCrisis.riskLevel ?? undefined } })}
-                  style={s.crisisBanner}
-                >
-                  <Text style={s.crisisIcon}>⚠️</Text>
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <Text style={s.crisisTitle}>This sounds serious</Text>
-                    <Text style={s.crisisSub}>Tap here if you need immediate help →</Text>
+                  {/* SECONDARY: Ask (collapsed) */}
+                  <View style={s.dividerLabelRow}>
+                    <View style={s.dividerLine} />
+                    <Text style={s.dividerLabel}>or take a quieter moment</Text>
+                    <View style={s.dividerLine} />
                   </View>
-                </Pressable>
-              )}
-
-              {/* SOS input */}
-              <Animated.View style={[s.sosCard, sosInputFocused && s.sosCardFocused]}>
-                {!sosInputText && (
-                  <Animated.View style={[s.placeholderWrap, { opacity: sosScenarioFade }]} pointerEvents="none">
-                    <Text style={s.sosPlaceholder}>
-                      {SOS_SCENARIOS[sosScenarioIdx]}
-                    </Text>
-                  </Animated.View>
-                )}
-                <TextInput
-                  multiline
-                  value={sosInputText}
-                  onChangeText={(t) => { setSosInputText(t); if (sosError) setSosError(''); }}
-                  onFocus={() => setSosInputFocused(true)}
-                  onBlur={() => setSosInputFocused(false)}
-                  style={s.sosInput}
-                  textAlignVertical="top"
-                  editable={!sosSending}
-                  selectionColor={'#E87461'}
-                />
-                <View style={s.thinkingSendWrap}>
-                  <Pressable
-                    onPress={handleSosSend}
-                    disabled={!canSosSend}
-                    style={({ pressed }) => [
-                      !canSosSend && { opacity: 0.32 },
-                      pressed && canSosSend && { transform: [{ scale: 0.94 }] },
-                    ]}
-                  >
-                    <View style={[s.getScriptBtn, canSosSend && s.getScriptBtnActive]}>
-                      <Text style={s.getScriptText}>{sosSending ? '…' : 'Get Script'}</Text>
+                  {collapsedAskRow}
+                  {secondaryOpen && (
+                    <View style={s.secondaryBody}>
+                      {renderAskCard(false)}
+                      {askModeChips}
                     </View>
-                  </Pressable>
-                </View>
-              </Animated.View>
-              {sosError ? <Text style={s.errorText}>{sosError}</Text> : null}
+                  )}
+                </>
+              ) : (
+                <>
+                  {/* HERO: Ask */}
+                  {askEyebrow}
+                  {renderAskCard(true)}
+                  {childPills}
+                  {askModeChips}
 
-              {/* Tone selector */}
-              <Text style={s.toneLabel}>TONE</Text>
-              <View style={s.toneRow}>
-                {(['soft', 'gentle', 'direct'] as const).map((t) => {
-                  const isSelected = tone === t;
-                  const isLocked = !isPremium && t !== 'gentle';
-                  return (
-                    <Pressable
-                      key={t}
-                      onPress={() => {
-                        if (isLocked) { router.push('/upgrade' as any); return; }
-                        Haptics.selectionAsync();
-                        setTone(t);
-                        saveTone(t).catch(() => {});
-                      }}
-                      style={[s.tonePill, isSelected && s.tonePillSelected]}
-                    >
-                      <Text style={[s.tonePillName, isSelected && s.tonePillNameSelected]}>
-                        {t.charAt(0).toUpperCase() + t.slice(1)}{isLocked ? ' 🔒' : ''}
-                      </Text>
-                      <Text style={s.tonePillDesc}>
-                        {t === 'soft' ? 'Warm' : t === 'gentle' ? 'Calm, clear' : 'Short, firm'}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+                  {/* SECONDARY: SOS (collapsed) */}
+                  <View style={s.dividerLabelRow}>
+                    <View style={s.dividerLine} />
+                    <Text style={s.dividerLabel}>in the moment instead?</Text>
+                    <View style={s.dividerLine} />
+                  </View>
+                  {collapsedSosRow}
+                  {secondaryOpen && (
+                    <View style={s.secondaryBody}>
+                      {sosCrisisBanner}
+                      {renderSosCard(false)}
+                      {toneSelector}
+                    </View>
+                  )}
+                </>
+              )}
 
               <Text style={s.freeFooter}>Always free · No paywall</Text>
               <View style={{ height: TAB_BAR_HEIGHT }} />
@@ -880,27 +975,6 @@ const s = StyleSheet.create({
   },
 
   // ─── Question zone ───
-  zoneLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
-  },
-  zoneEmoji: { fontSize: 14 },
-  zoneLabel: {
-    fontFamily: F.bodyMedium,
-    fontSize: 12,
-    color: 'rgba(255,248,230,0.5)',
-    letterSpacing: 0.3,
-  },
-  questionIntro: {
-    fontFamily: F.scriptItalic,
-    fontSize: 13,
-    fontStyle: 'italic',
-    color: 'rgba(255,248,230,0.45)',
-    marginBottom: 10,
-    lineHeight: 18,
-  },
   thinkingCard: {
     borderRadius: 16,
     borderWidth: 1,
@@ -932,10 +1006,11 @@ const s = StyleSheet.create({
     right: 60,
   },
   placeholderText: {
-    fontFamily: F.body,
-    fontSize: 16,
-    color: 'rgba(255,248,231,0.38)',
-    lineHeight: 24,
+    fontFamily: F.scriptItalic,
+    fontStyle: 'italic',
+    fontSize: 17,
+    color: 'rgba(255,248,231,0.40)',
+    lineHeight: 25,
   },
   thinkingSendWrap: {
     position: 'absolute',
@@ -992,11 +1067,106 @@ const s = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // ─── Divider ───
-  zoneDivider: {
+  // ─── Hero eyebrow (the one alive element per state) ───
+  heroEyebrowWrap: {
+    marginBottom: 14,
+    gap: 8,
+  },
+  heroKicker: {
+    fontFamily: F.bodySemi,
+    fontSize: 11,
+    letterSpacing: 1.5,
+    color: 'rgba(255,248,230,0.40)',
+  },
+  heroTitleAsk: {
+    fontFamily: F.scriptItalic,
+    fontStyle: 'italic',
+    fontSize: 26,
+    color: 'rgba(255,248,230,0.94)',
+    lineHeight: 34,
+    letterSpacing: -0.3,
+  },
+  heroTitleSos: {
+    fontFamily: F.heading,
+    fontSize: 24,
+    color: 'rgba(255,248,230,0.94)',
+    lineHeight: 32,
+    letterSpacing: -0.3,
+  },
+  heroName: { color: C.amber },
+  sosBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  sosTaglineInline: {
+    fontFamily: F.scriptItalic,
+    fontSize: 12,
+    fontStyle: 'italic',
+    color: C.sosSubtle,
+  },
+
+  // ─── Hero card lift (gives the hero its breathing weight) ───
+  heroCardLift: {
+    minHeight: 156,
+    paddingBottom: 64,
+  },
+
+  // ─── Labelled divider between hero and collapsed secondary ───
+  dividerLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 22,
+    marginBottom: 14,
+  },
+  dividerLine: {
+    flex: 1,
     height: 1,
     backgroundColor: C.divider,
-    marginVertical: 18,
+  },
+  dividerLabel: {
+    fontFamily: F.scriptItalic,
+    fontStyle: 'italic',
+    fontSize: 12,
+    color: 'rgba(255,248,230,0.40)',
+  },
+
+  // ─── Collapsed secondary row (the quiet, always-reachable mode) ───
+  secondaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    backgroundColor: C.surface,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  secondaryRowSos: {
+    borderColor: 'rgba(232,116,97,0.18)',
+    backgroundColor: 'rgba(232,116,97,0.05)',
+  },
+  secondaryIcon: { fontSize: 16 },
+  secondaryTextWrap: { flex: 1, gap: 2 },
+  secondaryTitle: {
+    fontFamily: F.bodySemi,
+    fontSize: 14,
+    color: 'rgba(255,248,230,0.80)',
+  },
+  secondarySub: {
+    fontFamily: F.body,
+    fontSize: 12,
+    color: 'rgba(255,248,230,0.40)',
+  },
+  secondaryChevron: {
+    fontFamily: F.body,
+    fontSize: 18,
+    color: 'rgba(255,248,230,0.40)',
+  },
+  secondaryBody: {
+    marginTop: 14,
   },
 
   // ─── Child pills ───
@@ -1048,20 +1218,6 @@ const s = StyleSheet.create({
   pillAddPlus: { fontSize: 14, color: 'rgba(255,248,230,0.2)' },
 
   // ─── SOS zone ───
-  sosTagline: {
-    fontFamily: F.scriptItalic,
-    fontSize: 12,
-    fontStyle: 'italic',
-    color: 'rgba(200,136,58,0.45)', // TODO: check token (no exact match for this opacity)
-    textAlign: 'right',
-    marginBottom: 8,
-  },
-  sosHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
-  },
   sosBadge: {
     backgroundColor: 'rgba(232,116,97,0.15)',
     borderWidth: 1,
@@ -1076,14 +1232,6 @@ const s = StyleSheet.create({
     color: '#E87461',
     letterSpacing: 0.5,
   },
-  sosQuestion: {
-    fontFamily: F.bodyMedium,
-    fontSize: 13,
-    color: 'rgba(255,248,230,0.85)',
-    flex: 1,
-    lineHeight: 18,
-  },
-  sosChildName: { color: C.amber },
   sosCard: {
     borderRadius: 16,
     borderWidth: 1,
@@ -1109,10 +1257,10 @@ const s = StyleSheet.create({
     lineHeight: 22,
   },
   sosPlaceholder: {
-    fontFamily: F.body,
-    fontSize: 15,
-    color: 'rgba(232,116,97,0.35)',
-    lineHeight: 22,
+    fontFamily: F.scriptItalic,
+    fontSize: 16,
+    color: 'rgba(232,116,97,0.40)',
+    lineHeight: 24,
     fontStyle: 'italic',
   },
   getScriptBtn: {
