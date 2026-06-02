@@ -58,11 +58,11 @@ const ASK_PLACEHOLDERS = [
 
 // SOS rotating placeholders — real parent voice, no ages, present tense
 const SOS_SCENARIOS: string[] = [
-  "He's losing it right now and I don't know what to say",
-  "She's been crying for 20 minutes and nothing is working",
-  "He completely shut down and won't talk to me or look at me",
-  "She threw herself on the floor and I'm losing patience",
-  "He said he hates me and slammed his door",
+"Losing it right now and I don't know what to say",
+  "Been crying for 20 minutes and nothing is working",
+  "Completely shut down — won't talk to me or look at me",
+  "Just threw themselves on the floor and I'm losing patience",
+  "Said they hate me and slammed the door",
 ];
 
 function inferIntensity(text: string): number | null {
@@ -793,7 +793,7 @@ export default function HomeScreen() {
             ]}
           >
             <View style={[s.getScriptBtn, canSosSend && s.getScriptBtnActive]}>
-              <Text style={s.getScriptText}>{sosSending ? '…' : 'Get Script'}</Text>
+              <Text style={s.getScriptText}>{sosSending ? '…' : 'Find calm words'}</Text>
             </View>
           </Pressable>
         </View>
