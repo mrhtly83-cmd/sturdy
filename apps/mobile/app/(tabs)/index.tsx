@@ -16,6 +16,7 @@ import {
   Animated,
   Easing,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -314,6 +315,8 @@ export default function HomeScreen() {
 
   // ─── Children ───
   const [activeChildId, setActiveChildId] = useState<string | null>(null);
+  // Child switcher sheet (opened from the inline name chip in the hero eyebrow)
+  const [switcherOpen, setSwitcherOpen] = useState(false);
 
   // ─── Tone ───
   const [tone, setTone] = useState<Tone>(TONE_DEFAULT);
@@ -551,6 +554,30 @@ export default function HomeScreen() {
     router.push('/child/new');
   };
 
+  // ─── Child switcher sheet ───
+  const openSwitcher = () => {
+    Haptics.selectionAsync();
+    setSwitcherOpen(true);
+  };
+
+  const closeSwitcher = () => {
+    setSwitcherOpen(false);
+  };
+
+  const handleSelectChild = (id: string) => {
+    Haptics.selectionAsync();
+    setActiveChildId(id);
+    setSwitcherOpen(false);
+  };
+
+  // "Add a child" inside the sheet routes through the existing add flow.
+  // The free-tier 1-child gate lives at the destination (/child/new mount check),
+  // so there is intentionally no limit logic here — single source of truth.
+  const handleAddChildFromSwitcher = () => {
+    setSwitcherOpen(false);
+    handleAddChild();
+  };
+
   // ─── Loading ───
   if (isLoadingChild) {
     return (
@@ -606,45 +633,12 @@ export default function HomeScreen() {
 
   // ─── Shared building blocks (composed differently per period) ───
 
-  const childPills = (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={s.pillRow}
-    >
-      {kidList.map((kid: any, index: number) => {
-        const isActive = activeChildId === kid.id;
-        const grad = CHILD_GRADIENTS[index % CHILD_GRADIENTS.length];
-        const initial = (kid?.name?.trim()?.[0] ?? '?').toUpperCase();
-        return (
-          <Pressable
-            key={kid.id}
-            onPress={() => {
-              Haptics.selectionAsync();
-              setActiveChildId(kid.id);
-            }}
-            style={[s.childPill, isActive && s.childPillActive]}
-          >
-            <LinearGradient
-              colors={grad}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              style={s.pillAvatar}
-            >
-              <Text style={s.pillInitial}>{initial}</Text>
-            </LinearGradient>
-            <Text style={[s.pillName, isActive && s.pillNameActive]}>
-              {kid.name} · {kid.childAge}
-            </Text>
-          </Pressable>
-        );
-      })}
-      <Pressable onPress={handleAddChild} style={s.childPill}>
-        <View style={s.pillAddCircle}>
-          <Text style={s.pillAddPlus}>+</Text>
-        </View>
-        <Text style={s.pillName}>Add</Text>
-      </Pressable>
-    </ScrollView>
+  // Inline tappable child-name chip — lives in the hero eyebrow and opens the
+  // switcher sheet. Replaces the old standalone child-pills row.
+  const childChip = (name: string) => (
+    <Text style={s.heroNameChip} onPress={openSwitcher} suppressHighlighting>
+      {name} ▾
+    </Text>
   );
 
   // Ask (Question mode) ----------------------------------------------------
@@ -653,7 +647,7 @@ export default function HomeScreen() {
       <Text style={s.heroKicker}>ASK STURDY</Text>
       <Text style={s.heroTitleAsk}>
         {activeChildName ? (
-          <>What's on your mind about <Text style={s.heroName}>{activeChildName}</Text>?</>
+          <>What's on your mind about {childChip(activeChildName)}?</>
         ) : (
           'The quiet questions matter too.'
         )}
@@ -743,7 +737,7 @@ export default function HomeScreen() {
       </View>
       <Text style={s.heroTitleSos}>
         {'What\'s happening with '}
-        <Text style={s.heroName}>{heroChildName}</Text>
+        {childChip(heroChildName)}
         {' right now?'}
       </Text>
     </View>
@@ -896,7 +890,6 @@ export default function HomeScreen() {
                   {sosEyebrow}
                   {sosCrisisBanner}
                   {renderSosCard(true)}
-                  {childPills}
                   {toneSelector}
 
                   {/* SECONDARY: Ask (collapsed) */}
@@ -918,7 +911,6 @@ export default function HomeScreen() {
                   {/* HERO: Ask */}
                   {askEyebrow}
                   {renderAskCard(true)}
-                  {childPills}
                   {askModeChips}
 
                   {/* SECONDARY: SOS (collapsed) */}
@@ -945,6 +937,65 @@ export default function HomeScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      {/* ─── Child switcher sheet ─── */}
+      <Modal
+        visible={switcherOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={closeSwitcher}
+        statusBarTranslucent
+      >
+        <Pressable style={s.switcherScrim} onPress={closeSwitcher}>
+          <Pressable style={s.switcherSheet} onPress={() => {}}>
+            <View style={s.switcherHandle} />
+            <Text style={s.switcherTitle}>Switch child</Text>
+
+            {kidList.map((kid: any, index: number) => {
+              const isActive = kid.id === activeChildId;
+              const grad = CHILD_GRADIENTS[index % CHILD_GRADIENTS.length];
+              const initial = (kid?.name?.trim()?.[0] ?? '?').toUpperCase();
+              return (
+                <Pressable
+                  key={kid.id}
+                  onPress={() => handleSelectChild(kid.id)}
+                  style={({ pressed }) => [
+                    s.switcherRow,
+                    isActive && s.switcherRowActive,
+                    pressed && { opacity: 0.8 },
+                  ]}
+                >
+                  <LinearGradient
+                    colors={grad}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                    style={s.switcherAvatar}
+                  >
+                    <Text style={s.switcherInitial}>{initial}</Text>
+                  </LinearGradient>
+                  <Text style={[s.switcherName, isActive && s.switcherNameActive]}>
+                    {kid.name} · {kid.childAge}
+                  </Text>
+                  {isActive ? <Text style={s.switcherCheck}>✓</Text> : null}
+                </Pressable>
+              );
+            })}
+
+            <Pressable
+              onPress={handleAddChildFromSwitcher}
+              style={({ pressed }) => [
+                s.switcherRow,
+                s.switcherAddRow,
+                pressed && { opacity: 0.8 },
+              ]}
+            >
+              <View style={s.switcherAddCircle}>
+                <Text style={s.switcherAddPlus}>+</Text>
+              </View>
+              <Text style={s.switcherAddText}>Add a child</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -1093,7 +1144,6 @@ const s = StyleSheet.create({
     lineHeight: 32,
     letterSpacing: -0.3,
   },
-  heroName: { color: C.amber },
   sosBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1169,53 +1219,102 @@ const s = StyleSheet.create({
     marginTop: 14,
   },
 
-  // ─── Child pills ───
-  pillRow: { flexDirection: 'row', gap: 7, paddingBottom: 14 },
-  childPill: {
+  // ─── Inline child-name chip (in hero eyebrow) ───
+  heroNameChip: {
+    color: C.amber,
+    fontFamily: F.bodySemi,
+  },
+
+  // ─── Child switcher sheet ───
+  switcherScrim: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  switcherSheet: {
+    backgroundColor: C.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderColor: C.border,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 36,
+    gap: 4,
+  },
+  switcherHandle: {
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: C.divider,
+    marginBottom: 12,
+  },
+  switcherTitle: {
+    fontFamily: F.bodySemi,
+    fontSize: 12,
+    letterSpacing: 1,
+    color: 'rgba(255,248,230,0.40)',
+    marginBottom: 6,
+    paddingHorizontal: 4,
+  },
+  switcherRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingLeft: 8,
-    paddingRight: 12,
-    borderRadius: 100,
+    gap: 12,
+    minHeight: 56,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  childPillActive: {
-    backgroundColor: 'rgba(200,136,58,0.15)', // TODO: check token (no exact match at 0.15 opacity)
+  switcherRowActive: {
+    backgroundColor: C.amberBadge,
     borderColor: C.amber,
-    shadowColor: C.amber,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 2,
   },
-  pillAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  switcherAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pillInitial: { fontFamily: F.bodySemi, fontSize: 11, color: '#FFF' },
-  pillName: {
+  switcherInitial: { fontFamily: F.bodySemi, fontSize: 15, color: '#FFF' },
+  switcherName: {
+    flex: 1,
     fontFamily: F.bodyMedium,
-    fontSize: 12,
-    color: 'rgba(255,248,230,0.32)',
+    fontSize: 15,
+    color: 'rgba(255,248,230,0.70)',
   },
-  pillNameActive: { color: C.amber },
-  pillAddCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  switcherNameActive: { color: C.amber },
+  switcherCheck: {
+    fontFamily: F.bodySemi,
+    fontSize: 16,
+    color: C.amber,
+  },
+  switcherAddRow: {
+    marginTop: 8,
+    borderColor: C.divider,
+    borderStyle: 'dashed',
+  },
+  switcherAddCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: 'rgba(255,248,230,0.12)',
+    borderColor: C.amberBorder,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pillAddPlus: { fontSize: 14, color: 'rgba(255,248,230,0.2)' },
+  switcherAddPlus: { fontSize: 20, color: C.amber, lineHeight: 22 },
+  switcherAddText: {
+    flex: 1,
+    fontFamily: F.bodySemi,
+    fontSize: 15,
+    color: C.amber,
+  },
 
   // ─── SOS zone ───
   sosBadge: {
