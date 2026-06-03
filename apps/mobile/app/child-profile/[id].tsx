@@ -399,12 +399,7 @@ export default function ChildProfileScreen() {
           </View>
 
           {/* ─── Edit link ─── */}
-          <Pressable
-            onPress={() => router.push(`/child/${child.id}?edit=1` as any)}
-            style={s.editBtn}
-          >
-            <Text style={s.editText}>Edit {child.name}'s profile</Text>
-          </Pressable>
+          {/* Edit disabled until V2 (name/age + description field). */}
 
           <View style={{ height: 40 }} />
         </ScrollView>
@@ -529,8 +524,4 @@ const s = StyleSheet.create({
   workQuote:      { fontFamily: F.body, fontSize: 13, color: C.textSecondary, lineHeight: 19, marginTop: 2 },
   workSeeAll:     { paddingTop: 4 },
   workSeeAllText: { fontFamily: F.bodyMedium, fontSize: 13, color: C.amber },
-
-  // Edit link
-  editBtn:  { alignSelf: 'center', paddingVertical: 8 },
-  editText: { fontFamily: F.bodyMedium, fontSize: 13, color: C.textMuted, textDecorationLine: 'underline' },
 });
