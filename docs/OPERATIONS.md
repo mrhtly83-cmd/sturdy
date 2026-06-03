@@ -940,3 +940,107 @@ Paste these into docs/OPERATIONS.md.
 **Reasoning:** Cleaner top-of-screen; a deliberate tap into the switcher is higher-intent than a passive "+", and keeping the gate at one destination avoids the recurring "logic hardcoded in multiple places" drift.
 
 **Brief:** BRIEF_home_inline_child_switcher.md — gate question resolved, ready for Claude Code. Independent of the adaptive-layout brief (can land before or after).
+
+# OPERATIONS.md — Entries to append (session 2026-06-02)
+
+Paste into docs/OPERATIONS.md.
+
+---
+
+## 2026-06-02 — Vision re-anchored from founder's original docs (philosophy now drives calls)
+
+**Context:** Across multiple AI build sessions the project had drifted from its original vision.
+Founder shared the original README/blueprint/strategy/roadmap/principles docs to re-extract the
+soul, not to compare built-vs-unbuilt.
+
+**Decision:** The vision is the spine of all product/marketing/design calls going forward:
+Respond → Understand → Grow → Find your own voice; core question "What should I say right now?";
+deeper promise "a better parent, one moment at a time" (a quiet byproduct, never the pitch — we
+do NOT promise outcomes/"you'll become"); philosophy "Sturdy gives you the words, use them
+exactly or make them yours"; the MOAT is the voice ("wise friend on a long walk"), not the AI;
+register is capable-not-dependent, relief-not-guilt, deliberately not addictive.
+
+**Reasoning:** Features get cloned; voice and philosophy don't. Re-anchoring stops the per-session
+drift and gives every decision a fixed reference.
+
+---
+
+## 2026-06-02 — Adopted Journey Audit method (stop chasing isolated leads)
+
+**Context:** Sessions had become reactive — chasing screenshots/ideas one at a time, rediscovering
+the same issues (e.g. stale "50 scripts" quota number resurfacing repeatedly).
+
+**Decision:** Audit by the parent's journey, not by screen. Six stages (Onboarding → Core Loop →
+Convert/Paywall → Review → Reflective/Ask → Account), fixed order, each finished before the next and
+never reopened. Per stage: define must-cover + enhancements → Claude Code audits real code/reports
+current state → judge gaps → Claude Code fixes via brief → test on-device → stage DONE. Out-of-stage
+items are PARKED and TRACKED, not fixed early. Doc: STURDY_JOURNEY_AUDIT.md (in repo).
+
+**Reasoning:** Journey-based walking surfaces flow bugs (e.g. pills→hub redundancy) that screen-by-
+screen misses, and prevents thrash. Discipline applies to the founder too: no jumping.
+
+---
+
+## 2026-06-02 — Gender-tone script differentiation REJECTED
+
+**Context:** Considered making scripts "sound different for boys vs girls" (founder's real parenting
+observation that talking to a 12yo girl differs from a 12yo boy).
+
+**Decision:** Do NOT build gender-based script tone or boy/girl avatars. The real differences are
+captured by the EXISTING axes — age calibration, intensity (crisis throttle), silent neurotype
+blocks, tone selector, message-length awareness — plus the planned free-text "tell us about [child]"
+field (per-child specificity).
+
+**Reasoning:** Gender is the wrong axis — it encodes stereotypes the developmental research doesn't
+support, breaks "it knows MY kid" for children who don't fit the mold, and collides with the silent-
+inference philosophy (Principle 1). The trait the founder observed (e.g. "needs it direct" vs "needs
+to talk it out") lives in the individual child, captured via description, not a gender flag.
+
+---
+
+## 2026-06-02 — Child screens consolidated; old hub retired (PR #63, PENDING)
+
+**Context:** Two child screens existed — old hub `child/[id]` (a second "What needs repair" script
+generator + tone) and `child-profile/[id]` (value-first review). The hub duplicated Home's SOS
+generation; the Home mode pills (Reconnect/Understand/Conversation) all produced SOS-style output
+(Understand/Conversation have no distinct engine — roadmap Phase 3), over-promising distinct modes.
+
+**Decision:** Home GENERATES (SOS hero + Ask); `child-profile/[id]` is the REVIEW/profile space. Cut
+the Home mode pills, retire `child/[id]`, redirect result "Back" → `child-profile/[id]`, disable the
+(non-functional) edit link until V2. Built as PR #63 — LEFT OPEN/UNMERGED until we reach Stage 2/4 of
+the journey audit (do not merge mid-journey).
+
+**Reasoning:** Eliminates the repetitive second generator and two-child-screen confusion. One door to
+generate, one space to review.
+
+---
+
+## 2026-06-02 — Paywall copy locked; "unlimited free" lie flagged (FIX AT STAGE 5)
+
+**Context:** The live upgrade screen lists "Unlimited SOS scripts" under "Always Free" — false under
+the shipped 75/25 model, on the legally-sensitive subscription screen (bait-and-switch / Principle 7).
+
+**Decision (copy):** Final paywall copy locked — empathy open → "words that actually fit" (age /
+shaped-to-child / research-grounded / calmest-when-hardest) → comparison (therapist/books/Google vs
+"< a coffee a week, right now") → plans ($9.99/mo, $69.99/yr) → philosophy close. All claims verified
+true against the script prompt. No named authors, no exposed mechanism. (Mockup: sturdy-paywall-final.html.)
+**Decision (the lie):** The "unlimited SOS — always free" line MUST be replaced with an honest line.
+TRACKED and PARKED for Stage 5 (Convert/Paywall) — not fixed early, per journey discipline. Do not forget.
+
+**Reasoning:** Honest converts better long-term; a visible falsehood on the paywall is the exact
+dark pattern the constitution forbids. Fix it in its stage with the full paywall build.
+
+---
+
+## 2026-06-02 — Subscription hooks PARKED pending real-parent feedback
+
+**Context:** Founder worried V1 is too thin to retain to V2; considered building a locked "insights"
+hook + free avatar customization to drive subscriptions.
+
+**Decision:** Do NOT build speculative retention hooks now. Ship, get ~10 real parents using SOS,
+collect feedback, THEN decide retention/hooks from data. (Insights card would also be selling the
+"patterns" feature that is genuinely "coming soon" — would be vaporware behind glass.)
+
+**Reasoning:** Retention for this product = "did it help in the moment," repeated. The highest-leverage
+work is script quality + getting real usage, not speculative locked features. Avoid building hooks for
+a problem we have no data on yet; avoid locking an empty/unbuilt feature (Principle 7).
