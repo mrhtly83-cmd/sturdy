@@ -33,6 +33,7 @@ import { PaywallSheet } from '../../src/components/ui/PaywallSheet';
 
 type SessionItem = {
   id: string;
+  conversation_id: string | null;
   mode: string;
   trigger_category: string | null;
   situation_summary: string | null;
@@ -98,7 +99,7 @@ export default function ChildProfileScreen() {
         loadSavedScripts(),
         supabase
           .from('interaction_logs')
-          .select('id, mode, trigger_category, situation_summary, created_at')
+          .select('id, conversation_id, mode, trigger_category, situation_summary, created_at')
           .eq('child_profile_id', child.id)
           .order('created_at', { ascending: false })
           .limit(5)
@@ -124,6 +125,24 @@ export default function ChildProfileScreen() {
     Haptics.selectionAsync();
     router.back();
   };
+
+  // Open a single session's full script — same destination History uses.
+  const openSession = useCallback((conversationId: string | null) => {
+    if (!conversationId) return;
+    Haptics.selectionAsync();
+    router.push({ pathname: '/result', params: { conversation_id: conversationId } });
+  }, []);
+
+  // Recent sessions are free. The FULL archive (everything beyond the
+  // recent 5) is the Sturdy+ value — paywalled for free, full list for premium.
+  const handleSeeAllSessions = useCallback(() => {
+    Haptics.selectionAsync();
+    if (isPremium) {
+      router.push('/history');
+    } else {
+      setPaywallFeature('Full history');
+    }
+  }, [isPremium]);
 
   if (!child) {
     return (
@@ -189,8 +208,83 @@ export default function ChildProfileScreen() {
           </View>
 
           {/* ══════════════════════════════════════════ */}
-          {/* SECTION 1: TRIGGERS                        */}
+          {/* SECTION 1: SESSIONS                        */}
+          {/* Value-first: the parent's recent history is */}
+          {/* free. Only the FULL archive (beyond 5) is   */}
+          {/* the Sturdy+ upsell — never a lock on empty. */}
+          {/* ══════════════════════════════════════════ */}
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>Sessions</Text>
+
+            {sessions.length === 0 ? (
+              <View style={s.emptyCard}>
+                <Text style={s.emptyEmoji}>🌱</Text>
+                <Text style={s.emptyTitle}>Building up</Text>
+                <Text style={s.emptyBody}>
+                  Use Sturdy a few more times and your sessions with {child.name} will start showing up here.
+                </Text>
+              </View>
+            ) : (
+              <View style={s.card}>
+                {sessions.map((item) => {
+                  const tappable = !!item.conversation_id;
+                  return (
+                    <Pressable
+                      key={item.id}
+                      disabled={!tappable}
+                      onPress={() => openSession(item.conversation_id)}
+                      style={({ pressed }) => [s.sessionRow, pressed && tappable && { opacity: 0.7 }]}
+                    >
+                      <View style={s.sessionMeta}>
+                        <View style={s.modeBadge}>
+                          <Text style={s.modeBadgeText}>
+                            {MODE_LABELS[item.mode] ?? item.mode}
+                          </Text>
+                        </View>
+                        <Text style={s.sessionDate}>{formatDate(item.created_at)}</Text>
+                      </View>
+                      {item.situation_summary ? (
+                        <Text style={s.sessionSummary} numberOfLines={2}>
+                          {item.situation_summary}
+                        </Text>
+                      ) : null}
+                      {tappable ? (
+                        <Text style={s.sessionLink}>View full script →</Text>
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+
+                {totalInteractions > sessions.length ? (
+                  isPremium ? (
+                    <Pressable onPress={handleSeeAllSessions} style={s.workSeeAll}>
+                      <Text style={s.workSeeAllText}>See all {totalInteractions} sessions →</Text>
+                    </Pressable>
+                  ) : (
+                    <Pressable onPress={handleSeeAllSessions} style={s.seeAllLocked}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.seeAllLockedTitle}>
+                          You have {totalInteractions} sessions with {child.name}
+                        </Text>
+                        <Text style={s.seeAllLockedBody}>
+                          See your full history with Sturdy+
+                        </Text>
+                      </View>
+                      <View style={s.premiumPill}>
+                        <Text style={s.premiumPillText}>STURDY+</Text>
+                      </View>
+                    </Pressable>
+                  )
+                ) : null}
+              </View>
+            )}
+          </View>
+
+          {/* ══════════════════════════════════════════ */}
+          {/* SECTION 2: TRIGGERS                        */}
           {/* Free: top 1 only. Premium: all 5.          */}
+          {/* The lock sits on visible value (+N more),   */}
+          {/* never on an empty shelf.                    */}
           {/* ══════════════════════════════════════════ */}
           <View style={s.section}>
             <Text style={s.sectionTitle}>What sets {child.name} off</Text>
@@ -237,87 +331,15 @@ export default function ChildProfileScreen() {
           </View>
 
           {/* ══════════════════════════════════════════ */}
-          {/* SECTION 2: SESSION HISTORY                 */}
-          {/* Fully locked for free users.               */}
-          {/* ══════════════════════════════════════════ */}
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>Sessions</Text>
-
-            {!isPremium ? (
-              <Pressable
-                onPress={() => setPaywallFeature('Session history')}
-                style={s.lockedCard}
-              >
-                <View style={s.lockedCardInner}>
-                  <Text style={s.lockedIcon}>🔒</Text>
-                  <View style={{ flex: 1, gap: 4 }}>
-                    <Text style={s.lockedTitle}>Every session with {child.name}</Text>
-                    <Text style={s.lockedBody}>
-                      See every moment you've used Sturdy — what happened, which mode, what you said.
-                    </Text>
-                  </View>
-                </View>
-                <View style={s.premiumPill}>
-                  <Text style={s.premiumPillText}>STURDY+</Text>
-                </View>
-              </Pressable>
-            ) : sessions.length === 0 ? (
-              <View style={s.emptyCard}>
-                <Text style={s.emptyEmoji}>📋</Text>
-                <Text style={s.emptyTitle}>No sessions yet</Text>
-                <Text style={s.emptyBody}>
-                  Sessions with {child.name} will appear here as you use Sturdy.
-                </Text>
-              </View>
-            ) : (
-              <View style={s.card}>
-                {sessions.map((item) => (
-                  <View key={item.id} style={s.sessionRow}>
-                    <View style={s.sessionMeta}>
-                      <View style={s.modeBadge}>
-                        <Text style={s.modeBadgeText}>
-                          {MODE_LABELS[item.mode] ?? item.mode}
-                        </Text>
-                      </View>
-                      <Text style={s.sessionDate}>{formatDate(item.created_at)}</Text>
-                    </View>
-                    {item.situation_summary ? (
-                      <Text style={s.sessionSummary} numberOfLines={2}>
-                        {item.situation_summary}
-                      </Text>
-                    ) : null}
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-
-          {/* ══════════════════════════════════════════ */}
           {/* SECTION 3: SAVED SCRIPTS                   */}
-          {/* Fully locked for free users.               */}
+          {/* The parent's own saved scripts — never      */}
+          {/* locked from them (Principle 7). Recent few  */}
+          {/* shown; full library lives on /saved.        */}
           {/* ══════════════════════════════════════════ */}
           <View style={s.section}>
             <Text style={s.sectionTitle}>What's helped before</Text>
 
-            {!isPremium ? (
-              <Pressable
-                onPress={() => setPaywallFeature('Saved scripts')}
-                style={s.lockedCard}
-              >
-                <View style={s.lockedCardInner}>
-                  <Text style={s.lockedIcon}>🔒</Text>
-                  <View style={{ flex: 1, gap: 4 }}>
-                    <Text style={s.lockedTitle}>Scripts that worked</Text>
-                    <Text style={s.lockedBody}>
-                      Save scripts after a session. Find them again the next time something similar comes up.
-                    </Text>
-                  </View>
-                </View>
-                <View style={s.premiumPill}>
-                  <Text style={s.premiumPillText}>STURDY+</Text>
-                </View>
-              </Pressable>
-            ) : savedScripts.length === 0 ? (
+            {savedScripts.length === 0 ? (
               <View style={s.emptyCard}>
                 <Text style={s.emptyEmoji}>💛</Text>
                 <Text style={s.emptyTitle}>Nothing saved yet</Text>
@@ -356,8 +378,10 @@ export default function ChildProfileScreen() {
           </View>
 
           {/* ══════════════════════════════════════════ */}
-          {/* SECTION 4: PATTERNS (V2 — locked for all) */}
-          {/* Informational only — no paywall on tap.   */}
+          {/* SECTION 4: PATTERNS (V2 — coming soon)     */}
+          {/* Informational only — no paywall on tap,    */}
+          {/* no faked pattern data. The genuine premium  */}
+          {/* magic, gated because it's a real full shelf.*/}
           {/* ══════════════════════════════════════════ */}
           <View style={s.section}>
             <Text style={s.sectionTitle}>Patterns</Text>
@@ -491,6 +515,12 @@ const s = StyleSheet.create({
   modeBadgeText:  { fontFamily: F.label, fontSize: 10, color: C.amber, letterSpacing: 0.4 },
   sessionDate:    { fontFamily: F.body, fontSize: 12, color: C.textMuted },
   sessionSummary: { fontFamily: F.body, fontSize: 13, color: C.textSecondary, lineHeight: 19 },
+  sessionLink:    { fontFamily: F.bodyMedium, fontSize: 13, color: C.amber, marginTop: 2 },
+
+  // "See all N" value-forward upsell (free, >5 sessions)
+  seeAllLocked:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 4 },
+  seeAllLockedTitle: { fontFamily: F.bodySemi, fontSize: 14, color: C.text },
+  seeAllLockedBody:  { fontFamily: F.bodyMedium, fontSize: 13, color: C.amber, marginTop: 2 },
 
   // Saved scripts
   workRow:        { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
