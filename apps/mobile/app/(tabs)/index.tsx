@@ -697,37 +697,6 @@ export default function HomeScreen() {
     </>
   );
 
-  const askModeChips = (
-    <View style={s.modeChipRow}>
-      {(
-        [
-          { mode: 'reconnect',    label: 'Reconnect',   emoji: '🔁' },
-          { mode: 'understand',   label: 'Understand',  emoji: '🔍' },
-          { mode: 'conversation', label: 'Conversation', emoji: '💬' },
-        ] as const
-      ).map(({ mode, label, emoji }) => (
-        <Pressable
-          key={mode}
-          onPress={() => {
-            if (!targetChildId) { router.push('/child/new'); return; }
-            Haptics.selectionAsync();
-            router.push({
-              pathname: `/child/${targetChildId}` as any,
-              params: { mode },
-            });
-          }}
-          style={({ pressed }) => [
-            s.modeChip,
-            pressed && { opacity: 0.75, transform: [{ scale: 0.97 }] },
-          ]}
-        >
-          <Text style={s.modeChipEmoji}>{emoji}</Text>
-          <Text style={s.modeChipLabel}>{label}</Text>
-        </Pressable>
-      ))}
-    </View>
-  );
-
   // SOS (script generation) ------------------------------------------------
   const sosEyebrow = (
     <View style={s.heroEyebrowWrap}>
@@ -902,7 +871,6 @@ export default function HomeScreen() {
                   {secondaryOpen && (
                     <View style={s.secondaryBody}>
                       {renderAskCard(false)}
-                      {askModeChips}
                     </View>
                   )}
                 </>
@@ -911,7 +879,6 @@ export default function HomeScreen() {
                   {/* HERO: Ask */}
                   {askEyebrow}
                   {renderAskCard(true)}
-                  {askModeChips}
 
                   {/* SECONDARY: SOS (collapsed) */}
                   <View style={s.dividerLabelRow}>
@@ -1086,36 +1053,6 @@ const s = StyleSheet.create({
     marginTop: -8,
     marginBottom: 12,
     paddingHorizontal: 4,
-  },
-
-  // ─── Directed mode chips ───
-  modeChipRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 4,
-    marginBottom: 4,
-  },
-  modeChip: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,248,231,0.04)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,248,231,0.08)',
-  },
-  modeChipEmoji: {
-    fontSize: 13,
-  },
-  modeChipLabel: {
-    fontFamily: F.bodyMedium,
-    fontSize: 12,
-    color: 'rgba(255,248,230,0.55)',
-    letterSpacing: 0.2,
   },
 
   // ─── Hero eyebrow (the one alive element per state) ───
