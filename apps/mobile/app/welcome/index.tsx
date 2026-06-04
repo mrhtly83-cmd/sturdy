@@ -45,10 +45,10 @@ const BEATS = [
   {
     id: 'beat3',
     image: require('../../assets/welcome-wc-connection.png'),
-    line1: 'From chaos.',
-    highlight: 'To connection.',
+    line1: 'You don’t need to be',
+    highlight: 'a perfect\nparent.',
     line2: '',
-    desc: 'One hard moment at a time.',
+    desc: 'Just the right words, at the right time.',
     isCta: true,
   }
 ];
