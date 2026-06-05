@@ -859,7 +859,7 @@ export default function HomeScreen() {
                   {sosEyebrow}
                   {sosCrisisBanner}
                   {renderSosCard(true)}
-                  {toneSelector}
+                  {isPremium && toneSelector}
 
                   {/* SECONDARY: Ask (collapsed) */}
                   <View style={s.dividerLabelRow}>
@@ -891,13 +891,13 @@ export default function HomeScreen() {
                     <View style={s.secondaryBody}>
                       {sosCrisisBanner}
                       {renderSosCard(false)}
-                      {toneSelector}
+                      {isPremium && toneSelector}
                     </View>
                   )}
                 </>
               )}
 
-              <Text style={s.freeFooter}>Always free · No paywall</Text>
+              <Text style={s.freeFooter}>75 free scripts & 25 questions each month.</Text>
               <View style={{ height: TAB_BAR_HEIGHT }} />
 
             </Animated.View>

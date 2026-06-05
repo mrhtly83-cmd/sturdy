@@ -1108,3 +1108,15 @@ slide-up on every swipe. Uses existing Animated import — no new deps.
 Background moveAnim untouched. Image halo untouched. Drawer untouched.
 
 Files changed: apps/mobile/app/welcome/index.tsx
+
+## 2026-06-05 — Stage 2: Fix trust-breaking copy (3 changes)
+
+1. Home freeFooter: "Always free · No paywall" → "75 free scripts &
+   25 questions each month." — false claim, direct Principle 7 violation.
+2. Tone selector: hidden from free users entirely via isPremium gate.
+   Padlocked pills on the SOS screen before first use is the wrong
+   first impression on the core screen.
+3. Result quota footer: "Unlimited scripts" → "More scripts" — false
+   claim on the paywall-adjacent screen, same Principle 7 violation.
+
+Files: apps/mobile/app/(tabs)/index.tsx, apps/mobile/app/result.tsx

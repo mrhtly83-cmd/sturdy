@@ -195,3 +195,16 @@ first.)
 
 Stage 1 visual polish complete. All structural and visual work done.
 Ready to close Stage 1 and move to Stage 2 (Core Loop / SOS).
+
+## Stage 2 progress update — 2026-06-05
+
+**COMPLETED:**
+- [x] "Always free · No paywall" lie removed from Home
+- [x] Tone selector hidden from free users on SOS screen
+- [x] "Unlimited scripts" lie removed from result quota footer
+- [x] "Find calm words" label confirmed correct
+- [x] Empty state (0 children) confirmed warm and clear
+
+**STILL OPEN:**
+- [ ] Full on-device walkthrough: Home → SOS → result → back
+- [ ] Back navigation safety after follow-up / retry chains

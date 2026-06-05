@@ -140,7 +140,7 @@ function QuotaResultFooter({
         <View style={[rf.fill, { width: `${Math.round(Math.max(0, Math.min(1, remaining / cap)) * 100)}%` as any }]} />
       </View>
       <Text style={rf.cardCta}>
-        Unlimited scripts, more children, tone selector — <Text style={rf.ctaLink}>see Sturdy+ →</Text>
+        More scripts, more children, tone selector — <Text style={rf.ctaLink}>see Sturdy+ →</Text>
       </Text>
     </Pressable>
   );
