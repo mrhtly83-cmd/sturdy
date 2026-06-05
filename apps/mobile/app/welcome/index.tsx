@@ -29,26 +29,29 @@ const BEATS = [
   {
     id: 'beat1',
     image: require('../../assets/welcome-wc-chaos.png'),
-    line1: 'For the moment',
-    highlight: 'right before\nyou lose it.',
+    line1: 'Parenting is hard in ways no one says.',
+    highlight: '',
     line2: '',
-    desc: 'The right words, while it still matters.',
+    desc: 'Sturdy says them.',
+    trust: 'Calmest when it\'s hardest.',
   },
   {
     id: 'beat2',
     image: require('../../assets/welcome-wc-think.png'),
-    line1: 'The questions you’d',
-    highlight: 'never say\nout loud.',
+    line1: 'Some questions deserve a real answer.',
+    highlight: '',
     line2: '',
-    desc: 'Ask anything. No judgment, no jargon.',
+    desc: 'Ask anything. No jargon, no judgment.',
+    trust: 'What you share here stays here.',
   },
   {
     id: 'beat3',
     image: require('../../assets/welcome-wc-connection.png'),
-    line1: 'You don’t need to be',
-    highlight: 'a perfect\nparent.',
+    line1: 'You show up. That\'s already the work.',
+    highlight: '',
     line2: '',
     desc: 'Just the right words, at the right time.',
+    trust: 'Sturdy gives you the words. Use them exactly, or make them yours.',
     isCta: true,
   }
 ];
@@ -164,13 +167,21 @@ export default function WelcomeScreen() {
               <View style={s.textContainer}>
                 <Text style={s.titleText}>
                   {beat.line1}
-                  {'\n'}
-                  <Text style={s.highlightText}>{beat.highlight}</Text>
+                  {beat.highlight ? (
+                    <>
+                      {'\n'}
+                      <Text style={s.highlightText}>{beat.highlight}</Text>
+                    </>
+                  ) : null}
                   {beat.line2 ? `\n${beat.line2}` : ''}
                 </Text>
 
                 {beat.desc && (
                   <Text style={s.descText}>{beat.desc}</Text>
+                )}
+
+                {beat.trust && (
+                  <Text style={s.trustText}>{beat.trust}</Text>
                 )}
 
                 {beat.isCta && (
@@ -268,11 +279,21 @@ const s = StyleSheet.create({
   },
   descText: {
     fontFamily: F.body,
-    marginTop: 24, 
+    marginTop: 24,
     fontSize: 15,
     color: 'rgba(255, 248, 231, 0.7)',
     textAlign: 'center',
     lineHeight: 22,
+  },
+  trustText: {
+    fontFamily: F.heading,
+    fontStyle: 'italic',
+    fontSize: 13,
+    color: C.amber,
+    textAlign: 'center',
+    marginTop: 16,
+    lineHeight: 20,
+    opacity: 0.85,
   },
 
   ctaWrapper: {
