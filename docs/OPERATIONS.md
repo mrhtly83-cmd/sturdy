@@ -1076,3 +1076,25 @@ Set C register is the locked Sturdy in-app voice standard. Reference examples ab
 - Fixed-drawer layout refactor (buttons fall off viewport on small screens — structural bug, next brief)
 - Name capture bug (email-junk scrape — SMTP session dependency)
 - First-script-before-signup (P1 activation lever — parked post-test)
+
+## 2026-06-05 — Welcome screen: fixed-drawer layout shipped
+
+**Problem:** CTA buttons (Get started, Sign in) were embedded inside the
+ScrollView on beat3 only. Dynamic headline wrapping pushed them below the
+viewport on small screens — invisible and unclickable. A conversion zero.
+
+**Fix:** Extracted the button drawer from the ScrollView entirely and pinned
+it as a static View directly inside SafeAreaView, below the ScrollView.
+Header (progress dots + Skip) and drawer (Get started + Sign in) are now
+always visible from slide 1 regardless of screen size or headline wrapping.
+Only the halo image and typography block scroll horizontally.
+
+**Structural change:** `page` justifyContent space-between → flex-start.
+`textContainer` flex:1 → flexShrink:0. New `drawer` style added. `isCta`
+flag and block removed from BEATS array and ScrollView map entirely.
+
+**Verified on-device:** buttons visible and tappable on all three beats,
+progress dots tracking correctly, background untouched, all copy intact.
+
+**Files changed:** apps/mobile/app/welcome/index.tsx
+**Commit:** 8e9da05

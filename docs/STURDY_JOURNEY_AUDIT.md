@@ -169,3 +169,22 @@ first.)
 - [ ] Legal links verified in-flow — not yet checked
 
 **Next action:** Write and execute fixed-drawer layout brief. That is the structural Stage 1 blocker.
+
+## Stage 1 progress update — 2026-06-05 (fixed-drawer)
+
+**COMPLETED this session:**
+- [x] Fixed-drawer layout — buttons pinned, visible from slide 1 on all screens
+
+**Stage 1 structural work now COMPLETE.**
+
+**Remaining open items (not blocking Stage 1 exit):**
+- [ ] Spacing: gap between watercolor image and headline — minor polish,
+      single paddingTop reduction on haloContainer, low risk
+- [ ] Name capture — email-junk scrape root unresolved (SMTP dependency)
+- [ ] First-script-before-signup — parked as post-test priority
+- [ ] Email confirmation + SMTP — tracked launch blocker, separate session
+- [ ] Crisis reachability during onboarding — not yet verified
+- [ ] Legal links verified in-flow — not yet checked
+
+**Next:** Decide — polish the image/headline spacing now, or move to Stage 2
+(Core Loop / SOS).
