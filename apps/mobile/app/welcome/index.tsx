@@ -52,7 +52,6 @@ const BEATS = [
     line2: '',
     desc: 'Just the right words, at the right time.',
     trust: 'Sturdy gives you the words. Use them exactly, or make them yours.',
-    isCta: true,
   }
 ];
 
@@ -184,33 +183,33 @@ export default function WelcomeScreen() {
                   <Text style={s.trustText}>{beat.trust}</Text>
                 )}
 
-                {beat.isCta && (
-                  <View style={s.ctaWrapper}>
-                    <Pressable 
-                      onPress={handleGetStarted}
-                      style={({ pressed }) => [s.btnWrap, pressed && { transform: [{ scale: 0.98 }] }]}
-                    >
-                      <LinearGradient
-                        colors={[C.amber, C.amberMid]}
-                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                        style={s.btnActive}
-                      >
-                        <Text style={s.btnText}>Get started</Text>
-                      </LinearGradient>
-                    </Pressable>
-                    <View style={s.signInRow}>
-                      <Text style={s.signInGrey}>Already with us? </Text>
-                      <Pressable onPress={handleSignIn} hitSlop={8}>
-                        <Text style={s.signInLink}>Sign in</Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                )}
               </View>
 
             </View>
           ))}
         </ScrollView>
+
+        {/* ─── Fixed Bottom Drawer ─── */}
+        <View style={s.drawer}>
+          <Pressable
+            onPress={handleGetStarted}
+            style={({ pressed }) => [s.btnWrap, pressed && { transform: [{ scale: 0.98 }] }]}
+          >
+            <LinearGradient
+              colors={[C.amber, C.amberMid]}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              style={s.btnActive}
+            >
+              <Text style={s.btnText}>Get started</Text>
+            </LinearGradient>
+          </Pressable>
+          <View style={s.signInRow}>
+            <Text style={s.signInGrey}>Already with us? </Text>
+            <Pressable onPress={handleSignIn} hitSlop={8}>
+              <Text style={s.signInLink}>Sign in</Text>
+            </Pressable>
+          </View>
+        </View>
       </SafeAreaView>
     </View>
   );
@@ -233,7 +232,7 @@ const s = StyleSheet.create({
   progressLineActive: { backgroundColor: C.amber },
   skipText: { color: 'rgba(255,255,255,0.5)', fontFamily: F.body, fontSize: 14 }, // TODO: check token
 
-  page: { width: W, height: '100%', justifyContent: 'space-between' },
+  page: { width: W, height: '100%', justifyContent: 'flex-start' },
 
   haloContainer: {
     flex: 1,
@@ -259,9 +258,10 @@ const s = StyleSheet.create({
   beatImage: { width: '100%', height: '100%' },
 
   textContainer: {
-    flex: 1,
+    flexShrink: 0,
     paddingHorizontal: 32,
     paddingTop: 24,
+    paddingBottom: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -299,6 +299,14 @@ const s = StyleSheet.create({
   ctaWrapper: {
     width: '100%',
     marginTop: 40,
+    alignItems: 'center',
+  },
+  drawer: {
+    flexShrink: 0,
+    paddingHorizontal: 32,
+    paddingTop: 16,
+    paddingBottom: 8,
+    width: '100%',
     alignItems: 'center',
   },
   btnWrap: { width: '100%', marginBottom: 20 },
