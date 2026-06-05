@@ -150,3 +150,22 @@ and we don't reopen it.
 (Framework above. We walk Stage 2 (Core Loop) next, same structure: must-cover / current-state /
 enhancements / competitor benchmark / punch-list / exit criteria. Not started — finish Stage 1
 first.)
+
+---
+
+## Stage 1 progress update — 2026-06-05
+
+**COMPLETED this session:**
+- [x] Welcome copy: all three beats replaced with Set C — The Understated register (locked)
+- [x] Trust lines added to each beat (Style A — italic amber), sourced and verified from privacy policy + paywall
+- [x] Verified on-device: all three beats clean, no regressions
+
+**STILL OPEN (Stage 1 not complete):**
+- [ ] Fixed-drawer layout refactor — buttons fall off viewport on small screens (next brief)
+- [ ] Name capture — email-junk scrape root unresolved (SMTP dependency)
+- [ ] First-script-before-signup — parked as post-test priority
+- [ ] Email confirmation + SMTP — tracked launch blocker, separate session
+- [ ] Crisis reachability during onboarding — not yet verified
+- [ ] Legal links verified in-flow — not yet checked
+
+**Next action:** Write and execute fixed-drawer layout brief. That is the structural Stage 1 blocker.

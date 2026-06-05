@@ -1044,3 +1044,35 @@ collect feedback, THEN decide retention/hooks from data. (Insights card would al
 **Reasoning:** Retention for this product = "did it help in the moment," repeated. The highest-leverage
 work is script quality + getting real usage, not speculative locked features. Avoid building hooks for
 a problem we have no data on yet; avoid locking an empty/unbuilt feature (Principle 7).
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SESSION 2026-06-05 — Welcome screen: Set C copy + trust lines
+# ═══════════════════════════════════════════════════════════════════════════
+
+## 2026-06-05 — Welcome copy voice LOCKED (Set C — The Understated)
+
+**Context:** Journey audit Stage 1 continued. All three beat headlines and subheads replaced with Set C register: fewest words, maximum weight, trusts the parent completely. Quiet and knowing, not performative. No drama, no therapy-speak, no validation language. Every line earns its place.
+
+**Locked copy (all three beats):**
+- Beat 1 (Chaos): headline "Parenting is hard in ways no one says." / subhead "Sturdy says them."
+- Beat 2 (Thinking): headline "Some questions deserve a real answer." / subhead "Ask anything. No jargon, no judgment."
+- Beat 3 (Connection): headline "You show up. That's already the work." / subhead "Just the right words, at the right time."
+
+**Trust lines added (Style A — italic amber, Fraunces, 13px, opacity 0.85):**
+- Beat 1: "Calmest when it's hardest." (sourced from paywall differentiator list — verified true)
+- Beat 2: "What you share here stays here." (verified against privacy policy — conversations not retained, not used for training)
+- Beat 3: "Sturdy gives you the words. Use them exactly, or make them yours." (the product philosophy closer — also used on paywall)
+
+**Governing voice principle (apply to ALL screens going forward):**
+Set C register is the locked Sturdy in-app voice standard. Reference examples above. Any copy that opens with a list, explains itself, or performs emotion is a violation. One true thing, said plainly. Test: would a wise friend on a long walk say this?
+
+**Technical:** `trustText` style added to StyleSheet — `F.heading` (Fraunces) italic, 13px, `C.amber`, centered, marginTop 16, lineHeight 20, opacity 0.85. Highlight split structure preserved but conditional — safe for future use. Smart-quote corruption introduced during paste; resolved via Claude Code direct edit before final build.
+
+**Verified on-device:** all three beats render correctly, trust lines in italic amber, background untouched, CTA on beat 3 intact, progress dots tracking correctly.
+
+**Files changed:** `apps/mobile/app/welcome/index.tsx`
+
+**Still open from Stage 1 (not touched this session):**
+- Fixed-drawer layout refactor (buttons fall off viewport on small screens — structural bug, next brief)
+- Name capture bug (email-junk scrape — SMTP session dependency)
+- First-script-before-signup (P1 activation lever — parked post-test)
