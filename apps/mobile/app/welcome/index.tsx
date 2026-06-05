@@ -29,8 +29,8 @@ const BEATS = [
   {
     id: 'beat1',
     image: require('../../assets/welcome-wc-chaos.png'),
-    line1: 'Parenting is hard in ways no one says.',
-    highlight: '',
+    line1: 'Parenting is hard',
+    highlight: 'in ways no one says.',
     line2: '',
     desc: 'Sturdy says them.',
     trust: 'Calmest when it\'s hardest.',
@@ -38,8 +38,8 @@ const BEATS = [
   {
     id: 'beat2',
     image: require('../../assets/welcome-wc-think.png'),
-    line1: 'Some questions deserve a real answer.',
-    highlight: '',
+    line1: 'Some questions deserve',
+    highlight: 'a real answer.',
     line2: '',
     desc: 'Ask anything. No jargon, no judgment.',
     trust: 'What you share here stays here.',
@@ -47,8 +47,8 @@ const BEATS = [
   {
     id: 'beat3',
     image: require('../../assets/welcome-wc-connection.png'),
-    line1: 'You show up. That\'s already the work.',
-    highlight: '',
+    line1: 'You show up.',
+    highlight: 'That\'s already the work.',
     line2: '',
     desc: 'Just the right words, at the right time.',
     trust: 'Sturdy gives you the words. Use them exactly, or make them yours.',
@@ -92,6 +92,19 @@ export default function WelcomeScreen() {
   const { session } = useAuth();
   const [page, setPage] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
+  const textAnim = useRef(new Animated.Value(1)).current;
+
+  const animateText = () => {
+    textAnim.setValue(0);
+    Animated.parallel([
+      Animated.timing(textAnim, {
+        toValue: 1,
+        duration: 380,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   // ─── Auth Redirect ───
   useEffect(() => {
@@ -105,6 +118,7 @@ export default function WelcomeScreen() {
     if (newPage !== page) {
       setPage(newPage);
       Haptics.selectionAsync();
+      animateText();
     }
   };
 
@@ -163,7 +177,18 @@ export default function WelcomeScreen() {
               </View>
 
               {/* BOTTOM: Typography & Actions */}
-              <View style={s.textContainer}>
+              <Animated.View style={[
+                s.textContainer,
+                {
+                  opacity: textAnim,
+                  transform: [{
+                    translateY: textAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [12, 0],
+                    }),
+                  }],
+                },
+              ]}>
                 <Text style={s.titleText}>
                   {beat.line1}
                   {beat.highlight ? (
@@ -183,7 +208,7 @@ export default function WelcomeScreen() {
                   <Text style={s.trustText}>{beat.trust}</Text>
                 )}
 
-              </View>
+              </Animated.View>
 
             </View>
           ))}
@@ -235,10 +260,11 @@ const s = StyleSheet.create({
   page: { width: W, height: '100%', justifyContent: 'flex-start' },
 
   haloContainer: {
-    flex: 1,
+    flexShrink: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 8,
+    paddingTop: 48,
+    paddingBottom: 0,
   },
   haloWrapper: {
     width: W * 0.65,
@@ -260,7 +286,7 @@ const s = StyleSheet.create({
   textContainer: {
     flexShrink: 0,
     paddingHorizontal: 32,
-    paddingTop: 24,
+    paddingTop: 12,
     paddingBottom: 16,
     alignItems: 'center',
     justifyContent: 'center',

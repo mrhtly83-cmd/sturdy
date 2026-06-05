@@ -188,3 +188,10 @@ first.)
 
 **Next:** Decide — polish the image/headline spacing now, or move to Stage 2
 (Core Loop / SOS).
+
+## Stage 1 progress update — 2026-06-05 (text animation)
+
+- [x] Fade + slide-up text animation on beat change (380ms, Easing.out cubic)
+
+Stage 1 visual polish complete. All structural and visual work done.
+Ready to close Stage 1 and move to Stage 2 (Core Loop / SOS).

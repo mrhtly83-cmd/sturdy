@@ -1098,3 +1098,13 @@ progress dots tracking correctly, background untouched, all copy intact.
 
 **Files changed:** apps/mobile/app/welcome/index.tsx
 **Commit:** 8e9da05
+
+## 2026-06-05 — Welcome screen: fade + slide-up text animation
+
+Added fade + translateY animation to the textContainer on each beat
+change. textAnim Animated.Value resets to 0 on onMomentumScrollEnd
+and eases to 1 over 380ms (Easing.out cubic). Opacity 0→1 + 12px
+slide-up on every swipe. Uses existing Animated import — no new deps.
+Background moveAnim untouched. Image halo untouched. Drawer untouched.
+
+Files changed: apps/mobile/app/welcome/index.tsx
