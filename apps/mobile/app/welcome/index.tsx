@@ -99,7 +99,7 @@ export default function WelcomeScreen() {
     Animated.parallel([
       Animated.timing(textAnim, {
         toValue: 1,
-        duration: 380,
+        duration: 1000,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
