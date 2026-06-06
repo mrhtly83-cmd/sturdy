@@ -307,12 +307,6 @@ const handleRetry = () => {
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-        {/* Back */}
-        <View style={s.backRow}>
-          <Pressable onPress={() => { voice.stop(); if (val(params.source) === 'home') { router.replace('/(tabs)'); return; } const cid = typeof params.childId === 'string' ? params.childId : null; if (cid) router.replace(`/child-profile/${cid}` as any); else router.back(); }} style={s.back}><Text style={s.backText}>← Back</Text></Pressable>
-          <Pressable onPress={() => { voice.stop(); router.replace('/(tabs)'); }} style={s.homeBtn}><Text style={s.homeBtnText}>🏠</Text></Pressable>
-        </View>
-
         {/* Fallback */}
         {isFallback ? (
           <View style={s.fallbackCard}>
@@ -481,12 +475,6 @@ const card = {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.backgroundWarm },
   scroll: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40, gap: 14 },
-
-  backRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  back: { alignSelf: 'flex-start', paddingVertical: 6 },
-  backText: { fontFamily: F.bodyMedium, fontSize: 15, color: C.textSecondary },
-  homeBtn: { paddingVertical: 6, paddingHorizontal: 10 },
-  homeBtnText: { fontSize: 20 },
 
   fallbackCard: { ...card, flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 14 },
   fallbackTitle: { fontFamily: F.bodySemi, fontSize: 14, color: C.sage },
