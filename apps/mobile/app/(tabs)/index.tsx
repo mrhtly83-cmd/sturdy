@@ -674,7 +674,7 @@ export default function HomeScreen() {
 
   // ─── Main: 1+ children ───
   const targetChildId = activeChildId ?? kidList[0]?.id;
-  const heroChildName = kidList.find((k: any) => k.id === activeChildId)?.name ?? 'your child';
+  const heroChildName = kidList.find((k: any) => k.id === activeChildId)?.name ?? kidList[0]?.name ?? 'your child';
 
   const toggleSecondary = () => {
     Haptics.selectionAsync();
@@ -907,46 +907,22 @@ export default function HomeScreen() {
               {/* One hero per state; the other is always one tap away.  */}
               {/* ══════════════════════════════════════════════════════ */}
 
-              {period === 'active' ? (
-                <>
-                  {/* HERO: SOS */}
-                  {sosEyebrow}
-                  {sosCrisisBanner}
-                  {renderSosCard(true)}
-                  {isPremium && toneSelector}
+              {/* SOS hero — always shown */}
+              {sosEyebrow}
+              {sosCrisisBanner}
+              {renderSosCard(true)}
+              {isPremium && toneSelector}
 
-                  {/* SECONDARY: Ask (collapsed) */}
-                  <View style={s.dividerLabelRow}>
-                    <View style={s.dividerLine} />
-                    <View style={s.dividerLine} />
-                  </View>
-                  {collapsedAskRow}
-                  {secondaryOpen && (
-                    <View style={s.secondaryBody}>
-                      {renderAskCard(false)}
-                    </View>
-                  )}
-                </>
-              ) : (
-                <>
-                  {/* HERO: Ask */}
-                  {askEyebrow}
-                  {renderAskCard(true)}
-
-                  {/* SECONDARY: SOS (collapsed) */}
-                  <View style={s.dividerLabelRow}>
-                    <View style={s.dividerLine} />
-                    <View style={s.dividerLine} />
-                  </View>
-                  {collapsedSosRow}
-                  {secondaryOpen && (
-                    <View style={s.secondaryBody}>
-                      {sosCrisisBanner}
-                      {renderSosCard(false)}
-                      {isPremium && toneSelector}
-                    </View>
-                  )}
-                </>
+              {/* Ask — collapsed secondary */}
+              <View style={s.dividerLabelRow}>
+                <View style={s.dividerLine} />
+                <View style={s.dividerLine} />
+              </View>
+              {collapsedAskRow}
+              {secondaryOpen && (
+                <View style={s.secondaryBody}>
+                  {renderAskCard(false)}
+                </View>
               )}
 
               <View style={{ height: TAB_BAR_HEIGHT }} />
