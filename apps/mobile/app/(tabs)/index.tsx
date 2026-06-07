@@ -199,73 +199,107 @@ function detectChildFromMessage(
 // BACKGROUND
 // ═══════════════════════════════════════════════
 
-function Background() {
-  const moveAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(moveAnim, {
-          toValue: 1,
-          duration: 25000,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(moveAnim, {
-          toValue: 0,
-          duration: 25000,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, [moveAnim]);
-
-  const translateY = moveAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -30] });
-  const scale = moveAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.04] });
-
-  return (
-    <>
-      {/* Main gradient — 8-stop paywall depth */}
-      <LinearGradient
-        colors={['#1a1206', '#171009', '#15100a', '#13100a', '#100c08', '#0b0906', '#070504', '#050402']}
-        locations={[0, 0.14, 0.26, 0.40, 0.56, 0.74, 0.90, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-      {/* Horizon glow — rising warmth from bottom */}
-      <View
-        style={StyleSheet.absoluteFillObject}
-        pointerEvents="none"
-      >
+function Background({ period }: { period: 'active' | 'calm' }) {
+  if (period === 'active') {
+    // ── DAY: Golden hour ──
+    return (
+      <>
+        {/* Base gradient — deep amber-orange top, warm brown bottom */}
+        <LinearGradient
+          colors={[
+            '#1a0e04', '#200f04', '#271205', '#2e1506',
+            '#321706', '#2e1606', '#281406', '#221207',
+            '#1c1108', '#171009', '#131009', '#100e08',
+            '#0d0c07', '#0a0906', '#080705', '#060504',
+          ]}
+          locations={[0, 0.04, 0.08, 0.14, 0.20, 0.28, 0.36, 0.44, 0.52, 0.60, 0.68, 0.76, 0.84, 0.91, 0.97, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        {/* Sun glow — radiating from top center */}
+        <LinearGradient
+          colors={['rgba(255,180,50,0.55)', 'rgba(230,140,30,0.3)', 'rgba(180,100,15,0.12)', 'transparent']}
+          locations={[0, 0.25, 0.5, 0.7]}
+          style={StyleSheet.absoluteFill}
+        />
+        {/* Atmosphere mid warmth */}
+        <LinearGradient
+          colors={['transparent', 'rgba(180,100,20,0.14)', 'transparent']}
+          locations={[0.1, 0.35, 0.65]}
+          style={StyleSheet.absoluteFill}
+        />
+        {/* Horizon glow — amber rising from bottom */}
         <LinearGradient
           colors={['transparent', 'rgba(140,90,15,0.22)']}
           locations={[0.6, 1]}
           style={StyleSheet.absoluteFill}
         />
-      </View>
-      {/* Horizon glow — gold centre bleed */}
-      <View
-        style={StyleSheet.absoluteFillObject}
-        pointerEvents="none"
-      >
         <LinearGradient
-          colors={['transparent', 'rgba(201,168,92,0.10)']}
-          locations={[0.7, 1]}
+          colors={['transparent', 'rgba(184,142,74,0.12)']}
+          locations={[0.72, 1]}
           style={StyleSheet.absoluteFill}
         />
-      </View>
-      {/* Stars — pinpoint warm lights in upper zone */}
-      <View
-        style={StyleSheet.absoluteFillObject}
-        pointerEvents="none"
-      >
+      </>
+    );
+  }
+
+  // ── NIGHT: Deep black sky + warm stars ──
+  return (
+    <>
+      {/* Base gradient — pure deep black sky */}
+      <LinearGradient
+        colors={[
+          '#020202', '#040403', '#060604', '#080705',
+          '#0a0906', '#0c0a07', '#0d0b08', '#0e0c08',
+          '#0d0b07', '#0c0a06', '#0b0906', '#0a0806',
+          '#090705', '#080605', '#070504', '#060403', '#050402',
+        ]}
+        locations={[0, 0.06, 0.12, 0.19, 0.26, 0.34, 0.41, 0.48, 0.55, 0.61, 0.67, 0.73, 0.79, 0.85, 0.90, 0.96, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      {/* Stars — warm white, concentrated in top 50% */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
         {[
-          { top: '4%',  left: '14%', size: 2   },
-          { top: '3%',  left: '70%', size: 2.5 },
+          { top: '4%',  left: '12%', size: 2   },
+          { top: '2%',  left: '67%', size: 2.5 },
           { top: '7%',  left: '88%', size: 2   },
-          { top: '6%',  left: '40%', size: 1.5 },
-          { top: '10%', left: '24%', size: 1.5 },
-          { top: '12%', left: '80%', size: 1.5 },
+          { top: '5%',  left: '45%', size: 3   },
+          { top: '9%',  left: '28%', size: 2   },
+          { top: '12%', left: '78%', size: 2.5 },
+          { top: '15%', left: '58%', size: 2   },
+          { top: '18%', left: '5%',  size: 2   },
+          { top: '3%',  left: '93%', size: 2.5 },
+          { top: '22%', left: '38%', size: 2   },
+          { top: '6%',  left: '20%', size: 1.5 },
+          { top: '8%',  left: '52%', size: 1.5 },
+          { top: '5%',  left: '82%', size: 1.5 },
+          { top: '13%', left: '35%', size: 1.5 },
+          { top: '17%', left: '70%', size: 1.5 },
+          { top: '24%', left: '16%', size: 1.5 },
+          { top: '26%', left: '60%', size: 1.5 },
+          { top: '20%', left: '90%', size: 1.5 },
+          { top: '30%', left: '48%', size: 1.5 },
+          { top: '30%', left: '8%',  size: 1.5 },
+          { top: '28%', left: '75%', size: 1.5 },
+          { top: '35%', left: '25%', size: 1.5 },
+          { top: '37%', left: '55%', size: 1.5 },
+          { top: '33%', left: '85%', size: 1.5 },
+          { top: '3%',  left: '42%', size: 1   },
+          { top: '10%', left: '7%',  size: 1   },
+          { top: '14%', left: '95%', size: 1   },
+          { top: '18%', left: '30%', size: 1   },
+          { top: '20%', left: '62%', size: 1   },
+          { top: '16%', left: '18%', size: 1   },
+          { top: '22%', left: '80%', size: 1   },
+          { top: '27%', left: '40%', size: 1   },
+          { top: '24%', left: '72%', size: 1   },
+          { top: '32%', left: '14%', size: 1   },
+          { top: '34%', left: '50%', size: 1   },
+          { top: '40%', left: '33%', size: 1   },
+          { top: '42%', left: '65%', size: 1   },
+          { top: '44%', left: '22%', size: 1   },
+          { top: '38%', left: '88%', size: 1   },
+          { top: '46%', left: '57%', size: 1   },
+          { top: '48%', left: '10%', size: 1   },
         ].map((star, i) => (
           <View
             key={i}
@@ -276,12 +310,27 @@ function Background() {
               width: star.size,
               height: star.size,
               borderRadius: star.size / 2,
-              backgroundColor: 'rgba(255,248,235,0.85)',
+              backgroundColor: `rgba(255,248,225,${i < 10 ? 0.95 : i < 24 ? 0.78 : 0.55})`,
             }}
           />
         ))}
       </View>
-      <StarField />
+      {/* Horizon glow — amber warmth rising from bottom */}
+      <LinearGradient
+        colors={['transparent', 'rgba(120,80,10,0.22)']}
+        locations={[0.55, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <LinearGradient
+        colors={['transparent', 'rgba(160,105,15,0.14)']}
+        locations={[0.65, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <LinearGradient
+        colors={['transparent', 'rgba(184,142,74,0.08)']}
+        locations={[0.75, 1]}
+        style={StyleSheet.absoluteFill}
+      />
     </>
   );
 }
@@ -583,7 +632,7 @@ export default function HomeScreen() {
   if (isLoadingChild) {
     return (
       <View style={s.root}>
-        <Background />
+        <Background period={period} />
         <StatusBar style="light" />
         <SafeAreaView style={s.centerGate}>
           <ActivityIndicator color={C.amber} />
@@ -596,7 +645,7 @@ export default function HomeScreen() {
   if (kidList.length === 0) {
     return (
       <View style={s.root}>
-        <Background />
+        <Background period={period} />
         <StatusBar style="light" />
         <SafeAreaView style={s.safe} edges={['top']}>
           <View style={s.emptyWrap}>
@@ -645,7 +694,6 @@ export default function HomeScreen() {
   // Ask (Question mode) ----------------------------------------------------
   const askEyebrow = (
     <View style={s.heroEyebrowWrap}>
-      <Text style={s.heroKicker}>ASK STURDY</Text>
       <Text style={s.heroTitleAsk}>
         {activeChildName ? (
           <>What's on your mind about {childChip(activeChildName)}?</>
@@ -826,7 +874,7 @@ export default function HomeScreen() {
 
   return (
     <View style={s.root}>
-      <Background />
+      <Background period={period} />
       <StatusBar style="light" />
       <SafeAreaView style={s.safe} edges={['top']}>
         <KeyboardAvoidingView
@@ -870,7 +918,6 @@ export default function HomeScreen() {
                   {/* SECONDARY: Ask (collapsed) */}
                   <View style={s.dividerLabelRow}>
                     <View style={s.dividerLine} />
-                    <Text style={s.dividerLabel}>or take a quieter moment</Text>
                     <View style={s.dividerLine} />
                   </View>
                   {collapsedAskRow}
@@ -889,7 +936,6 @@ export default function HomeScreen() {
                   {/* SECONDARY: SOS (collapsed) */}
                   <View style={s.dividerLabelRow}>
                     <View style={s.dividerLine} />
-                    <Text style={s.dividerLabel}>in the moment instead?</Text>
                     <View style={s.dividerLine} />
                   </View>
                   {collapsedSosRow}
@@ -903,7 +949,6 @@ export default function HomeScreen() {
                 </>
               )}
 
-              <Text style={s.freeFooter}>75 free scripts & 25 questions each month.</Text>
               <View style={{ height: TAB_BAR_HEIGHT }} />
 
             </Animated.View>
@@ -1012,17 +1057,17 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(184,142,74,0.25)',
     borderTopColor: 'rgba(220,185,110,0.12)',
-    backgroundColor: 'rgba(255,255,255,0.025)',
+    backgroundColor: 'rgba(255,248,220,0.06)',
     minHeight: 120,
     padding: 16,
     paddingBottom: 60,
     position: 'relative',
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.50,
-    shadowRadius: 28,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 2,
   },
   thinkingCardFocused: {
     borderColor: 'rgba(200,168,100,0.40)',
@@ -1309,20 +1354,20 @@ const s = StyleSheet.create({
   },
   sosCard: {
     borderRadius: 18,
-    borderWidth: 0.5,
-    borderColor: 'rgba(184,142,74,0.18)',
-    borderTopColor: 'rgba(210,120,90,0.38)',
-    backgroundColor: 'rgba(255,255,255,0.025)',
+    borderWidth: 1,
+    borderColor: 'rgba(201,168,92,0.25)',
+    borderTopColor: 'rgba(220,185,110,0.14)',
+    backgroundColor: 'rgba(255,248,220,0.06)',
     minHeight: 110,
     padding: 14,
     paddingBottom: 52,
     position: 'relative',
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.50,
-    shadowRadius: 28,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 2,
   },
   sosCardFocused: {
     borderColor: 'rgba(200,100,80,0.30)',
