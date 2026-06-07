@@ -1177,3 +1177,15 @@ tech-bold.
 
 **Files changed:**
 - `apps/mobile/app/(tabs)/index.tsx` — `sosActivePrompt` + `sosActivePromptName` styles, `setSwitcherOpen(true)` on name tap
+
+## 2026-06-07 — SOS pulse animation + spacing fix
+
+**What:** Added breathing pulse animation to resting SOS button. Added 32px top margin to SOS section.
+
+**Decisions locked:**
+- Pulse: scale 1→1.08→1, 900ms each way, Easing.inOut(Easing.ease), loop while !sosOpen
+- Animation stops and resets to scale 1 on tap (sosOpen = true)
+- marginTop: 32 on sosButtonSection — creates clear air between greeting and button
+- sosBigBtn wrapped in Animated.View with transform scale bound to sosPulse ref
+
+**Status:** Verified on device. Both states clean (resting pulse, active collapse).

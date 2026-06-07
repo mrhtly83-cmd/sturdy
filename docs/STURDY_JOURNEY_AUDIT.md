@@ -205,6 +205,10 @@ Ready to close Stage 1 and move to Stage 2 (Core Loop / SOS).
 - [x] "Find calm words" label confirmed correct
 - [x] Empty state (0 children) confirmed warm and clear
 
+- SOS button retract model implemented (resting big button → active small + child name) ✓
+- SOS pulse animation (scale breathe, stops on tap) ✓
+- SOS section spacing fix (marginTop 32) ✓
+
 **STILL OPEN:**
 - [ ] Full on-device walkthrough: Home → SOS → result → back
 - [ ] Back navigation safety after follow-up / retry chains
