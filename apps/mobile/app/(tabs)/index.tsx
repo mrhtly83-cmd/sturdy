@@ -379,6 +379,31 @@ export default function HomeScreen() {
   // The non-hero mode collapses to a quiet tap-row; this tracks its expansion.
   const [secondaryOpen, setSecondaryOpen] = useState(false);
   const [sosOpen, setSosOpen] = useState(false);
+  const sosPulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!sosOpen) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(sosPulse, {
+            toValue: 1.08,
+            duration: 900,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(sosPulse, {
+            toValue: 1,
+            duration: 900,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      sosPulse.stopAnimation();
+      sosPulse.setValue(1);
+    }
+  }, [sosOpen]);
 
   // ─── Entry animation ───
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -752,7 +777,7 @@ export default function HomeScreen() {
           }}
           style={s.sosBigBtnWrap}
         >
-          <Animated.View style={s.sosBigBtn}>
+          <Animated.View style={[s.sosBigBtn, { transform: [{ scale: sosPulse }] }]}>
             <Text style={s.sosBigBtnText}>SOS</Text>
           </Animated.View>
           <Text style={s.sosBigBtnHint}>Tap for calm words now</Text>
@@ -1124,6 +1149,7 @@ const s = StyleSheet.create({
   },
   sosButtonSection: {
     alignItems: 'center',
+    marginTop: 32,
     marginBottom: 20,
   },
   sosBigBtnWrap: {
