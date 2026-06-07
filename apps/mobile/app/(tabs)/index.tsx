@@ -49,8 +49,7 @@ import { getDayPeriod, getTimeGreeting, type DayPeriod } from '../../src/utils/d
 // ═══════════════════════════════════════════════
 
 const ASK_PLACEHOLDERS = [
-  "What's on your mind?",
-  'Why does he completely shut down when I try to talk to him?',
+  'Why does he shut down when I try to talk to him?',
   'Am I making things worse by giving in sometimes?',
   'How do I stop losing my temper before I even realise it?',
   'Is this normal for her age or should I be worried?',
@@ -199,9 +198,9 @@ function detectChildFromMessage(
 // BACKGROUND
 // ═══════════════════════════════════════════════
 
-function Background({ period }: { period: 'active' | 'calm' }) {
-  if (period === 'active') {
-    // ── DAY: Golden hour ──
+function Background() {
+  if (false) {
+    // ── DAY: Golden hour (kept for reference) ──
     return (
       <>
         {/* Base gradient — deep amber-orange top, warm brown bottom */}
@@ -379,6 +378,7 @@ export default function HomeScreen() {
   const [greeting, setGreeting] = useState<string>(() => getTimeGreeting());
   // The non-hero mode collapses to a quiet tap-row; this tracks its expansion.
   const [secondaryOpen, setSecondaryOpen] = useState(false);
+  const [sosOpen, setSosOpen] = useState(false);
 
   // ─── Entry animation ───
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -632,7 +632,7 @@ export default function HomeScreen() {
   if (isLoadingChild) {
     return (
       <View style={s.root}>
-        <Background period={period} />
+        <Background />
         <StatusBar style="light" />
         <SafeAreaView style={s.centerGate}>
           <ActivityIndicator color={C.amber} />
@@ -645,7 +645,7 @@ export default function HomeScreen() {
   if (kidList.length === 0) {
     return (
       <View style={s.root}>
-        <Background period={period} />
+        <Background />
         <StatusBar style="light" />
         <SafeAreaView style={s.safe} edges={['top']}>
           <View style={s.emptyWrap}>
@@ -693,14 +693,8 @@ export default function HomeScreen() {
 
   // Ask (Question mode) ----------------------------------------------------
   const askEyebrow = (
-    <View style={s.heroEyebrowWrap}>
-      <Text style={s.heroTitleAsk}>
-        {activeChildName ? (
-          <>What's on your mind about {childChip(activeChildName)}?</>
-        ) : (
-          'The quiet questions matter too.'
-        )}
-      </Text>
+    <View style={{ marginTop: 32, marginBottom: 8 }}>
+      <Text style={s.heroTitleAsk}>What's on your mind?</Text>
     </View>
   );
 
@@ -747,17 +741,51 @@ export default function HomeScreen() {
   );
 
   // SOS (script generation) ------------------------------------------------
-  const sosEyebrow = (
-    <View style={s.heroEyebrowWrap}>
-      <View style={s.sosBadgeRow}>
-        <View style={s.sosBadge}><Text style={s.sosBadgeText}>SOS</Text></View>
-        <Text style={s.sosTaglineInline}>From chaos to connection</Text>
-      </View>
-      <Text style={s.heroTitleSos}>
-        {'What\'s happening with '}
-        {childChip(heroChildName)}
-        {' right now?'}
-      </Text>
+  const sosButton = (
+    <View style={s.sosButtonSection}>
+      {!sosOpen ? (
+        // ── Resting: big pulsing button ──
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            setSosOpen(true);
+          }}
+          style={s.sosBigBtnWrap}
+        >
+          <Animated.View style={s.sosBigBtn}>
+            <Text style={s.sosBigBtnText}>SOS</Text>
+          </Animated.View>
+          <Text style={s.sosBigBtnHint}>Tap for calm words now</Text>
+        </Pressable>
+      ) : (
+        // ── Active: small button + input ──
+        <View style={s.sosActiveWrap}>
+          <View style={s.sosActiveRow}>
+            <Pressable
+              onPress={() => {
+                setSosOpen(false);
+                setSosInputText('');
+              }}
+              style={s.sosSmallBtn}
+            >
+              <Text style={s.sosSmallBtnText}>SOS</Text>
+            </Pressable>
+            <Text style={s.sosActiveChild}>
+              {heroChildName !== 'your child' ? heroChildName : 'my child'}
+            </Text>
+          </View>
+          <Text style={s.sosActivePrompt}>
+            What's happening with{' '}
+            <Text
+              style={s.sosActivePromptName}
+              onPress={() => setSwitcherOpen(true)}
+            >
+              {heroChildName} ▾
+            </Text>
+            {' '}right now?
+          </Text>
+        </View>
+      )}
     </View>
   );
 
@@ -845,20 +873,6 @@ export default function HomeScreen() {
     </>
   );
 
-  // ─── Collapsed secondary rows (the non-hero mode, always one tap away) ───
-  const collapsedAskRow = (
-    <Pressable onPress={toggleSecondary} style={s.secondaryRow}>
-      <Text style={s.secondaryIcon}>💬</Text>
-      <View style={s.secondaryTextWrap}>
-        <Text style={s.secondaryTitle}>
-          {activeChildName ? `Ask about ${activeChildName}` : 'Ask Sturdy'}
-        </Text>
-        <Text style={s.secondarySub}>Reflect on a quieter moment</Text>
-      </View>
-      <Text style={s.secondaryChevron}>{secondaryOpen ? '⌄' : '›'}</Text>
-    </Pressable>
-  );
-
   const collapsedSosRow = (
     <Pressable onPress={toggleSecondary} style={[s.secondaryRow, s.secondaryRowSos]}>
       <View style={s.sosBadge}><Text style={s.sosBadgeText}>SOS</Text></View>
@@ -874,7 +888,7 @@ export default function HomeScreen() {
 
   return (
     <View style={s.root}>
-      <Background period={period} />
+      <Background />
       <StatusBar style="light" />
       <SafeAreaView style={s.safe} edges={['top']}>
         <KeyboardAvoidingView
@@ -892,9 +906,10 @@ export default function HomeScreen() {
               {/* ─── Header: Greeting + Traffic dots ─── */}
               <View style={s.headerRow}>
                 <View>
-                  <Text style={s.greetingText}>{greeting}{displayName ? `, ${displayName}` : ''}.</Text>
-                  <Text style={s.greetingSub}>
-                    {period === 'active' ? 'Here when the moment gets hard.' : 'The hard moments pass.'}
+                  <Text style={s.greetingText}>
+                    {greeting}{displayName ? (
+                      <Text style={s.greetingName}>, {displayName}.</Text>
+                    ) : '.'}
                   </Text>
                 </View>
                 <TrafficDots />
@@ -907,23 +922,15 @@ export default function HomeScreen() {
               {/* One hero per state; the other is always one tap away.  */}
               {/* ══════════════════════════════════════════════════════ */}
 
-              {/* SOS hero — always shown */}
-              {sosEyebrow}
+              {/* SOS hero */}
+              {sosButton}
               {sosCrisisBanner}
-              {renderSosCard(true)}
-              {isPremium && toneSelector}
+              {sosOpen && renderSosCard(true)}
+              {sosOpen && isPremium && toneSelector}
 
-              {/* Ask — collapsed secondary */}
-              <View style={s.dividerLabelRow}>
-                <View style={s.dividerLine} />
-                <View style={s.dividerLine} />
-              </View>
-              {collapsedAskRow}
-              {secondaryOpen && (
-                <View style={s.secondaryBody}>
-                  {renderAskCard(false)}
-                </View>
-              )}
+              {/* Ask Sturdy — always visible below */}
+              {askEyebrow}
+              {renderAskCard(false)}
 
               <View style={{ height: TAB_BAR_HEIGHT }} />
 
@@ -1018,6 +1025,10 @@ const s = StyleSheet.create({
     letterSpacing: 0.3,
     lineHeight: 32,
   },
+  greetingName: {
+    fontFamily: F.headingItalic,
+    color: C.amber,
+  },
   greetingSub: {
     fontFamily: F.serif,
     fontStyle: 'italic',
@@ -1111,6 +1122,84 @@ const s = StyleSheet.create({
     marginBottom: 10,
     gap: 4,
   },
+  sosButtonSection: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  sosBigBtnWrap: {
+    alignItems: 'center',
+    gap: 10,
+  },
+  sosBigBtn: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#C83228',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#E87461',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  sosBigBtnText: {
+    fontFamily: F.label,
+    fontSize: 22,
+    color: '#FFFFFF',
+    letterSpacing: 2,
+  },
+  sosBigBtnHint: {
+    fontFamily: F.headingItalic,
+    fontStyle: 'italic',
+    fontSize: 11,
+    color: 'rgba(243,232,200,0.3)',
+  },
+  sosActiveWrap: {
+    width: '100%',
+    gap: 10,
+  },
+  sosActiveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 10,
+  },
+  sosSmallBtn: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#C83228',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#E87461',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  sosSmallBtnText: {
+    fontFamily: F.label,
+    fontSize: 11,
+    color: '#FFFFFF',
+    letterSpacing: 1,
+  },
+  sosActiveChild: {
+    fontFamily: F.heading,
+    fontStyle: 'italic',
+    fontSize: 18,
+    color: 'rgba(243,232,200,0.85)',
+  },
+  sosActivePrompt: {
+    fontFamily: F.headingItalic,
+    fontStyle: 'italic',
+    fontSize: 20,
+    color: 'rgba(243,232,200,0.85)',
+  },
+  sosActivePromptName: {
+    color: C.amber,
+    textDecorationLine: 'underline',
+  },
   heroKicker: {
     fontFamily: F.bodySemi,
     fontStyle: 'normal',
@@ -1121,10 +1210,10 @@ const s = StyleSheet.create({
   },
   heroTitleAsk: {
     fontFamily: F.heading,
-    fontSize: 24,
-    color: 'rgba(240,225,185,0.95)',
+    fontSize: 22,
+    color: 'rgba(240,225,185,0.85)',
     lineHeight: 28,
-    letterSpacing: 0.24,
+    letterSpacing: -0.3,
   },
   heroTitleSos: {
     fontFamily: F.heading,
@@ -1212,10 +1301,6 @@ const s = StyleSheet.create({
     fontSize: 18,
     color: 'rgba(255,248,230,0.40)',
   },
-  secondaryBody: {
-    marginTop: 14,
-  },
-
   // ─── Inline child-name chip (in hero eyebrow) ───
   heroNameChip: {
     color: C.amber,

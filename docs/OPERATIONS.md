@@ -1166,3 +1166,14 @@ tech-bold.
 - `apps/mobile/src/theme/colors.ts` — palette v9, font token remapping
 - `apps/mobile/app/_layout.tsx` — Cormorant Garamond + Crimson Pro loaded
 - `apps/mobile/app/(tabs)/index.tsx` — star field, background, typography
+
+## June 2026 — SOS button retract model
+**Context:** Home screen SOS redesign — resting big-circle button collapses to an active state with prompt and input card.
+**Decision:**
+- SOS button retract model built and committed.
+- Active state: small SOS circle + child name + "What's happening with [child] right now?" prompt + input card.
+- `setSwitcherOpen` confirmed as the child sheet setter (was `setChildSheetOpen` in the brief — corrected during implementation).
+- Prompt text restored as a patch after the initial brief omitted it.
+
+**Files changed:**
+- `apps/mobile/app/(tabs)/index.tsx` — `sosActivePrompt` + `sosActivePromptName` styles, `setSwitcherOpen(true)` on name tap
