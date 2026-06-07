@@ -1,10 +1,10 @@
 // src/theme/colors.ts
-// Sturdy v8 — Warm Ember × Obsidian Gold (palette warmed May 31 2026)
+// Sturdy v9 — Deep Ember (palette deepened Jun 6 2026, warmer + more human)
 //
-// Visual identity: warm-brown base rising to near-black (#1a1206 → #15100a → #050402),
+// Visual identity: richer warm-brown base (#231508 → #1c1208 → #080604),
 // yellow-gold accent (#c9a85c → #a8843a → #8a6820), horizon glow rising
-// from the bottom. Cards are frosted-glass ultra-thin (rgba(255,255,255,0.04))
-// with gold-tinted borders. Stars animated in the warm-ember background.
+// from the bottom. Cards are warm-linen thin (rgba(255,220,170,0.06))
+// with gold-amber borders. Dust motes animated in the warm-ember background.
 //
 // v8 palette shift (Twilight → Warm Ember): the gradient TOP/upper-mid stops
 // warmed from pure black #020202 toward warm brown #1a1206 to lift the app's
@@ -21,12 +21,12 @@ export const colors = {
   // ═══════════════════════════════════════════════
   // SURFACES
   // ═══════════════════════════════════════════════
-  background:       '#15100a',                       // warm ember base (flat backgrounds)
-  backgroundDeep:   '#050402',                       // deepest gradient stop (warm near-black nadir)
-  backgroundWarm:   '#1a1206',                       // warm brown (gradient top)
-  surface:          'rgba(255,255,255,0.04)',         // card bg — frosted glass veil
-  surfaceRaised:    'rgba(255,255,255,0.028)',        // elevated card (SOS card weight)
-  surfaceSubtle:    'rgba(255,255,255,0.025)',        // barely-there separator
+  background:       '#261408',                       // warm ember base (flat backgrounds)
+  backgroundDeep:   '#0C0804',                       // deepest gradient stop (warm near-black nadir)
+  backgroundWarm:   '#3A2210',                       // warm brown (gradient top)
+  surface:          'rgba(255,220,170,0.08)',         // card bg — warm linen veil
+  surfaceRaised:    'rgba(255,220,170,0.065)',        // elevated card (SOS card weight)
+  surfaceSubtle:    'rgba(255,220,170,0.05)',         // barely-there separator
 
   // ═══════════════════════════════════════════════
   // PRIMARY — Coral (from logo)
@@ -73,11 +73,11 @@ export const colors = {
   // ═══════════════════════════════════════════════
   // SOS — Red (crisis-distinct from primary coral)
   // ═══════════════════════════════════════════════
-  sos:              '#E87461',
-  sosLight:         'rgba(232,116,97,0.12)',
-  sosDark:          '#C45540',
-  sosBadge:         'rgba(232,116,97,0.12)',          // session mode pill bg
-  sosSubtle:        'rgba(232,116,97,0.75)',          // greeting subtitle color
+  sos:              '#D4705A',
+  sosLight:         'rgba(200,100,80,0.12)',
+  sosDark:          '#B5604C',
+  sosBadge:         'rgba(200,100,80,0.12)',          // session mode pill bg
+  sosSubtle:        'rgba(212,112,90,0.65)',          // greeting subtitle color
 
   // ═══════════════════════════════════════════════
   // NAVY (from logo)
@@ -105,13 +105,13 @@ export const colors = {
   // ═══════════════════════════════════════════════
   // STRUCTURE
   // ═══════════════════════════════════════════════
-  border:           'rgba(184,142,74,0.22)',           // gold-tinted card border
+  border:           'rgba(200,168,100,0.24)',           // gold-tinted card border
   borderHi:         'rgba(220,185,110,0.10)',          // card top inset highlight
   borderFocus:      '#c9a85c',                        // gold focus ring
-  divider:          'rgba(184,142,74,0.30)',           // gold-fade divider line
-  avoidBorder:      'rgba(232,116,97,0.25)',           // avoid card left stripe
-  avoidLabel:       'rgba(232,116,97,0.55)',           // avoid section label
-  avoidStrike:      'rgba(232,116,97,0.18)',           // strikethrough color
+  divider:          'rgba(200,168,100,0.32)',           // gold-fade divider line
+  avoidBorder:      'rgba(200,100,80,0.25)',           // avoid card left stripe
+  avoidLabel:       'rgba(200,100,80,0.55)',           // avoid section label
+  avoidStrike:      'rgba(200,100,80,0.18)',           // strikethrough color
 
   // ═══════════════════════════════════════════════
   // COMPONENT-LEVEL
@@ -120,8 +120,8 @@ export const colors = {
   tabInactive:      'rgba(184,142,74,0.30)',           // gold-tinted inactive tab
   chipBg:           'rgba(184,142,74,0.07)',           // gold-tinted chip bg
   chipBorder:       'rgba(184,142,74,0.10)',           // gold-tinted chip border
-  inputBg:          'rgba(255,255,255,0.04)',          // frosted glass input (matches card)
-  inputBorder:      'rgba(184,142,74,0.22)',           // gold-tinted input border
+  inputBg:          'rgba(255,220,170,0.06)',          // warm linen input (matches card)
+  inputBorder:      'rgba(200,168,100,0.24)',           // gold-tinted input border
   inputHighlight:   'rgba(220,185,110,0.10)',          // input top inset highlight
   inputPlaceholder: 'rgba(230,210,165,0.45)',          // warm italic placeholder
 
@@ -129,23 +129,23 @@ export const colors = {
   // GRADIENTS (use with LinearGradient)
   // Warm Ember: warm brown top → warm near-black bottom (horizon glow from bottom)
   // ═══════════════════════════════════════════════
-  gradientTop:      '#1a1206',                        // warm brown (zenith)
-  gradientMid1:     '#171009',                        // ~16%
-  gradientMid2:     '#13100a',                        // ~40%
-  gradientMid3:     '#100c08',                        // ~58%
-  gradientMid4:     '#0a0806',                        // ~70%
-  gradientBottom:   '#050402',                        // warm near-black (nadir, kept calm)
+  gradientTop:      '#3A2210',                        // warm brown (zenith)
+  gradientMid1:     '#301C0C',                        // ~16%
+  gradientMid2:     '#261508',                        // ~40%
+  gradientMid3:     '#1C1006',                        // ~58%
+  gradientMid4:     '#140C05',                        // ~70%
+  gradientBottom:   '#0C0804',                        // warm near-black (nadir, kept calm)
 
   // Result screen gradient (same Warm Ember palette)
-  gradientResultTop:    '#1a1206',
-  gradientResultMid1:   '#171009',                    // ~10%
-  gradientResultMid2:   '#13100a',                    // ~25%
-  gradientResultMid3:   '#100c08',                    // ~42%
+  gradientResultTop:    '#3A2210',
+  gradientResultMid1:   '#301C0C',                    // ~10%
+  gradientResultMid2:   '#261508',                    // ~25%
+  gradientResultMid3:   '#1C1006',                    // ~42%
 
   // Settings gradient (same Warm Ember palette)
-  gradientSettingsTop:  '#1a1206',
-  gradientSettingsMid1: '#171009',                    // ~12%
-  gradientSettingsMid2: '#13100a',                    // ~26%
+  gradientSettingsTop:  '#3A2210',
+  gradientSettingsMid1: '#301C0C',                    // ~12%
+  gradientSettingsMid2: '#261508',                    // ~26%
 
   // Ambient glow (radial gradient overlays — horizon warmth from bottom)
   glowAmber:        'rgba(184,142,74,0.07)',           // horizon glow (bottom bleed)
@@ -155,8 +155,8 @@ export const colors = {
   // ICON BADGE GRADIENTS (outcome card icons)
   // Each pair: [start, end] for LinearGradient
   // ═══════════════════════════════════════════════
-  iconSosStart:         '#E87461',
-  iconSosEnd:           '#C45540',
+  iconSosStart:         '#D4705A',
+  iconSosEnd:           '#B5604C',
   iconRepairStart:      '#c9a85c',                    // gold (was orange #C8883A)
   iconRepairEnd:        '#a8843a',                    // gold mid (was #B87A30)
   iconUnderstandStart:  '#5778A3',
@@ -172,7 +172,7 @@ export const colors = {
   shadowAmber:      'rgba(201,168,92,0.08)',           // gold card color bleed
   shadowSage:       'rgba(138,160,96,0.08)',           // sage card color bleed
   shadowSteel:      'rgba(87,120,163,0.08)',           // steel card color bleed
-  shadowSos:        'rgba(232,116,97,0.25)',           // SOS icon glow
+  shadowSos:        'rgba(200,100,80,0.22)',           // SOS icon glow
 
 
   // ═══════════════════════════════════════════════
@@ -182,17 +182,17 @@ export const colors = {
   // ═══════════════════════════════════════════════
 
   // Old surface names → new warm-ember surfaces
-  base:             '#15100a',
-  backgroundLight:  '#15100a',
-  raised:           'rgba(255,255,255,0.04)',
-  elevated:         'rgba(255,255,255,0.028)',
-  subtle:           'rgba(255,255,255,0.025)',
-  glass:            'rgba(255,255,255,0.04)',
-  glassStrong:      'rgba(255,255,255,0.028)',
-  glassSoft:        'rgba(255,255,255,0.025)',
-  cardGlass:        'rgba(255,255,255,0.04)',
-  cardGlassStrong:  'rgba(255,255,255,0.028)',
-  cardGlassSoft:    'rgba(255,255,255,0.025)',
+  base:             '#261408',
+  backgroundLight:  '#261408',
+  raised:           'rgba(255,220,170,0.08)',
+  elevated:         'rgba(255,220,170,0.065)',
+  subtle:           'rgba(255,220,170,0.05)',
+  glass:            'rgba(255,220,170,0.08)',
+  glassStrong:      'rgba(255,220,170,0.065)',
+  glassSoft:        'rgba(255,220,170,0.05)',
+  cardGlass:        'rgba(255,220,170,0.08)',
+  cardGlassStrong:  'rgba(255,220,170,0.065)',
+  cardGlassSoft:    'rgba(255,220,170,0.05)',
 
   // Old brand names → new Twilight × Obsidian Gold
   coral:            '#FF5C75',                        // → primary
@@ -223,16 +223,16 @@ export const colors = {
   // Old semantic
   success:          '#8AA060',
   warning:          '#c9a85c',                        // gold (was orange #C8883A)
-  danger:           '#E87461',
+  danger:           '#D4705A',
   disabled:         'rgba(255,255,255,0.06)',
   disabledText:     'rgba(255,255,255,0.20)',
   pressed:          'rgba(255,255,255,0.04)',
 
   // Old gradient stops → warm ember (kept in sync with gradient* tokens)
-  gradStart:        '#1a1206',
-  gradMid1:         '#171009',
-  gradMid2:         '#13100a',
-  gradEnd:          '#050402',
+  gradStart:        '#3A2210',
+  gradMid1:         '#301C0C',
+  gradMid2:         '#261508',
+  gradEnd:          '#0C0804',
 
   // Old category card backgrounds (now dark card system)
   catPink:          'rgba(255,92,117,0.10)',
@@ -258,8 +258,12 @@ export const colors = {
 
 export const fonts = {
   // ─── Canonical (paired with logical role) ───
-  heading:        'Fraunces_700Bold',                // hero, screen titles
-  headingItalic:  'Fraunces_700Bold_Italic',         // situation summaries, philosophy lines
+  heading:        'CormorantGaramond_400Regular',    // greetings, screen titles — light, warm
+  headingItalic:  'CormorantGaramond_400Regular_Italic',
+  headingLight:   'CormorantGaramond_300Light',
+  headingLightItalic: 'CormorantGaramond_300Light_Italic',
+  serif:          'CrimsonPro_300Light_Italic',      // question/placeholder text in cards
+  serifRegular:   'CrimsonPro_400Regular',
   subheading:     'DMSans_600SemiBold',
   body:           'DMSans_400Regular',
   bodyMedium:     'DMSans_500Medium',
@@ -271,8 +275,8 @@ export const fonts = {
   accent:         'DMSans_500Medium',
 
   // ─── Backwards-compat aliases (retained until consumers migrate) ───
-  display:           'Fraunces_700Bold',
-  displaySemi:       'Fraunces_600SemiBold',
+  display:           'CormorantGaramond_400Regular',
+  displaySemi:       'CormorantGaramond_400Regular',
   scriptMedium:      'Fraunces_600SemiBold',
   scriptLight:       'Fraunces_600SemiBold',
   scriptLightItalic: 'Fraunces_600SemiBold_Italic',

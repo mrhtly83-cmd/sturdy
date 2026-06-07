@@ -86,23 +86,25 @@ State:
 - `src/utils/tone.ts` — AsyncStorage-backed Sturdy+ tone preference (`soft` / `gentle` / `direct`). Default `gentle`.
 - `src/utils/analytics.ts` — `track(event, props)` stub. Logs in `__DEV__`, no-op in prod until a tracking backend is wired.
 
-Theme + fonts (v6 — Golden Beam era):
-- `src/theme/colors.ts` is the single source of truth for tokens. Defines `background: '#1A1614'` (warm dark) plus brand: `coral #FF5C75`, `amber #F79566`, `steel #5778A3`, `sage #8AA060`, `sos #E87461`. Backwards-compat aliases (`rose`, `base`, `subtle`, `raised`, `peach`, `blue`, `textSub`, `cardGlass*`) retained because many screens still reference them.
+Theme + fonts (v9 — Deep Ember):
+- `src/theme/colors.ts` is the single source of truth for tokens. Defines `background: '#261408'` (warm ember base) plus brand: `coral #FF5C75`, `amber #F79566`, `steel #5778A3`, `sage #8AA060`, `sos #D4705A`. Backwards-compat aliases (`rose`, `base`, `subtle`, `raised`, `peach`, `blue`, `textSub`, `cardGlass*`) retained because many screens still reference them.
 - **Reality check on backgrounds:** several screens deliberately override the theme's `background`:
   - `welcome/index.tsx` uses `welcome-family.jpg` and `welcome-horizon.jpg` photo backgrounds (asset path: `apps/mobile/assets/images/welcome/`).
-  - `(tabs)/index.tsx` uses `golden-particles-bg.png` with parallax animation + dark overlay gradient (`rgba(0,0,0,0.50 → 0.95)`). Root background: `#0d0b08`.
+  - `(tabs)/index.tsx` uses `golden-particles-bg.png` with parallax animation + an 8-stop hardcoded warm-ember gradient. Root background: `#1a1206`.
   - `child/[id].tsx` uses the same `golden-particles-bg.png` background.
   - `upgrade.tsx` hardcodes a solid `#0e0a10` base (no photo) with the v3 dark identity tokens.
 - **Brand colours in shipped use today:**
   - Primary CTA gradient: `#C8883A → #E8A855` (left-to-right amber). Used on `upgrade.tsx`. Settings upgrade chip: `#C8883A`.
   - Selected-state amber accent: `#D4944A` (active plan card border, settings upgrade label).
-  - SOS / crisis: `#E87461` (and only there — coral is reserved for SOS).
+  - SOS / crisis: `#D4705A` (and only there — coral is reserved for SOS).
   - Sage `#8DB89A` for success, checkmarks, and the savings badge on the paywall.
   - Steel `#A8C4E2` / `#5778A3` for trust accents (Question feature slide).
-- Fonts loaded in `app/_layout.tsx` via `@expo-google-fonts/fraunces` + `@expo-google-fonts/dm-sans`:
-  - Fraunces: `_600SemiBold`, `_600SemiBold_Italic`, `_700Bold`, `_700Bold_Italic`
-  - DM Sans: `_400Regular`, `_500Medium`, `_600SemiBold`, `_700Bold`
-  - `fonts.heading` / `fonts.script` → Fraunces; `fonts.body` / `fonts.label` / `fonts.subheading` → DM Sans. Components use the family-name string directly: `<Text style={{ fontFamily: fonts.body }}>`.
+- Fonts loaded in `app/_layout.tsx` via `@expo-google-fonts/fraunces` + `@expo-google-fonts/dm-sans` + `@expo-google-fonts/cormorant-garamond` + `@expo-google-fonts/crimson-pro`:
+  - Cormorant Garamond: `_300Light`, `_300Light_Italic`, `_400Regular`, `_400Regular_Italic` — headings, greetings, screen titles
+  - Crimson Pro: `_300Light`, `_300Light_Italic`, `_400Regular` — editorial italic detail (placeholder text, subtitles)
+  - Fraunces: `_600SemiBold`, `_600SemiBold_Italic`, `_700Bold`, `_700Bold_Italic` — AI script text the parent reads aloud only
+  - DM Sans: `_400Regular`, `_500Medium`, `_600SemiBold`, `_700Bold` — UI body, labels, subheadings
+  - `fonts.heading` → Cormorant Garamond Regular; `fonts.serif` → Crimson Pro Light Italic; `fonts.script`/`scriptMedium` → Fraunces; `fonts.body` / `fonts.label` / `fonts.subheading` → DM Sans. Components use the family-name string directly: `<Text style={{ fontFamily: fonts.body }}>`.
 - `Card.tsx` (re-exported as `GlassCard`) is a glass-on-dark surface — `surface` fill, `border` border, no `borderTopWidth` (it creates a visible highlight line bug on dark surfaces). `Screen.tsx` wraps children in the warm-dark gradient.
 - `PaywallSheet.tsx` is the reusable bottom-sheet shown when free users tap a Sturdy+ feature. Calls `useSubscription().purchase()` on the CTA.
 
@@ -184,7 +186,7 @@ These rules come from the Operations log and are non-obvious:
 - **Script quality bar.** `docs/SCRIPT QUALITY STANDARDS.md` defines pass/fail. Prompt edits should be tested against the six scenarios listed there at intensity 1 vs 5, short vs long messages, and ADHD/Autism keyword variants.
 - **Safety filter precedes Claude.** Don't add an LLM call before `runSafetyFilter`. Don't bypass it for the question path — questions can carry crisis content.
 - **No paywalls on crisis.** The safety/crisis routes are always free. The voice player is also free for SOS mode (paywalled for the other 3 modes only).
-- **Coral is for SOS only.** `#E87461` and the rose aliases are reserved for crisis / safety affordances. CTAs use the amber gradient (`#C8883A → #E8A855`); upgrade accents use `#D4944A`.
+- **SOS red is for SOS only.** `#D4705A` (v9, was `#E87461` in v8) and the rose aliases are reserved for crisis / safety affordances. CTAs use the amber gradient (`#C8883A → #E8A855`); upgrade accents use `#D4944A`.
 - **Operations log.** Material architecture or strategy decisions get a new entry appended to `docs/OPERATIONS.md` (newest at the bottom): context → decision → reasoning.
 - **Build process rules** (post-Phase 1 retro): verify state before edits, one change at a time tested before the next, JSX always multi-line, extract multi-line handlers to named functions, delete files and clean up references in the same commit, prefer real device logs over theorising for async/routing bugs, migrations always transactional with rollback documented.
 - **Schema FKs are mandatory.** Any table with a `user_id` column must have a FK constraint to `auth.users(id)` with explicit `ON DELETE` behaviour (typically `CASCADE`; `SET NULL` only for tables that retain anonymized data like `safety_events`). Tables created via the Supabase SQL Editor that omit the FK will break the deletion cascade — see migration `20260428_004` for the schema hygiene fix that retroactively added missing constraints.

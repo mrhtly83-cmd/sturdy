@@ -1120,3 +1120,49 @@ Files changed: apps/mobile/app/welcome/index.tsx
    claim on the paywall-adjacent screen, same Principle 7 violation.
 
 Files: apps/mobile/app/(tabs)/index.tsx, apps/mobile/app/result.tsx
+
+## 2026-06-07 — Visual identity v9 "Deep Ember" + typography overhaul
+
+**Context:** The v8 "Warm Ember × Obsidian Gold" palette read as too cold
+on device — dark surfaces felt grey rather than warm, and Fraunces Bold on
+greetings/titles felt heavy against the intimate parenting context. Target:
+richer, warmer, more candlelit. Typography target: editorial-quiet, not
+tech-bold.
+
+**Decisions:**
+
+1. **Palette deepened (v9 "Deep Ember"):** Background base `#15100a` →
+   `#261408`; gradient top `#1a1206` → `#3A2210`; near-black nadir
+   `#050402` → `#0C0804`. Surface tokens switched from cold frosted glass
+   (`rgba(255,255,255,0.04)`) to warm linen (`rgba(255,220,170,0.08)`).
+   SOS red cooled: `#E87461` → `#D4705A` — still distinct from amber CTAs
+   but no longer hot-orange against the new warmer base.
+
+2. **Typeface swap — headings:** Fraunces Bold (heavy, literary) replaced
+   by Cormorant Garamond (300 Light + 400 Regular) for greetings, screen
+   titles, and eyebrow text. Fraunces retained exclusively for AI script
+   text the parent reads aloud — the contrast between "quiet interface" and
+   "expressive script" is now intentional and legible.
+
+3. **Typeface addition — editorial detail:** Crimson Pro 300 Light Italic
+   added as `fonts.serif` for placeholder text, question-card subtitles,
+   and greeting subscript. Warmer and more editorial than DM Sans italic.
+
+4. **Particle system replaced:** 40 zone-based animated floating particles
+   (random generation, per-particle opacity/translate loop, 4.5–10.5s
+   cycle) replaced with a static star field: 16 fixed `STATIC_STARS` +
+   6 `TWINKLING_STARS` (opacity 1→0.3→1, 3.4s, Easing.inOut sin, staggered
+   delays). Deterministic layout, zero Math.random() at render, no
+   translateY drift — the background is now stable canvas, not a distraction.
+
+5. **Greeting subscript added:** A second-line italic beneath the main
+   greeting — "Here when the moment gets hard." (active period) or
+   "The hard moments pass." (evening/night). Warm amber, quiet presence.
+
+6. **Tone label copy:** "TONE" → "how you want to sound" — less control-
+   panel, more coaching suggestion.
+
+**Files changed:**
+- `apps/mobile/src/theme/colors.ts` — palette v9, font token remapping
+- `apps/mobile/app/_layout.tsx` — Cormorant Garamond + Crimson Pro loaded
+- `apps/mobile/app/(tabs)/index.tsx` — star field, background, typography

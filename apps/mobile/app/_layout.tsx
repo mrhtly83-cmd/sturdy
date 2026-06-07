@@ -20,6 +20,17 @@ import {
   DMSans_600SemiBold,
   DMSans_700Bold,
 } from '@expo-google-fonts/dm-sans';
+import {
+  CormorantGaramond_300Light,
+  CormorantGaramond_300Light_Italic,
+  CormorantGaramond_400Regular,
+  CormorantGaramond_400Regular_Italic,
+} from '@expo-google-fonts/cormorant-garamond';
+import {
+  CrimsonPro_300Light,
+  CrimsonPro_300Light_Italic,
+  CrimsonPro_400Regular,
+} from '@expo-google-fonts/crimson-pro';
 import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { ChildProfileProvider }   from '../src/context/ChildProfileContext';
@@ -158,7 +169,7 @@ function usePasswordResetDeepLink() {
 export default function RootLayout() {
   usePasswordResetDeepLink();
   const [fontsLoaded] = useFonts({
-    // Fraunces (serif) — headings, hero, AI script text
+    // Fraunces (serif) — AI script text the parent reads aloud
     Fraunces_600SemiBold,
     Fraunces_600SemiBold_Italic,
     Fraunces_700Bold,
@@ -168,6 +179,15 @@ export default function RootLayout() {
     DMSans_500Medium,
     DMSans_600SemiBold,
     DMSans_700Bold,
+    // Cormorant Garamond — headings, greetings, eyebrow titles
+    CormorantGaramond_300Light,
+    CormorantGaramond_300Light_Italic,
+    CormorantGaramond_400Regular,
+    CormorantGaramond_400Regular_Italic,
+    // Crimson Pro — question/placeholder italic text, subtitles
+    CrimsonPro_300Light,
+    CrimsonPro_300Light_Italic,
+    CrimsonPro_400Regular,
   });
 
   if (!fontsLoaded) return null;

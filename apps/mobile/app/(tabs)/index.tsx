@@ -75,110 +75,57 @@ function inferIntensity(text: string): number | null {
 }
 
 // ═══════════════════════════════════════════════
-// PARTICLE SYSTEM
-// Matches sturdy-home-final.html particle distribution:
-//   - Top-right cluster (35%): densest, in the light beam
-//   - Mid scatter (25%): lighter, wider spread
-//   - Lower scatter (20%): gentle presence
-//   - Bottom (20%): so floor doesn't die
+// STAR FIELD
+// Static dots + 6 twinkling stars — matches sturdy-home-final.html
+// CSS star positions faithfully recreated as positioned Views.
+// Twinkling uses a simple opacity loop (1 → 0.3 → 1, 3.4s, staggered).
 // ═══════════════════════════════════════════════
 
-type ParticleConfig = {
-  left: number;
-  top: number;
-  size: number;
-  opacity: number;
-  duration: number;
-  delay: number;
-  colorR: number;
-  colorG: number;
-  colorB: number;
-};
+type StarConfig = { left: number; top: number; size: number; opacity: number };
+type TwinkleConfig = { left: number; top: number; size: number; delay: number };
 
-function generateParticles(count: number): ParticleConfig[] {
-  const particles: ParticleConfig[] = [];
-  for (let i = 0; i < count; i++) {
-    const zone = Math.random();
-    let left: number, top: number, size: number, opacity: number;
+const STATIC_STARS: StarConfig[] = [
+  { left: 12, top: 4,  size: 2,   opacity: 1    },
+  { left: 67, top: 2,  size: 2.5, opacity: 1    },
+  { left: 88, top: 7,  size: 2,   opacity: 1    },
+  { left: 45, top: 5,  size: 3,   opacity: 1    },
+  { left: 28, top: 9,  size: 2,   opacity: 0.95 },
+  { left: 78, top: 12, size: 2.5, opacity: 0.95 },
+  { left: 58, top: 15, size: 2,   opacity: 0.9  },
+  { left: 5,  top: 18, size: 2,   opacity: 0.9  },
+  { left: 35, top: 13, size: 1.5, opacity: 0.8  },
+  { left: 70, top: 17, size: 1.5, opacity: 0.8  },
+  { left: 16, top: 24, size: 1.5, opacity: 0.75 },
+  { left: 90, top: 20, size: 1.5, opacity: 0.75 },
+  { left: 42, top: 22, size: 1,   opacity: 0.7  },
+  { left: 62, top: 26, size: 1,   opacity: 0.6  },
+  { left: 22, top: 30, size: 1,   opacity: 0.5  },
+  { left: 80, top: 28, size: 1,   opacity: 0.55 },
+];
 
-    if (zone < 0.35) {
-      left = 42 + Math.random() * 58;
-      top = Math.random() * 30;
-      size = 2 + Math.random() * 3;
-      opacity = 0.28 + Math.random() * 0.42;
-    } else if (zone < 0.60) {
-      left = 15 + Math.random() * 70;
-      top = 28 + Math.random() * 32;
-      size = 1.5 + Math.random() * 2.5;
-      opacity = 0.14 + Math.random() * 0.24;
-    } else if (zone < 0.80) {
-      left = 10 + Math.random() * 80;
-      top = 58 + Math.random() * 22;
-      size = 1.5 + Math.random() * 2;
-      opacity = 0.10 + Math.random() * 0.18;
-    } else {
-      left = 8 + Math.random() * 84;
-      top = 78 + Math.random() * 18;
-      size = 1.5 + Math.random() * 2;
-      opacity = 0.08 + Math.random() * 0.15;
-    }
+const TWINKLING_STARS: TwinkleConfig[] = [
+  { left: 45, top: 3.5, size: 2.5, delay: 0    },
+  { left: 67, top: 7,   size: 2,   delay: 800  },
+  { left: 88, top: 2,   size: 3,   delay: 1400 },
+  { left: 78, top: 12,  size: 2,   delay: 400  },
+  { left: 30, top: 17,  size: 2,   delay: 2100 },
+  { left: 58, top: 24,  size: 1.5, delay: 1700 },
+];
 
-    const warmth = Math.random();
-    let colorR: number, colorG: number, colorB: number;
-    if (warmth > 0.7) {
-      colorR = 255; colorG = 230; colorB = 170;
-    } else if (warmth > 0.35) {
-      colorR = 244; colorG = 200; colorB = 120;
-    } else {
-      colorR = 225; colorG = 180; colorB = 100;
-    }
-
-    particles.push({
-      left, top, size, opacity,
-      duration: 4500 + Math.random() * 6000,
-      delay: Math.random() * 9000,
-      colorR, colorG, colorB,
-    });
-  }
-  return particles;
-}
-
-const PARTICLES = generateParticles(40);
-
-function FloatingParticle({ config }: { config: ParticleConfig }) {
-  const anim = useRef(new Animated.Value(0)).current;
+function TwinklingStar({ config }: { config: TwinkleConfig }) {
+  const anim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    const startLoop = () => {
-      anim.setValue(0);
+    const loop = Animated.loop(
       Animated.sequence([
         Animated.delay(config.delay),
-        Animated.timing(anim, {
-          toValue: 1,
-          duration: config.duration,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        }),
-      ]).start(() => startLoop());
-    };
-    startLoop();
-    return () => anim.stopAnimation();
+        Animated.timing(anim, { toValue: 0.3, duration: 1700, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 1,   duration: 1700, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
   }, []);
-
-  const particleOpacity = anim.interpolate({
-    inputRange: [0, 0.12, 0.88, 1],
-    outputRange: [0, config.opacity, config.opacity, 0],
-  });
-
-  const translateY = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -110],
-  });
-
-  const translateX = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 25],
-  });
 
   return (
     <Animated.View
@@ -189,23 +136,32 @@ function FloatingParticle({ config }: { config: ParticleConfig }) {
         width: config.size,
         height: config.size,
         borderRadius: config.size / 2,
-        backgroundColor: `rgb(${config.colorR},${config.colorG},${config.colorB})`,
-        shadowColor: `rgb(${config.colorR},${config.colorG},${config.colorB})`,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: config.opacity * 1.5,
-        shadowRadius: config.size * 2.5,
-        opacity: particleOpacity,
-        transform: [{ translateY }, { translateX }],
+        backgroundColor: 'rgba(255,248,225,0.95)',
+        opacity: anim,
       }}
     />
   );
 }
 
-function ParticleField() {
+function StarField() {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {PARTICLES.map((p, i) => (
-        <FloatingParticle key={i} config={p} />
+      {STATIC_STARS.map((star, i) => (
+        <View
+          key={i}
+          style={{
+            position: 'absolute',
+            left: `${star.left}%` as any,
+            top: `${star.top}%` as any,
+            width: star.size,
+            height: star.size,
+            borderRadius: star.size / 2,
+            backgroundColor: `rgba(255,248,225,${star.opacity})`,
+          }}
+        />
+      ))}
+      {TWINKLING_STARS.map((star, i) => (
+        <TwinklingStar key={`tw-${i}`} config={star} />
       ))}
     </View>
   );
@@ -265,22 +221,67 @@ function Background() {
     ).start();
   }, [moveAnim]);
 
-  const translateY = moveAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -40] });
-  const scale = moveAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.1] });
+  const translateY = moveAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -30] });
+  const scale = moveAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.04] });
 
   return (
     <>
-      {/* Twilight × Obsidian Gold */}
+      {/* Main gradient — 8-stop paywall depth */}
       <LinearGradient
-        colors={[C.gradientTop, C.gradientMid1, C.gradientMid2, C.gradientMid3, C.gradientMid4, C.gradientBottom]}
-        locations={[0, 0.16, 0.40, 0.58, 0.76, 1]}
+        colors={['#1a1206', '#171009', '#15100a', '#13100a', '#100c08', '#0b0906', '#070504', '#050402']}
+        locations={[0, 0.14, 0.26, 0.40, 0.56, 0.74, 0.90, 1]}
         style={StyleSheet.absoluteFill}
       />
-      <LinearGradient
-        colors={['transparent','rgba(120,80,10,0.22)']}
-        locations={[0.45, 1]}
-        style={StyleSheet.absoluteFill}
-      />
+      {/* Horizon glow — rising warmth from bottom */}
+      <View
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      >
+        <LinearGradient
+          colors={['transparent', 'rgba(140,90,15,0.22)']}
+          locations={[0.6, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
+      {/* Horizon glow — gold centre bleed */}
+      <View
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      >
+        <LinearGradient
+          colors={['transparent', 'rgba(201,168,92,0.10)']}
+          locations={[0.7, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
+      {/* Stars — pinpoint warm lights in upper zone */}
+      <View
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      >
+        {[
+          { top: '4%',  left: '14%', size: 2   },
+          { top: '3%',  left: '70%', size: 2.5 },
+          { top: '7%',  left: '88%', size: 2   },
+          { top: '6%',  left: '40%', size: 1.5 },
+          { top: '10%', left: '24%', size: 1.5 },
+          { top: '12%', left: '80%', size: 1.5 },
+        ].map((star, i) => (
+          <View
+            key={i}
+            style={{
+              position: 'absolute',
+              top: star.top as any,
+              left: star.left as any,
+              width: star.size,
+              height: star.size,
+              borderRadius: star.size / 2,
+              backgroundColor: 'rgba(255,248,235,0.85)',
+            }}
+          />
+        ))}
+      </View>
+      <StarField />
     </>
   );
 }
@@ -767,7 +768,7 @@ export default function HomeScreen() {
 
   const toneSelector = (
     <>
-      <Text style={s.toneLabel}>TONE</Text>
+      <Text style={s.toneLabel}>how you want to sound</Text>
       <View style={s.toneRow}>
         {(['soft', 'gentle', 'direct'] as const).map((t) => {
           const isSelected = tone === t;
@@ -842,7 +843,12 @@ export default function HomeScreen() {
 
               {/* ─── Header: Greeting + Traffic dots ─── */}
               <View style={s.headerRow}>
-                <Text style={s.greetingText}>{greeting}{displayName ? `, ${displayName}` : ''}.</Text>
+                <View>
+                  <Text style={s.greetingText}>{greeting}{displayName ? `, ${displayName}` : ''}.</Text>
+                  <Text style={s.greetingSub}>
+                    {period === 'active' ? 'Here when the moment gets hard.' : 'The hard moments pass.'}
+                  </Text>
+                </View>
                 <TrafficDots />
               </View>
 
@@ -986,27 +992,50 @@ const s = StyleSheet.create({
   },
   greetingText: {
     fontFamily: F.heading,
-    fontSize: 28,
-    color: 'rgba(255,248,230,0.92)',
-    letterSpacing: -0.5,
-    lineHeight: 34,
+    fontSize: 30,
+    color: 'rgba(240,225,185,0.95)',
+    letterSpacing: 0.3,
+    lineHeight: 32,
+  },
+  greetingSub: {
+    fontFamily: F.serif,
+    fontStyle: 'italic',
+    fontSize: 13,
+    color: 'rgba(184,142,74,0.55)',
+    marginTop: 5,
+    letterSpacing: 0.26,
   },
 
   // ─── Question zone ───
   thinkingCard: {
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,248,231,0.07)',
-    backgroundColor: C.surface,
+    borderColor: 'rgba(184,142,74,0.25)',
+    borderTopColor: 'rgba(220,185,110,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.025)',
     minHeight: 120,
     padding: 16,
     paddingBottom: 60,
     position: 'relative',
     marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.50,
+    shadowRadius: 28,
+    elevation: 10,
   },
   thinkingCardFocused: {
-    borderColor: C.divider,
-    backgroundColor: 'rgba(255,255,255,0.08)', // TODO: check token (no surface variant at 0.08)
+    borderColor: 'rgba(200,168,100,0.40)',
+    borderTopColor: 'rgba(220,185,110,0.65)',
+    backgroundColor: 'rgba(255,220,170,0.12)',
+  },
+  cardGradientFill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 18,
   },
   thinkingInput: {
     fontFamily: F.body,
@@ -1024,10 +1053,10 @@ const s = StyleSheet.create({
     right: 60,
   },
   placeholderText: {
-    fontFamily: F.scriptItalic,
+    fontFamily: F.serif,
     fontStyle: 'italic',
-    fontSize: 17,
-    color: 'rgba(255,248,231,0.40)',
+    fontSize: 16,
+    color: 'rgba(230,210,165,0.62)',
     lineHeight: 25,
   },
   thinkingSendWrap: {
@@ -1057,29 +1086,31 @@ const s = StyleSheet.create({
 
   // ─── Hero eyebrow (the one alive element per state) ───
   heroEyebrowWrap: {
-    marginBottom: 14,
-    gap: 8,
+    marginTop: 8,
+    marginBottom: 10,
+    gap: 4,
   },
   heroKicker: {
     fontFamily: F.bodySemi,
+    fontStyle: 'normal',
     fontSize: 11,
-    letterSpacing: 1.5,
-    color: 'rgba(255,248,230,0.40)',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: 'rgba(200,175,120,0.5)',
   },
   heroTitleAsk: {
-    fontFamily: F.scriptItalic,
-    fontStyle: 'italic',
-    fontSize: 26,
-    color: 'rgba(255,248,230,0.94)',
-    lineHeight: 34,
-    letterSpacing: -0.3,
+    fontFamily: F.heading,
+    fontSize: 24,
+    color: 'rgba(240,225,185,0.95)',
+    lineHeight: 28,
+    letterSpacing: 0.24,
   },
   heroTitleSos: {
     fontFamily: F.heading,
     fontSize: 24,
-    color: 'rgba(255,248,230,0.94)',
-    lineHeight: 32,
-    letterSpacing: -0.3,
+    color: 'rgba(240,225,185,0.95)',
+    lineHeight: 28,
+    letterSpacing: 0.24,
   },
   sosBadgeRow: {
     flexDirection: 'row',
@@ -1110,13 +1141,13 @@ const s = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: C.divider,
+    backgroundColor: 'rgba(200,168,100,0.18)',
   },
   dividerLabel: {
     fontFamily: F.scriptItalic,
     fontStyle: 'italic',
     fontSize: 12,
-    color: 'rgba(255,248,230,0.40)',
+    color: 'rgba(255,230,180,0.32)',
   },
 
   // ─── Collapsed secondary row (the quiet, always-reachable mode) ───
@@ -1128,19 +1159,27 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 14,
     backgroundColor: C.surface,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: C.border,
+    borderTopColor: 'rgba(200,168,100,0.34)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 5,
   },
   secondaryRowSos: {
-    borderColor: 'rgba(232,116,97,0.18)',
-    backgroundColor: 'rgba(232,116,97,0.05)',
+    borderColor: 'rgba(200,100,80,0.20)',
+    borderTopColor: 'rgba(210,120,90,0.30)',
+    backgroundColor: 'rgba(200,100,80,0.05)',
   },
   secondaryIcon: { fontSize: 16 },
   secondaryTextWrap: { flex: 1, gap: 2 },
   secondaryTitle: {
-    fontFamily: F.bodySemi,
+    fontFamily: F.heading,
     fontSize: 14,
-    color: 'rgba(255,248,230,0.80)',
+    color: 'rgba(240,225,185,0.85)',
+    letterSpacing: 0.14,
   },
   secondarySub: {
     fontFamily: F.body,
@@ -1255,9 +1294,9 @@ const s = StyleSheet.create({
 
   // ─── SOS zone ───
   sosBadge: {
-    backgroundColor: 'rgba(232,116,97,0.15)',
+    backgroundColor: 'rgba(200,100,80,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(232,116,97,0.3)',
+    borderColor: 'rgba(200,100,80,0.22)',
     borderRadius: 6,
     paddingHorizontal: 7,
     paddingVertical: 2,
@@ -1265,23 +1304,30 @@ const s = StyleSheet.create({
   sosBadgeText: {
     fontFamily: F.bodySemi,
     fontSize: 10,
-    color: '#E87461',
+    color: '#D4705A',
     letterSpacing: 0.5,
   },
   sosCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(232,116,97,0.18)',
-    backgroundColor: 'rgba(232,116,97,0.05)',
+    borderRadius: 18,
+    borderWidth: 0.5,
+    borderColor: 'rgba(184,142,74,0.18)',
+    borderTopColor: 'rgba(210,120,90,0.38)',
+    backgroundColor: 'rgba(255,255,255,0.025)',
     minHeight: 110,
     padding: 14,
     paddingBottom: 52,
     position: 'relative',
     marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.50,
+    shadowRadius: 28,
+    elevation: 10,
   },
   sosCardFocused: {
-    borderColor: 'rgba(232,116,97,0.35)',
-    backgroundColor: 'rgba(232,116,97,0.08)',
+    borderColor: 'rgba(200,100,80,0.30)',
+    borderTopColor: 'rgba(210,120,90,0.50)',
+    backgroundColor: 'rgba(200,100,80,0.09)',
   },
   sosInput: {
     fontFamily: F.body,
@@ -1293,9 +1339,9 @@ const s = StyleSheet.create({
     lineHeight: 22,
   },
   sosPlaceholder: {
-    fontFamily: F.scriptItalic,
-    fontSize: 16,
-    color: 'rgba(232,116,97,0.40)',
+    fontFamily: F.serif,
+    fontSize: 15,
+    color: 'rgba(200,100,80,0.55)',
     lineHeight: 24,
     fontStyle: 'italic',
   },
@@ -1303,28 +1349,28 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     height: 44,
     borderRadius: 10,
-    backgroundColor: 'rgba(232,116,97,0.12)',
+    backgroundColor: 'rgba(200,100,80,0.09)',
     borderWidth: 1,
-    borderColor: 'rgba(232,116,97,0.2)',
+    borderColor: 'rgba(200,100,80,0.16)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   getScriptBtnActive: {
-    backgroundColor: 'rgba(232,116,97,0.2)',
-    borderColor: 'rgba(232,116,97,0.4)',
+    backgroundColor: 'rgba(200,100,80,0.16)',
+    borderColor: 'rgba(200,100,80,0.30)',
   },
   getScriptText: {
     fontFamily: F.bodyMedium,
     fontSize: 13,
-    color: '#E87461',
+    color: '#D4705A',
   },
 
   // ─── Tone selector ───
   toneLabel: {
-    fontFamily: F.label,
-    fontSize: 10,
-    letterSpacing: 1,
-    color: 'rgba(255,248,230,0.25)',
+    fontFamily: F.body,
+    fontSize: 11,
+    letterSpacing: 0,
+    color: 'rgba(255,230,180,0.35)',
     marginBottom: 8,
   },
   toneRow: { flexDirection: 'row', gap: 6, marginBottom: 14 },
@@ -1350,7 +1396,7 @@ const s = StyleSheet.create({
   tonePillDesc: {
     fontFamily: F.body,
     fontSize: 10,
-    color: 'rgba(255,248,230,0.2)',
+    color: 'rgba(255,230,180,0.30)',
     marginTop: 2,
   },
 
@@ -1363,7 +1409,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: C.sosLight,
     borderWidth: 1,
-    borderColor: 'rgba(232,116,97,0.30)',
+    borderColor: 'rgba(200,100,80,0.22)',
     borderRadius: 12,
     marginBottom: 10,
   },
@@ -1371,12 +1417,12 @@ const s = StyleSheet.create({
   crisisTitle: {
     fontFamily: F.bodyMedium,
     fontSize: 14,
-    color: '#E87461',
+    color: '#D4705A',
   },
   crisisSub: {
     fontFamily: F.body,
     fontSize: 12,
-    color: 'rgba(232,116,97,0.75)',
+    color: 'rgba(200,100,80,0.70)',
   },
 
   // ─── Footer ───
@@ -1393,8 +1439,8 @@ const s = StyleSheet.create({
   emptyTitle: {
     fontFamily: F.heading,
     fontSize: 26,
-    color: 'rgba(255,248,230,0.90)',
-    letterSpacing: -0.3,
+    color: 'rgba(240,225,185,0.90)',
+    letterSpacing: 0.26,
   },
   emptyBody: {
     fontFamily: F.body,
